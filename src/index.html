@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles/sidebar.css">
   <link rel="stylesheet" href="styles/player.css">
   <link rel="stylesheet" href="styles/modal.css">
+  <link rel="stylesheet" href="styles/playlist-management.css">
 </head>
 <body>
   <!-- 主容器 -->
@@ -113,8 +114,74 @@
           <h2>我的歌单</h2>
           <button class="create-playlist-btn">创建歌单</button>
         </div>
+        
         <div class="playlist-grid" id="playlistGrid">
           <!-- 歌单内容 -->
+        </div>
+      </div>
+
+      <!-- 歌单详情页 -->
+      <div class="page" id="playlistDetailPage">
+        <div class="page-header">
+          <button class="back-btn" id="backToPlaylistsBtn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+            返回歌单
+          </button>
+          <div class="playlist-detail-info">
+            <h2 id="playlistDetailTitle">歌单名称</h2>
+            <p id="playlistDetailMeta">0 首歌曲 · 创建于 --</p>
+          </div>
+          <div class="playlist-detail-actions">
+            <button class="play-all-btn" id="playAllDetailBtn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              播放全部
+            </button>
+            <button class="edit-playlist-main-btn" id="editPlaylistMainBtn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+              </svg>
+              编辑歌单
+            </button>
+            <button class="manage-toggle-btn" id="manageDetailToggleBtn" data-mode="view">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+              </svg>
+              <span>管理歌单</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- 管理工具栏 (默认隐藏) -->
+        <div class="playlist-management-toolbar" id="playlistDetailToolbar" style="display: none;">
+          <div class="toolbar-left">
+            <button class="toolbar-btn select-all-btn" id="selectAllDetailBtn"><span>全选</span></button>
+            <button class="toolbar-btn select-none-btn" id="selectNoneDetailBtn"><span>取消选择</span></button>
+            <span class="selected-count-display">已选择 <span class="selected-count" id="selectedDetailCount">0</span> 首歌曲</span>
+          </div>
+          <div class="toolbar-right">
+            <button class="toolbar-btn add-songs-btn" id="addSongsDetailBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              <span>添加歌曲</span>
+            </button>
+            <button class="toolbar-btn batch-remove-btn" id="batchRemoveDetailBtn" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+              </svg>
+              <span>批量删除</span>
+            </button>
+          </div>
+        </div>
+        
+        <div class="playlist-detail-songs">
+          <div class="songs-list" id="playlistDetailSongs">
+            <!-- 歌曲列表将在这里渲染 -->
+          </div>
         </div>
       </div>
 
@@ -303,6 +370,7 @@
   <script src="js/components/Sidebar.js"></script>
   <script src="js/components/Player.js"></script>
   <script src="js/components/Search.js"></script>
+  <script src="js/components/PlaylistManager.js"></script>
   <script src="js/components/Playlist.js"></script>
   <script src="js/app.js"></script>
 </body>

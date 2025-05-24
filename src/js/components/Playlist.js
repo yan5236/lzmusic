@@ -87,10 +87,8 @@ class Playlist {
         <p class="playlist-card-count">${songCount} 首歌曲</p>
       </div>
       <div class="playlist-card-actions">
-        <button class="action-btn edit-btn" title="编辑">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-          </svg>
+        <button class="action-btn edit-playlist-text-btn" title="编辑歌单">
+          编辑歌单
         </button>
         <button class="action-btn delete-btn" title="删除">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -107,7 +105,7 @@ class Playlist {
   // 绑定歌单项事件
   bindPlaylistItemEvents(item, playlist) {
     const playBtn = item.querySelector('.play-playlist-btn');
-    const editBtn = item.querySelector('.edit-btn');
+    const editBtn = item.querySelector('.edit-playlist-text-btn');
     const deleteBtn = item.querySelector('.delete-btn');
 
     // 双击打开歌单
@@ -130,13 +128,53 @@ class Playlist {
     // 删除歌单
     deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.deletePlaylist(playlist);
+      this.showDeleteConfirmDialog(playlist);
     });
 
     // 点击打开歌单
     item.addEventListener('click', () => {
       this.openPlaylist(playlist);
     });
+  }
+
+  // 显示删除确认对话框
+  showDeleteConfirmDialog(playlist) {
+    const dialog = this.createDialog('删除歌单', `
+      <div class="delete-confirm-dialog">
+        <div class="warning-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+        </div>
+        <p>确定要删除歌单 "<strong>${playlist.name}</strong>" 吗？</p>
+        <p class="warning-text">此操作不可恢复，歌单中的 ${playlist.songs.length} 首歌曲将被移除。</p>
+        <div class="delete-options">
+          <label>
+            <input type="checkbox" id="confirmDelete">
+            我了解此操作不可恢复
+          </label>
+        </div>
+      </div>
+    `, [
+      {
+        text: '取消',
+        type: 'secondary',
+        handler: (dialog) => dialog.close()
+      },
+      {
+        text: '删除',
+        type: 'danger',
+        handler: (dialog) => {
+          const confirmCheckbox = dialog.querySelector('#confirmDelete');
+          if (confirmCheckbox.checked) {
+            this.deletePlaylist(playlist);
+            dialog.close();
+          } else {
+            this.showToast('请确认删除操作');
+          }
+        }
+      }
+    ]);
   }
 
   // 显示创建歌单对话框
@@ -283,7 +321,7 @@ class Playlist {
 
   // 编辑歌单
   editPlaylist(playlist) {
-    const dialog = this.createDialog('编辑歌单', `
+    const dialog = this.createDialog('编辑歌单文字', `
       <div class="dialog-body">
         <div class="form-group">
           <label for="editPlaylistName">歌单名称</label>
@@ -338,56 +376,245 @@ class Playlist {
     ]);
   }
 
-  // 打开歌单详情
+  // 打开歌单（导航到详情页面）
   openPlaylist(playlist) {
     this.currentPlaylist = playlist;
-    this.showPlaylistDetail(playlist);
+    this.showPlaylistDetailPage(playlist);
   }
 
-  // 显示歌单详情
-  showPlaylistDetail(playlist) {
-    const modal = document.createElement('div');
-    modal.className = 'playlist-detail-modal';
-    modal.innerHTML = `
-      <div class="playlist-detail-content">
-        <div class="playlist-detail-header">
-          <button class="close-detail-btn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+  // 显示歌单详情页面
+  showPlaylistDetailPage(playlist) {
+    console.log('显示歌单详情页面:', playlist.name);
+    
+    // 直接操作页面元素，不依赖Sidebar的switchPage方法
+    // 隐藏所有页面
+    const allPages = document.querySelectorAll('.page');
+    allPages.forEach(page => {
+      page.classList.remove('active');
+    });
+    
+    // 显示歌单详情页面
+    const playlistDetailPage = document.getElementById('playlistDetailPage');
+    if (playlistDetailPage) {
+      playlistDetailPage.classList.add('active');
+      console.log('直接激活歌单详情页面');
+    } else {
+      console.error('找不到歌单详情页面元素');
+      return;
+    }
+    
+    // 移除侧边栏导航项的活跃状态
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+      item.classList.remove('active');
+    });
+    
+    // 等待页面切换完成后再设置内容
+    setTimeout(() => {
+      console.log('页面切换完成，设置页面内容');
+      this.setupPlaylistDetailPage(playlist);
+    }, 50);
+  }
+
+  // 设置歌单详情页面内容
+  setupPlaylistDetailPage(playlist) {
+    console.log('设置歌单详情页面内容:', playlist);
+    console.log('歌单歌曲数量:', playlist.songs.length);
+    console.log('歌单歌曲列表:', playlist.songs);
+    
+    const titleElement = document.getElementById('playlistDetailTitle');
+    const metaElement = document.getElementById('playlistDetailMeta');
+    const songsContainer = document.getElementById('playlistDetailSongs');
+    
+    console.log('页面元素检查:', {
+      titleElement: !!titleElement,
+      metaElement: !!metaElement,
+      songsContainer: !!songsContainer
+    });
+    
+    if (titleElement) {
+      titleElement.textContent = playlist.name;
+      console.log('设置标题:', playlist.name);
+      console.log('标题元素内容:', titleElement.textContent);
+    } else {
+      console.error('找不到标题元素: playlistDetailTitle');
+    }
+    
+    if (metaElement) {
+      const metaText = `${playlist.songs.length} 首歌曲 · 创建于 ${this.formatDate(playlist.createTime)}`;
+      metaElement.textContent = metaText;
+      console.log('设置元信息:', metaText);
+      console.log('元信息元素内容:', metaElement.textContent);
+    } else {
+      console.error('找不到元信息元素: playlistDetailMeta');
+    }
+    
+    if (songsContainer) {
+      const songsHTML = this.renderPlaylistSongs(playlist.songs, false);
+      console.log('生成的歌曲HTML长度:', songsHTML.length);
+      console.log('生成的歌曲HTML前200字符:', songsHTML.substring(0, 200));
+      songsContainer.innerHTML = songsHTML;
+      console.log('设置歌曲列表, 歌曲数量:', playlist.songs.length);
+      console.log('歌曲容器内容长度:', songsContainer.innerHTML.length);
+      console.log('歌曲容器子元素数量:', songsContainer.children.length);
+    } else {
+      console.error('找不到歌曲容器元素: playlistDetailSongs');
+    }
+    
+    // 检查页面是否可见
+    const playlistDetailPage = document.getElementById('playlistDetailPage');
+    if (playlistDetailPage) {
+      console.log('歌单详情页面可见性:', {
+        display: getComputedStyle(playlistDetailPage).display,
+        visibility: getComputedStyle(playlistDetailPage).visibility,
+        opacity: getComputedStyle(playlistDetailPage).opacity,
+        hasActiveClass: playlistDetailPage.classList.contains('active')
+      });
+    }
+    
+    // 绑定页面事件
+    this.bindPlaylistDetailPageEvents(playlist);
+  }
+
+  // 绑定歌单详情页面事件
+  bindPlaylistDetailPageEvents(playlist) {
+    // 先清除之前的事件监听器
+    this.clearDetailPageEvents();
+    
+    const backBtn = document.getElementById('backToPlaylistsBtn');
+    const playAllBtn = document.getElementById('playAllDetailBtn');
+    const editPlaylistMainBtn = document.getElementById('editPlaylistMainBtn');
+    const manageToggleBtn = document.getElementById('manageDetailToggleBtn');
+    const managementToolbar = document.getElementById('playlistDetailToolbar');
+    const songsContainer = document.getElementById('playlistDetailSongs');
+    
+    console.log('绑定歌单详情页面事件:', {
+      backBtn: !!backBtn,
+      playAllBtn: !!playAllBtn,
+      editPlaylistMainBtn: !!editPlaylistMainBtn,
+      manageToggleBtn: !!manageToggleBtn,
+      managementToolbar: !!managementToolbar,
+      songsContainer: !!songsContainer,
+      playlist: playlist.name
+    });
+    
+    let isManageMode = false;
+
+    // 返回歌单列表
+    if (backBtn) {
+      this.backBtnHandler = () => {
+        console.log('返回歌单列表');
+        
+        // 直接操作页面元素
+        const allPages = document.querySelectorAll('.page');
+        allPages.forEach(page => {
+          page.classList.remove('active');
+        });
+        
+        // 显示歌单页面
+        const playlistPage = document.getElementById('playlistPage');
+        if (playlistPage) {
+          playlistPage.classList.add('active');
+        }
+        
+        // 激活歌单导航项
+        const playlistNavItem = document.querySelector('[data-page="playlist"]');
+        if (playlistNavItem) {
+          const navItems = document.querySelectorAll('.nav-item');
+          navItems.forEach(item => item.classList.remove('active'));
+          playlistNavItem.classList.add('active');
+        }
+      };
+      backBtn.addEventListener('click', this.backBtnHandler);
+    }
+
+    // 播放全部
+    if (playAllBtn) {
+      this.playAllBtnHandler = () => {
+        console.log('播放全部歌曲');
+        this.playPlaylist(playlist);
+      };
+      playAllBtn.addEventListener('click', this.playAllBtnHandler);
+    }
+
+    // 编辑歌单（主要按钮）
+    if (editPlaylistMainBtn) {
+      this.editPlaylistMainBtnHandler = () => {
+        console.log('编辑歌单');
+        this.editPlaylist(playlist);
+      };
+      editPlaylistMainBtn.addEventListener('click', this.editPlaylistMainBtnHandler);
+    }
+
+    // 管理模式切换
+    if (manageToggleBtn) {
+      this.manageToggleBtnHandler = () => {
+        isManageMode = !isManageMode;
+        console.log('切换管理模式:', isManageMode);
+        
+        if (isManageMode) {
+          // 切换到管理模式
+          manageToggleBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
             </svg>
-          </button>
-          <div class="playlist-detail-info">
-            <h2>${playlist.name}</h2>
-            <p>${playlist.songs.length} 首歌曲 · 创建于 ${this.formatDate(playlist.createTime)}</p>
-          </div>
-          <div class="playlist-detail-actions">
-            <button class="play-all-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-              播放全部
-            </button>
-          </div>
-        </div>
-        <div class="playlist-detail-songs">
-          <div class="songs-list" id="playlistSongs">
-            ${this.renderPlaylistSongs(playlist.songs)}
-          </div>
-        </div>
-      </div>
-    `;
+            <span>退出管理</span>
+          `;
+          if (managementToolbar) {
+            managementToolbar.style.display = 'flex';
+          }
+          songsContainer.innerHTML = this.renderPlaylistSongs(playlist.songs, true);
+          this.bindDetailManagementEvents(playlist);
+        } else {
+          // 切换到查看模式
+          manageToggleBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+            </svg>
+            <span>管理歌单</span>
+          `;
+          if (managementToolbar) {
+            managementToolbar.style.display = 'none';
+          }
+          songsContainer.innerHTML = this.renderPlaylistSongs(playlist.songs, false);
+        }
+        
+        // 重新绑定歌曲项事件
+        this.bindDetailSongItemEvents(playlist, isManageMode);
+      };
+      manageToggleBtn.addEventListener('click', this.manageToggleBtnHandler);
+    }
 
-    document.body.appendChild(modal);
+    // 初始绑定歌曲项事件
+    this.bindDetailSongItemEvents(playlist, isManageMode);
+  }
+
+  // 清除详情页面事件监听器
+  clearDetailPageEvents() {
+    const backBtn = document.getElementById('backToPlaylistsBtn');
+    const playAllBtn = document.getElementById('playAllDetailBtn');
+    const editPlaylistMainBtn = document.getElementById('editPlaylistMainBtn');
+    const manageToggleBtn = document.getElementById('manageDetailToggleBtn');
     
-    // 绑定事件
-    this.bindPlaylistDetailEvents(modal, playlist);
+    if (backBtn && this.backBtnHandler) {
+      backBtn.removeEventListener('click', this.backBtnHandler);
+    }
+    if (playAllBtn && this.playAllBtnHandler) {
+      playAllBtn.removeEventListener('click', this.playAllBtnHandler);
+    }
+    if (editPlaylistMainBtn && this.editPlaylistMainBtnHandler) {
+      editPlaylistMainBtn.removeEventListener('click', this.editPlaylistMainBtnHandler);
+    }
+    if (manageToggleBtn && this.manageToggleBtnHandler) {
+      manageToggleBtn.removeEventListener('click', this.manageToggleBtnHandler);
+    }
     
-    // 显示模态框
-    setTimeout(() => modal.classList.add('show'), 10);
+    // 也清除管理事件监听器
+    this.clearDetailManagementEvents();
   }
 
   // 渲染歌单歌曲
-  renderPlaylistSongs(songs) {
+  renderPlaylistSongs(songs, isManageMode = false) {
     if (songs.length === 0) {
       return `
         <div class="empty-playlist">
@@ -401,8 +628,14 @@ class Playlist {
     }
 
     return songs.map((song, index) => `
-      <div class="song-item" data-index="${index}" data-bvid="${song.bvid}">
-        <div class="song-index">${index + 1}</div>
+      <div class="song-item ${isManageMode ? 'management-mode' : ''}" data-index="${index}" data-bvid="${song.bvid}">
+        ${isManageMode ? `
+          <div class="song-checkbox">
+            <input type="checkbox" id="song-${index}">
+          </div>
+        ` : `
+          <div class="song-index">${index + 1}</div>
+        `}
         <div class="song-cover">
           <img src="${song.cover}" alt="封面" loading="lazy">
         </div>
@@ -427,55 +660,225 @@ class Playlist {
     `).join('');
   }
 
-  // 绑定歌单详情事件
-  bindPlaylistDetailEvents(modal, playlist) {
-    const closeBtn = modal.querySelector('.close-detail-btn');
-    const playAllBtn = modal.querySelector('.play-all-btn');
-    const songItems = modal.querySelectorAll('.song-item');
+  // 绑定详情页面管理功能事件
+  bindDetailManagementEvents(playlist) {
+    // 先清除之前的事件监听器，避免重复绑定
+    this.clearDetailManagementEvents();
+    
+    const selectAllBtn = document.getElementById('selectAllDetailBtn');
+    const selectNoneBtn = document.getElementById('selectNoneDetailBtn');
+    const batchRemoveBtn = document.getElementById('batchRemoveDetailBtn');
+    const addSongsBtn = document.getElementById('addSongsDetailBtn');
+    const selectedCountElement = document.getElementById('selectedDetailCount');
 
-    // 关闭模态框
-    closeBtn.addEventListener('click', () => {
-      modal.classList.remove('show');
-      setTimeout(() => modal.remove(), 300);
-    });
+    // 全选
+    if (selectAllBtn) {
+      this.selectAllBtnHandler = () => {
+        const checkboxes = document.querySelectorAll('#playlistDetailSongs .song-checkbox input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          checkbox.checked = true;
+        });
+        this.updateDetailSelectionState();
+      };
+      selectAllBtn.addEventListener('click', this.selectAllBtnHandler);
+    }
 
-    // 播放全部
-    playAllBtn.addEventListener('click', () => {
-      this.playPlaylist(playlist);
-    });
+    // 取消选择
+    if (selectNoneBtn) {
+      this.selectNoneBtnHandler = () => {
+        const checkboxes = document.querySelectorAll('#playlistDetailSongs .song-checkbox input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          checkbox.checked = false;
+        });
+        this.updateDetailSelectionState();
+      };
+      selectNoneBtn.addEventListener('click', this.selectNoneBtnHandler);
+    }
 
-    // 歌曲项事件
+    // 批量删除
+    if (batchRemoveBtn) {
+      this.batchRemoveBtnHandler = () => {
+        const checkboxes = document.querySelectorAll('#playlistDetailSongs .song-checkbox input[type="checkbox"]:checked');
+        if (checkboxes.length === 0) return;
+
+        const dialog = this.createDialog('批量删除歌曲', `
+          <div class="dialog-body">
+            <p>确定要从歌单中删除选中的 ${checkboxes.length} 首歌曲吗？</p>
+            <p class="warning">此操作无法撤销。</p>
+          </div>
+        `, [
+          {
+            text: '取消',
+            type: 'secondary',
+            handler: (dialog) => dialog.close()
+          },
+          {
+            text: '删除',
+            type: 'danger',
+            handler: (dialog) => {
+              // 获取要删除的歌曲索引
+              const indicesToRemove = Array.from(checkboxes).map(cb => {
+                return parseInt(cb.closest('.song-item').dataset.index);
+              }).sort((a, b) => b - a); // 从后往前删除
+
+              // 删除歌曲
+              indicesToRemove.forEach(index => {
+                const song = playlist.songs[index];
+                this.playlistManager.removeSong(playlist.id, song.bvid);
+                playlist.songs.splice(index, 1);
+              });
+
+              // 刷新显示
+              const songsContainer = document.getElementById('playlistDetailSongs');
+              songsContainer.innerHTML = this.renderPlaylistSongs(playlist.songs, true);
+              this.bindDetailManagementEvents(playlist);
+              this.bindDetailSongItemEvents(playlist, true);
+              
+              // 更新歌单列表
+              this.loadPlaylists();
+              // 更新页面头部信息
+              const metaElement = document.getElementById('playlistDetailMeta');
+              if (metaElement) {
+                metaElement.textContent = `${playlist.songs.length} 首歌曲 · 创建于 ${this.formatDate(playlist.createTime)}`;
+              }
+              
+              this.showToast(`已删除 ${indicesToRemove.length} 首歌曲`);
+              dialog.close();
+            }
+          }
+        ]);
+      };
+      batchRemoveBtn.addEventListener('click', this.batchRemoveBtnHandler);
+    }
+
+    // 添加歌曲
+    if (addSongsBtn) {
+      this.addSongsBtnHandler = () => {
+        // 可以在这里实现添加歌曲功能，比如打开搜索选择器
+        this.showToast('请在搜索页面找到歌曲并添加到歌单');
+      };
+      addSongsBtn.addEventListener('click', this.addSongsBtnHandler);
+    }
+  }
+
+  // 清除详情页面管理事件监听器
+  clearDetailManagementEvents() {
+    const selectAllBtn = document.getElementById('selectAllDetailBtn');
+    const selectNoneBtn = document.getElementById('selectNoneDetailBtn');
+    const batchRemoveBtn = document.getElementById('batchRemoveDetailBtn');
+    const addSongsBtn = document.getElementById('addSongsDetailBtn');
+    
+    if (selectAllBtn && this.selectAllBtnHandler) {
+      selectAllBtn.removeEventListener('click', this.selectAllBtnHandler);
+    }
+    if (selectNoneBtn && this.selectNoneBtnHandler) {
+      selectNoneBtn.removeEventListener('click', this.selectNoneBtnHandler);
+    }
+    if (batchRemoveBtn && this.batchRemoveBtnHandler) {
+      batchRemoveBtn.removeEventListener('click', this.batchRemoveBtnHandler);
+    }
+    if (addSongsBtn && this.addSongsBtnHandler) {
+      addSongsBtn.removeEventListener('click', this.addSongsBtnHandler);
+    }
+  }
+
+  // 绑定详情页面歌曲项事件
+  bindDetailSongItemEvents(playlist, isManageMode) {
+    const songItems = document.querySelectorAll('#playlistDetailSongs .song-item');
+
     songItems.forEach((item, index) => {
       const playBtn = item.querySelector('.play-song-btn');
       const removeBtn = item.querySelector('.remove-song-btn');
 
-      // 双击播放
-      item.addEventListener('dblclick', () => {
-        this.playSongFromPlaylist(playlist, index);
-      });
+      // 双击播放（仅在查看模式）
+      if (!isManageMode) {
+        item.addEventListener('dblclick', () => {
+          this.playSongFromPlaylist(playlist, index);
+        });
+      } else {
+        // 管理模式下的复选框事件
+        const checkbox = item.querySelector('.song-checkbox input[type="checkbox"]');
+        if (checkbox) {
+          checkbox.addEventListener('change', () => {
+            this.updateDetailSelectionState();
+          });
+        }
+      }
 
       // 播放按钮
-      playBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.playSongFromPlaylist(playlist, index);
-      });
+      if (playBtn) {
+        playBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.playSongFromPlaylist(playlist, index);
+        });
+      }
 
       // 移除按钮
-      removeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.removeSongFromPlaylist(playlist.id, playlist.songs[index].bvid);
-        // 更新显示
-        item.remove();
-        playlist.songs.splice(index, 1);
-      });
-    });
-
-    // 点击背景关闭
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        closeBtn.click();
+      if (removeBtn) {
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.confirmRemoveSong(playlist, index, () => {
+            // 刷新显示
+            const songsContainer = document.getElementById('playlistDetailSongs');
+            songsContainer.innerHTML = this.renderPlaylistSongs(playlist.songs, isManageMode);
+            this.bindDetailSongItemEvents(playlist, isManageMode);
+            if (isManageMode) {
+              this.bindDetailManagementEvents(playlist);
+            }
+            
+            // 更新页面头部信息
+            const metaElement = document.getElementById('playlistDetailMeta');
+            if (metaElement) {
+              metaElement.textContent = `${playlist.songs.length} 首歌曲 · 创建于 ${this.formatDate(playlist.createTime)}`;
+            }
+          });
+        });
       }
     });
+  }
+
+  // 更新详情页面选择状态
+  updateDetailSelectionState() {
+    const checkboxes = document.querySelectorAll('#playlistDetailSongs .song-checkbox input[type="checkbox"]');
+    const checkedBoxes = document.querySelectorAll('#playlistDetailSongs .song-checkbox input[type="checkbox"]:checked');
+    const batchRemoveBtn = document.getElementById('batchRemoveDetailBtn');
+    const selectedCountElement = document.getElementById('selectedDetailCount');
+
+    const selectedCount = checkedBoxes.length;
+    
+    if (selectedCountElement) {
+      selectedCountElement.textContent = selectedCount.toString();
+    }
+    
+    if (batchRemoveBtn) {
+      batchRemoveBtn.disabled = selectedCount === 0;
+    }
+  }
+
+  // 确认删除单首歌曲
+  confirmRemoveSong(playlist, index, callback) {
+    const song = playlist.songs[index];
+    const dialog = this.createDialog('删除歌曲', `
+      <div class="dialog-body">
+        <p>确定要从歌单中删除歌曲 "<strong>${song.title}</strong>" 吗？</p>
+      </div>
+    `, [
+      {
+        text: '取消',
+        type: 'secondary',
+        handler: (dialog) => dialog.close()
+      },
+      {
+        text: '删除',
+        type: 'danger',
+        handler: (dialog) => {
+          this.removeSongFromPlaylist(playlist.id, song.bvid);
+          playlist.songs.splice(index, 1);
+          callback();
+          dialog.close();
+        }
+      }
+    ]);
   }
 
   // 从歌单播放歌曲

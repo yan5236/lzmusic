@@ -6,10 +6,14 @@ class App {
     this.playHistory = new PlayHistory();
     
     // 组件实例
-    this.sidebar = null;
-    this.player = null;
-    this.searchComponent = null;
-    this.playlistComponent = null;
+    this.player = new Player();
+    this.sidebar = new Sidebar();
+    this.searchComponent = new Search(this.player, this.api);
+    this.playlistComponent = new Playlist(this.player);
+    this.playlistManagement = null;
+    
+    // 设置全局引用
+    window.app = this;
     
     this.init();
   }
@@ -41,20 +45,7 @@ class App {
   }
 
   initComponents() {
-    // 初始化播放器
-    this.player = new Player();
-    
-    // 初始化侧边栏
-    this.sidebar = new Sidebar();
-    
-    // 初始化搜索组件
-    this.searchComponent = new Search(this.player, this.api);
-    
-    // 初始化歌单组件
-    this.playlistComponent = new Playlist(this.player);
-    
-    // 设置全局引用
-    window.app = this;
+    // 组件已在构造函数中初始化，这里只进行额外的设置
     
     // 检查播放栏是否可见
     setTimeout(() => {

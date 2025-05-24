@@ -93,6 +93,8 @@ class Sidebar {
 
   // 切换页面
   switchPage(pageId) {
+    console.log('切换页面请求:', pageId);
+    
     // 移除所有活跃状态
     this.navItems.forEach(item => {
       item.classList.remove('active');
@@ -106,12 +108,31 @@ class Sidebar {
     const activeNavItem = document.querySelector(`[data-page="${pageId}"]`);
     const activePage = document.getElementById(`${pageId}Page`);
 
+    console.log('页面切换元素检查:', {
+      activeNavItem: !!activeNavItem,
+      activePage: !!activePage,
+      pageId: pageId,
+      expectedPageId: `${pageId}Page`
+    });
+
     if (activeNavItem && activePage) {
       activeNavItem.classList.add('active');
       activePage.classList.add('active');
       
+      console.log('页面切换成功:', {
+        navItemActive: activeNavItem.classList.contains('active'),
+        pageActive: activePage.classList.contains('active'),
+        pageDisplay: getComputedStyle(activePage).display
+      });
+      
       // 触发页面切换事件
       this.onPageSwitch(pageId);
+    } else {
+      console.error('页面切换失败:', {
+        pageId,
+        activeNavItem: !!activeNavItem,
+        activePage: !!activePage
+      });
     }
   }
 
@@ -132,6 +153,9 @@ class Sidebar {
         break;
       case 'playlist':
         this.loadPlaylistPage();
+        break;
+      case 'playlistDetail':
+        // 歌单详情页面，由Playlist组件处理
         break;
       case 'settings':
         this.loadSettingsPage();
