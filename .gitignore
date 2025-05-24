@@ -1,0 +1,10 @@
+# 排除所有 .md 文件
+*.md
+start-win.bat
+
+# 保留 README.md
+!README.md
+
+# 排除依赖包目录和锁定文件
+node_modules/
+package-lock.json

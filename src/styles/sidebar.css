@@ -1,0 +1,235 @@
+/* 侧边栏样式 */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: var(--player-height);
+  width: var(--sidebar-width);
+  background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: var(--text-light);
+  z-index: 1000;
+  transition: width var(--transition-speed) ease;
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 80px;
+}
+
+/* 折叠状态下的header样式 */
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 20px 10px;
+}
+
+.app-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-light);
+  white-space: nowrap;
+  transition: opacity var(--transition-speed) ease;
+}
+
+.sidebar.collapsed .app-title {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+.sidebar-toggle {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color var(--transition-speed) ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 36px;
+  min-height: 36px;
+  position: relative;
+}
+
+/* 折叠状态下，确保按钮始终可见 */
+.sidebar.collapsed .sidebar-toggle {
+  position: relative;
+  z-index: 1001;
+}
+
+/* 折叠状态下添加边框提示 */
+.sidebar.collapsed .sidebar-toggle {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+}
+
+.sidebar.collapsed .sidebar-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 添加一个提示动画，让用户知道这里可以点击 */
+.sidebar.collapsed .sidebar-toggle::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid var(--text-light);
+  border-radius: 8px;
+  opacity: 0;
+  animation: expandHint 2s infinite;
+}
+
+@keyframes expandHint {
+  0%, 80%, 100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  40% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+.sidebar-nav {
+  padding: 20px 0;
+}
+
+.nav-list {
+  list-style: none;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+  position: relative;
+  white-space: nowrap;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--text-light);
+}
+
+.nav-item svg {
+  margin-right: 12px;
+  flex-shrink: 0;
+  transition: margin-right var(--transition-speed) ease;
+}
+
+.sidebar.collapsed .nav-item svg {
+  margin-right: 0;
+}
+
+.nav-item span {
+  font-size: 14px;
+  font-weight: 500;
+  transition: opacity var(--transition-speed) ease;
+}
+
+.sidebar.collapsed .nav-item span {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+/* 折叠状态下的工具提示 */
+.sidebar.collapsed .nav-item {
+  position: relative;
+  justify-content: center;
+  padding: 12px 10px;
+}
+
+.sidebar.collapsed .nav-item:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1001;
+  margin-left: 8px;
+  animation: tooltipFadeIn 0.2s ease-in-out;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .sidebar {
+    width: var(--sidebar-collapsed-width);
+  }
+  
+  .sidebar-header {
+    justify-content: center;
+    padding: 20px 10px;
+  }
+  
+  .app-title {
+    opacity: 0;
+    position: absolute;
+    pointer-events: none;
+  }
+  
+  .nav-item span {
+    opacity: 0;
+    position: absolute;
+    pointer-events: none;
+  }
+  
+  .nav-item svg {
+    margin-right: 0;
+  }
+  
+  .nav-item {
+    justify-content: center;
+    padding: 12px 10px;
+  }
+} 

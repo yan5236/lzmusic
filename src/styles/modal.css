@@ -1,0 +1,337 @@
+/* 播放模态框样式 */
+.player-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--player-height);
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+  z-index: 2000;
+  transform: translateY(100%);
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  overflow: hidden;
+}
+
+.player-modal.show {
+  transform: translateY(0);
+}
+
+.modal-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 24px;
+  z-index: 2001;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-speed) ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.modal-content {
+  height: 100%;
+  display: flex;
+  padding-top: 60px;
+}
+
+.modal-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: white;
+}
+
+.large-cover {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 32px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  transition: transform var(--transition-speed) ease;
+}
+
+.large-cover:hover {
+  transform: scale(1.02);
+}
+
+.large-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.large-cover img.loaded {
+  display: block;
+}
+
+.large-cover .cover-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.large-cover img.loaded + .cover-placeholder {
+  display: none;
+}
+
+.modal-song-info {
+  text-align: center;
+  max-width: 400px;
+}
+
+.modal-song-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.modal-song-artist {
+  font-size: 18px;
+  opacity: 0.9;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.modal-right {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lyrics-container {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.lyrics-container h3 {
+  font-size: 24px;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 12px;
+}
+
+.lyrics-content {
+  line-height: 2;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.lyrics-content p {
+  margin-bottom: 16px;
+  padding: 8px 0;
+  transition: color var(--transition-speed) ease;
+}
+
+.lyrics-content p.active {
+  color: var(--primary-color);
+  font-weight: 600;
+  transform: scale(1.05);
+}
+
+.lyrics-content p:hover {
+  color: var(--text-primary);
+}
+
+/* 空歌词状态 */
+.lyrics-content .empty-lyrics {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.lyrics-content .empty-lyrics svg {
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+/* 加载歌词动画 */
+.lyrics-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.lyrics-loading .loading-spinner {
+  border-color: var(--border-color);
+  border-top-color: var(--primary-color);
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .modal-content {
+    flex-direction: column;
+  }
+  
+  .modal-left {
+    padding: 20px;
+  }
+  
+  .large-cover {
+    width: 240px;
+    height: 240px;
+    margin-bottom: 24px;
+  }
+  
+  .modal-song-title {
+    font-size: 28px;
+  }
+  
+  .modal-song-artist {
+    font-size: 16px;
+  }
+  
+  .modal-right {
+    min-height: 40vh;
+  }
+  
+  .lyrics-container {
+    padding: 20px;
+  }
+  
+  .lyrics-container h3 {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  
+  .lyrics-content {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-header {
+    padding: 0 16px;
+  }
+  
+  .modal-left {
+    padding: 16px;
+  }
+  
+  .large-cover {
+    width: 200px;
+    height: 200px;
+    margin-bottom: 16px;
+  }
+  
+  .modal-song-title {
+    font-size: 24px;
+  }
+  
+  .modal-song-artist {
+    font-size: 14px;
+  }
+  
+  .lyrics-container {
+    padding: 16px;
+  }
+  
+  .lyrics-container h3 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 600px) {
+  .large-cover {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .modal-song-title {
+    font-size: 20px;
+  }
+  
+  .modal-song-artist {
+    font-size: 13px;
+  }
+  
+  .lyrics-content {
+    font-size: 13px;
+  }
+}
+
+/* 动画效果 */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.player-modal.entering {
+  animation: slideInUp 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.player-modal.leaving {
+  animation: slideOutDown 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* 背景模糊效果 */
+.player-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  filter: blur(20px);
+  opacity: 0.3;
+  z-index: -1;
+} 
