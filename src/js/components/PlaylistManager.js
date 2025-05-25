@@ -495,34 +495,53 @@ class PlaylistManagementPage {
 
     const addBtns = container.querySelectorAll('.add-to-playlist-btn');
     addBtns.forEach((btn, index) => {
-      btn.addEventListener('click', () => {
-        this.addSongToPlaylist(results[index], btn);
+      btn.addEventListener('click', async () => {
+        await this.addSongToPlaylist(results[index], btn);
       });
     });
   }
 
   // 添加歌曲到歌单
-  addSongToPlaylist(video, btn) {
-    const song = {
-      bvid: video.bvid,
-      title: video.title,
-      author: video.owner.name,
-      cover: video.pic,
-      duration: this.formatDuration(video.duration),
-      play: video.stat.view
-    };
-
-    const result = this.playlistStorage.addSong(this.currentPlaylist.id, song);
-    if (result) {
-      btn.textContent = '已添加';
+  async addSongToPlaylist(video, btn) {
+    try {
+      btn.textContent = '添加中...';
       btn.disabled = true;
-      this.showToast('歌曲已添加到歌单');
-      
-      this.currentPlaylist.songs.push(song);
-      this.updatePlaylistInfo();
-      this.loadPlaylists();
-    } else {
-      this.showToast('歌曲已存在于歌单中');
+
+      // 获取完整的视频信息（包含cid和pages）
+      const api = new BilibiliAPI();
+      const videoInfo = await api.getVideoInfo(video.bvid);
+
+      const song = {
+        bvid: video.bvid,
+        title: video.title,
+        author: video.owner.name,
+        cover: video.pic,
+        duration: this.formatDuration(video.duration),
+        play: video.stat.view,
+        cid: videoInfo.cid,
+        pages: videoInfo.pages // 保存分P信息
+      };
+
+      const result = this.playlistStorage.addSong(this.currentPlaylist.id, song);
+      if (result) {
+        btn.textContent = '已添加';
+        this.showToast('歌曲已添加到歌单');
+        
+        this.currentPlaylist.songs.push(song);
+        this.updatePlaylistInfo();
+        this.loadPlaylists();
+      } else {
+        btn.textContent = '已存在';
+        this.showToast('歌曲已存在于歌单中');
+      }
+    } catch (error) {
+      console.error('添加歌曲失败:', error);
+      btn.textContent = '添加失败';
+      this.showToast('添加歌曲失败');
+      setTimeout(() => {
+        btn.textContent = '添加';
+        btn.disabled = false;
+      }, 2000);
     }
   }
 

@@ -10,6 +10,8 @@ class Search {
     
     this.currentKeyword = '';
     this.currentPage = 1;
+    this.totalPages = 1;
+    this.totalResults = 0;
     this.isLoading = false;
     this.searchHistory = [];
     this.maxHistoryItems = 10;
@@ -117,6 +119,8 @@ class Search {
 
     this.currentKeyword = keyword;
     this.currentPage = 1;
+    this.totalPages = 1;
+    this.totalResults = 0;
     
     // 添加到搜索历史
     this.addToHistory(keyword);
@@ -128,7 +132,7 @@ class Search {
     if (this.api.isBVID(keyword)) {
       await this.searchByBVID(keyword);
     } else {
-      await this.searchVideos(keyword);
+      await this.searchVideos(keyword, 1);
     }
   }
 
@@ -147,7 +151,8 @@ class Search {
           author: videoInfo.author,
           cover: videoInfo.cover,
           duration: this.api.formatDuration(videoInfo.duration),
-          cid: videoInfo.cid
+          cid: videoInfo.cid,
+          pages: videoInfo.pages // 包含分P信息
         }],
         total: 1
       };
@@ -163,16 +168,18 @@ class Search {
   }
 
   // 搜索视频
-  async searchVideos(keyword, page = 1) {
+  async searchVideos(keyword, page = 1, isLoadMore = false) {
     if (this.isLoading) return;
     
     try {
       this.isLoading = true;
       
-      if (page === 1) {
+      if (page === 1 || !isLoadMore) {
         this.showLoading();
         // 显示搜索框加载状态
         this.showSearchLoading();
+      } else {
+        this.showLoadingMore();
       }
       
       const result = await this.api.searchVideos(keyword, page);
@@ -181,6 +188,10 @@ class Search {
         throw new Error(result.error);
       }
       
+      // 更新分页信息
+      this.totalResults = result.total;
+      this.totalPages = Math.min(50, Math.ceil(result.total / 20)); // B站最大50页
+      
       // 获取视频详细信息（包含 cid）
       const detailedVideos = await Promise.all(
         result.videos.map(async (video) => {
@@ -188,7 +199,8 @@ class Search {
             const videoInfo = await this.api.getVideoInfo(video.bvid);
             return {
               ...video,
-              cid: videoInfo.cid
+              cid: videoInfo.cid,
+              pages: videoInfo.pages // 包含分P信息
             };
           } catch (error) {
             console.error(`获取视频 ${video.bvid} 详细信息失败:`, error);
@@ -196,18 +208,30 @@ class Search {
           }
         })
       );
-      
+
       result.videos = detailedVideos;
       
-      this.displayResults(result, page === 1);
-      this.hideLoading();
-      this.hideSearchLoading();
+      // 页面跳转时替换内容，加载更多时追加内容
+      const isNewSearch = page === 1 || !isLoadMore;
+      this.displayResults(result, isNewSearch);
+      
+      if (page === 1 || !isLoadMore) {
+        this.hideLoading();
+        this.hideSearchLoading();
+      } else {
+        this.hideLoadingMore();
+      }
       
     } catch (error) {
       console.error('搜索失败:', error);
-      this.showError('搜索失败：' + error.message);
-      this.hideLoading();
-      this.hideSearchLoading();
+      this.showError(error.message || '搜索失败，请稍后重试');
+      
+      if (page === 1 || !isLoadMore) {
+        this.hideLoading();
+        this.hideSearchLoading();
+      } else {
+        this.hideLoadingMore();
+      }
     } finally {
       this.isLoading = false;
     }
@@ -233,11 +257,23 @@ class Search {
       fragment.appendChild(item);
     });
 
-    this.searchResults.appendChild(fragment);
+    // 如果是新搜索，插入到结果容器的开头（在分页控件之前）
+    // 如果是加载更多，插入到分页控件之前
+    const paginationControls = this.searchResults.querySelector('.pagination-controls');
+    if (paginationControls && !isNewSearch) {
+      // 加载更多：插入到分页控件之前
+      this.searchResults.insertBefore(fragment, paginationControls);
+    } else {
+      // 新搜索：直接追加
+      this.searchResults.appendChild(fragment);
+    }
     
-    // 显示总数信息
-    if (isNewSearch && result.total) {
-      this.showResultInfo(result.total);
+    // 显示总数信息和分页控制
+    if (isNewSearch) {
+      this.showResultInfo(this.totalResults);
+      this.createPaginationControls();
+    } else {
+      this.updatePaginationControls();
     }
   }
 
@@ -246,6 +282,9 @@ class Search {
     const item = document.createElement('div');
     item.className = 'search-item';
     item.dataset.bvid = video.bvid;
+    
+    // 检查是否为分P视频
+    const isMultiPart = video.pages && video.pages.length > 1;
     
     item.innerHTML = `
       <div class="search-item-cover">
@@ -259,9 +298,17 @@ class Search {
       <div class="search-item-info">
         <div class="search-item-title" title="${video.title}">${video.title}</div>
         <div class="search-item-artist" title="${video.author}">UP主: ${video.author}</div>
+        ${isMultiPart ? `<div class="search-item-parts">共${video.pages.length}个分P</div>` : ''}
       </div>
       <div class="search-item-duration">${video.duration}</div>
       <div class="search-item-actions">
+        ${isMultiPart ? `
+          <button class="expand-parts-btn" title="展开分P">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/>
+            </svg>
+          </button>
+        ` : ''}
         <button class="play-single-btn" title="播放">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8 5v14l11-7z"/>
@@ -275,19 +322,62 @@ class Search {
       </div>
     `;
 
+    // 如果是分P视频，添加分P列表容器
+    if (isMultiPart) {
+      const partsContainer = document.createElement('div');
+      partsContainer.className = 'search-item-parts-list';
+      partsContainer.style.display = 'none';
+      partsContainer.innerHTML = this.createPartsListHTML(video);
+      item.appendChild(partsContainer);
+    }
+
     // 绑定事件
     this.bindSearchItemEvents(item, video);
     
     return item;
   }
 
+  // 创建分P列表HTML
+  createPartsListHTML(video) {
+    return video.pages.map((page, index) => `
+      <div class="part-item" data-index="${index}" data-cid="${page.cid}">
+        <div class="part-info">
+          <div class="part-title">P${index + 1}: ${page.part}</div>
+          <div class="part-duration">${this.formatDuration(page.duration)}</div>
+        </div>
+        <div class="part-actions">
+          <button class="play-part-btn" title="播放这一P">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+          <button class="add-part-btn" title="添加这一P到歌单">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 格式化时长
+  formatDuration(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+
   // 绑定搜索项事件
   bindSearchItemEvents(item, video) {
     const playBtn = item.querySelector('.play-single-btn');
     const addBtn = item.querySelector('.add-to-playlist-btn');
+    const expandBtn = item.querySelector('.expand-parts-btn');
     
     // 双击播放
-    item.addEventListener('dblclick', () => {
+    item.addEventListener('dblclick', (e) => {
+      // 如果双击的是分P列表区域，不触发播放
+      if (e.target.closest('.search-item-parts-list')) return;
       this.playVideo(video);
     });
     
@@ -302,6 +392,20 @@ class Search {
       e.stopPropagation();
       this.addToPlaylist(video);
     });
+
+    // 展开分P列表
+    if (expandBtn) {
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.togglePartsExpansion(item);
+      });
+    }
+
+    // 绑定分P列表事件
+    const partsContainer = item.querySelector('.search-item-parts-list');
+    if (partsContainer) {
+      this.bindPartsListEvents(partsContainer, video);
+    }
     
     // 悬停效果
     item.addEventListener('mouseenter', () => {
@@ -317,6 +421,122 @@ class Search {
         playIcon.style.opacity = '0';
       }
     });
+  }
+
+  // 切换分P展开状态
+  togglePartsExpansion(item) {
+    const partsContainer = item.querySelector('.search-item-parts-list');
+    const expandBtn = item.querySelector('.expand-parts-btn');
+    
+    if (partsContainer.style.display === 'none') {
+      // 展开
+      partsContainer.style.display = 'block';
+      expandBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+        </svg>
+      `;
+      expandBtn.title = '收起分P';
+    } else {
+      // 收起
+      partsContainer.style.display = 'none';
+      expandBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/>
+        </svg>
+      `;
+      expandBtn.title = '展开分P';
+    }
+  }
+
+  // 绑定分P列表事件
+  bindPartsListEvents(partsContainer, video) {
+    const partItems = partsContainer.querySelectorAll('.part-item');
+    
+    partItems.forEach((partItem, index) => {
+      const playPartBtn = partItem.querySelector('.play-part-btn');
+      const addPartBtn = partItem.querySelector('.add-part-btn');
+      
+      // 播放特定分P
+      playPartBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.playSpecificPart(video, index);
+      });
+      
+      // 添加特定分P到歌单
+      addPartBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.addSpecificPartToPlaylist(video, index);
+      });
+      
+      // 双击播放分P
+      partItem.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        this.playSpecificPart(video, index);
+      });
+    });
+  }
+
+  // 播放特定分P
+  async playSpecificPart(video, partIndex) {
+    try {
+      const page = video.pages[partIndex];
+      
+      // 创建独立的分P歌曲对象
+      const partSong = {
+        ...video,
+        title: `${this.getOriginalTitle(video.title)} (P${partIndex + 1}: ${page.part})`,
+        cid: page.cid,
+        pageInfo: {
+          index: partIndex,
+          part: page.part,
+          duration: page.duration
+        }
+      };
+      
+      // 如果已经有试听歌单，将歌曲添加到歌单并播放
+      if (this.player.isListenPlaylist && this.player.playlist.length > 0) {
+        const songIndex = this.player.addToListenPlaylist(partSong);
+        await this.player.playSong(partSong, this.player.playlist, songIndex);
+      } else {
+        // 创建新的试听歌单
+        this.player.createListenPlaylist(partSong);
+        await this.player.playSong(partSong, [partSong], 0);
+      }
+      
+    } catch (error) {
+      console.error('播放分P失败:', error);
+      this.showError('播放失败：' + error.message);
+    }
+  }
+
+  // 添加特定分P到歌单
+  addSpecificPartToPlaylist(video, partIndex) {
+    const page = video.pages[partIndex];
+    
+    // 创建独立的分P歌曲对象
+    const partSong = {
+      ...video,
+      title: `${this.getOriginalTitle(video.title)} (P${partIndex + 1}: ${page.part})`,
+      cid: page.cid,
+      pageInfo: {
+        index: partIndex,
+        part: page.part,
+        duration: page.duration
+      }
+    };
+    
+    // 触发添加到歌单事件
+    const event = new CustomEvent('addToPlaylist', {
+      detail: { video: partSong }
+    });
+    document.dispatchEvent(event);
+  }
+
+  // 获取原始标题（去除之前添加的分P信息）
+  getOriginalTitle(title) {
+    // 移除之前可能添加的分P信息，如 " (P1: xxx)" 或 " (P2: yyy)"
+    return title.replace(/\s*\(P\d+:.*?\)$/, '');
   }
 
   // 播放视频
@@ -391,7 +611,7 @@ class Search {
         try {
           this.currentKeyword = cleanValue;
           this.currentPage = 1;
-          await this.searchVideos(cleanValue, 1);
+          await this.searchVideos(cleanValue, 1, false); // 实时搜索，替换内容
         } catch (error) {
           console.error('实时搜索失败:', error);
         }
@@ -554,10 +774,10 @@ class Search {
 
   // 加载更多结果
   async loadMore() {
-    if (!this.currentKeyword || this.api.isBVID(this.currentKeyword)) return;
+    if (!this.currentKeyword || this.api.isBVID(this.currentKeyword) || this.currentPage >= this.totalPages) return;
     
     this.currentPage++;
-    await this.searchVideos(this.currentKeyword, this.currentPage);
+    await this.searchVideos(this.currentKeyword, this.currentPage, true); // 明确标识为加载更多
   }
 
   // 添加到搜索历史
@@ -682,8 +902,140 @@ class Search {
     const searchBox = this.searchInput.closest('.search-box');
     searchBox.classList.remove('loading');
   }
+
+  // 创建分页控制器
+  createPaginationControls() {
+    // 移除已存在的分页控制器
+    const existingPagination = this.searchResults.querySelector('.pagination-controls');
+    if (existingPagination) {
+      existingPagination.remove();
+    }
+
+    const paginationControls = document.createElement('div');
+    paginationControls.className = 'pagination-controls';
+    paginationControls.innerHTML = `
+      <div class="pagination-info">
+        第 ${this.currentPage} 页，共 ${this.totalPages} 页 (${this.totalResults} 个结果)
+      </div>
+      <div class="pagination-buttons">
+        <button class="pagination-btn prev-btn" ${this.currentPage <= 1 ? 'disabled' : ''}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+          </svg>
+          上一页
+        </button>
+        <button class="pagination-btn load-more-btn" ${this.currentPage >= this.totalPages ? 'disabled' : ''}>
+          加载更多 (${Math.min(20, Math.max(0, this.totalResults - this.currentPage * 20))} 个)
+        </button>
+        <button class="pagination-btn next-btn" ${this.currentPage >= this.totalPages ? 'disabled' : ''}>
+          下一页
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    // 添加样式
+    paginationControls.style.cssText = `
+      padding: 20px;
+      background: var(--background-secondary);
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+      margin-top: 20px;
+    `;
+
+    // 绑定事件
+    this.bindPaginationEvents(paginationControls);
+
+    this.searchResults.appendChild(paginationControls);
+  }
+
+  // 更新分页控制器
+  updatePaginationControls() {
+    const paginationControls = this.searchResults.querySelector('.pagination-controls');
+    if (!paginationControls) {
+      this.createPaginationControls();
+      return;
+    }
+
+    const paginationInfo = paginationControls.querySelector('.pagination-info');
+    const prevBtn = paginationControls.querySelector('.prev-btn');
+    const nextBtn = paginationControls.querySelector('.next-btn');
+    const loadMoreBtn = paginationControls.querySelector('.load-more-btn');
+
+    paginationInfo.textContent = `第 ${this.currentPage} 页，共 ${this.totalPages} 页 (${this.totalResults} 个结果)`;
+    
+    prevBtn.disabled = this.currentPage <= 1;
+    nextBtn.disabled = this.currentPage >= this.totalPages;
+    loadMoreBtn.disabled = this.currentPage >= this.totalPages;
+    
+    const remainingResults = this.totalResults - this.currentPage * 20;
+    if (remainingResults > 0) {
+      loadMoreBtn.textContent = `加载更多 (${Math.min(20, remainingResults)} 个)`;
+    } else {
+      loadMoreBtn.textContent = '已加载全部';
+    }
+  }
+
+  // 绑定分页事件
+  bindPaginationEvents(paginationControls) {
+    const prevBtn = paginationControls.querySelector('.prev-btn');
+    const nextBtn = paginationControls.querySelector('.next-btn');
+    const loadMoreBtn = paginationControls.querySelector('.load-more-btn');
+
+    prevBtn.addEventListener('click', () => {
+      if (this.currentPage > 1) {
+        this.goToPage(this.currentPage - 1);
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (this.currentPage < this.totalPages) {
+        this.goToPage(this.currentPage + 1);
+      }
+    });
+
+    loadMoreBtn.addEventListener('click', () => {
+      this.loadMore();
+    });
+  }
+
+  // 跳转到指定页面
+  async goToPage(page) {
+    if (page < 1 || page > this.totalPages || this.isLoading) return;
+    
+    this.currentPage = page;
+    
+    // 滚动到顶部
+    this.searchResults.scrollTop = 0;
+    
+    await this.searchVideos(this.currentKeyword, page, false); // 页面跳转，不是加载更多
+  }
+
+  // 显示加载更多状态
+  showLoadingMore() {
+    const paginationControls = this.searchResults.querySelector('.pagination-controls');
+    if (paginationControls) {
+      const loadMoreBtn = paginationControls.querySelector('.load-more-btn');
+      if (loadMoreBtn) {
+        loadMoreBtn.innerHTML = `
+          <div class="loading-spinner small"></div>
+          加载中...
+        `;
+        loadMoreBtn.disabled = true;
+      }
+    }
+  }
+
+  // 隐藏加载更多状态
+  hideLoadingMore() {
+    const paginationControls = this.searchResults.querySelector('.pagination-controls');
+    if (paginationControls) {
+      this.updatePaginationControls();
+    }
+  }
 }
 
 // 导出
-window.Search = Search; 
 window.Search = Search; 

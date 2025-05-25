@@ -1,5 +1,7 @@
-const { app, BrowserWindow, shell, session } = require('electron');
+const { app, BrowserWindow, shell, session, ipcMain } = require('electron');
 const path = require('path');
+const { spawn } = require('child_process');
+const http = require('http');
 
 // 设置控制台输出编码为UTF-8，解决中文乱码
 if (process.platform === 'win32') {
@@ -25,6 +27,147 @@ if (process.platform === 'win32') {
 }
 
 let mainWindow;
+let neteaseAPIProcess = null;
+
+// 网易云API服务器管理
+const NeteaseAPIManager = {
+  port: 3000,
+  isRunning: false,
+  
+  async start() {
+    if (this.isRunning) {
+      return { success: true, message: 'API服务器已在运行' };
+    }
+    
+    try {
+      // 检查端口是否被占用
+      const isPortInUse = await this.checkPort();
+      if (isPortInUse) {
+        this.isRunning = true;
+        return { success: true, message: 'API服务器已在运行' };
+      }
+      
+      console.log('开始启动网易云音乐API服务器...');
+      
+      // 启动npx NeteaseCloudMusicApi
+      const command = 'npx';
+      const args = ['NeteaseCloudMusicApi@latest'];
+      
+      // 设置环境变量
+      const env = { 
+        ...process.env, 
+        PORT: this.port.toString(),
+        FORCE_COLOR: 'true'
+      };
+      
+      neteaseAPIProcess = spawn(command, args, {
+        env,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true,
+        windowsHide: true
+      });
+      
+      console.log(`正在启动网易云API服务器，PID: ${neteaseAPIProcess.pid}`);
+      
+      let serverStarted = false;
+      
+      neteaseAPIProcess.stdout.on('data', (data) => {
+        const output = data.toString();
+        console.log(`[NeteaseAPI] ${output}`);
+        
+        // 检查服务器是否启动成功的多种标识
+        if (output.includes('server running') || 
+            output.includes('listening') || 
+            output.includes(`${this.port}`) ||
+            output.includes('Server running') ||
+            output.includes('服务器启动') ||
+            output.includes('启动成功') ||
+            output.includes('listening on')) {
+          serverStarted = true;
+          this.isRunning = true;
+          console.log('网易云API服务器启动成功');
+        }
+      });
+      
+      neteaseAPIProcess.stderr.on('data', (data) => {
+        const error = data.toString();
+        console.warn(`[NeteaseAPI Error] ${error}`);
+        
+        // 即使有错误输出，也可能是正常的警告
+        if (error.includes('server running') || 
+            error.includes('listening') ||
+            error.includes(`${this.port}`) ||
+            error.includes('Server running') ||
+            error.includes('服务器启动') ||
+            error.includes('启动成功') ||
+            error.includes('listening on')) {
+          serverStarted = true;
+          this.isRunning = true;
+        }
+      });
+      
+      neteaseAPIProcess.on('close', (code) => {
+        console.log(`网易云API进程退出，代码: ${code}`);
+        this.isRunning = false;
+        neteaseAPIProcess = null;
+      });
+      
+      neteaseAPIProcess.on('error', (error) => {
+        console.error('启动网易云API服务器失败:', error);
+        this.isRunning = false;
+        neteaseAPIProcess = null;
+      });
+      
+      // 等待服务器启动，最多等待10秒
+      for (let i = 0; i < 20; i++) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (serverStarted || await this.checkPort()) {
+          this.isRunning = true;
+          console.log('网易云API服务器启动验证成功');
+          return { success: true, message: '网易云API服务器启动成功' };
+        }
+      }
+      
+      // 如果10秒后还没启动成功
+      console.warn('网易云API服务器启动超时');
+      return { success: false, message: '网易云API服务器启动超时，请手动运行: npx NeteaseCloudMusicApi@latest' };
+      
+    } catch (error) {
+      console.error('启动网易云API服务器时出错:', error);
+      return { success: false, message: `启动失败: ${error.message}` };
+    }
+  },
+  
+  async checkPort() {
+    return new Promise((resolve) => {
+      // 尝试访问API根路径
+      const req = http.get(`http://localhost:${this.port}/`, (res) => {
+        console.log(`端口检查响应状态: ${res.statusCode}`);
+        resolve(res.statusCode === 200);
+      });
+      
+      req.on('error', (error) => {
+        console.log(`端口检查失败: ${error.message}`);
+        resolve(false);
+      });
+      
+      req.setTimeout(5000, () => {
+        console.log('端口检查超时');
+        req.abort();
+        resolve(false);
+      });
+    });
+  },
+  
+  stop() {
+    if (neteaseAPIProcess) {
+      neteaseAPIProcess.kill();
+      neteaseAPIProcess = null;
+    }
+    this.isRunning = false;
+  }
+};
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -34,10 +177,8 @@ function createWindow() {
     minHeight: 600,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false,
-      // 移除不安全的webSecurity设置
-      // webSecurity: false,
-      // allowRunningInsecureContent: true
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
     },
     titleBarStyle: 'default',
     icon: path.join(__dirname, 'assets/icon.png'),
@@ -65,6 +206,19 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     console.log('LZ Music 应用已启动');
+    
+    // 应用启动后自动启动网易云音乐API服务器
+    console.log('正在自动启动网易云音乐API服务器...');
+    NeteaseAPIManager.start().then(result => {
+      if (result.success) {
+        console.log('网易云音乐API服务器自动启动成功:', result.message);
+      } else {
+        console.warn('网易云音乐API服务器自动启动失败:', result.message);
+        console.log('您可以手动运行: npx NeteaseCloudMusicApi@latest');
+      }
+    }).catch(error => {
+      console.error('启动网易云音乐API服务器时出错:', error);
+    });
   });
 
   mainWindow.on('closed', () => {
@@ -76,6 +230,16 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   }
 }
+
+// IPC事件处理
+ipcMain.handle('start-netease-api', async () => {
+  return await NeteaseAPIManager.start();
+});
+
+ipcMain.handle('check-netease-api', async () => {
+  const isRunning = await NeteaseAPIManager.checkPort();
+  return { isRunning };
+});
 
 // 生成buvid3值的简单函数
 function generateBuvid3() {
@@ -107,6 +271,9 @@ function generateBuvid3() {
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
+  // 清理网易云API进程
+  NeteaseAPIManager.stop();
+  
   if (process.platform !== 'darwin') {
     app.quit();
   }

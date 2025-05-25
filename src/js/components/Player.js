@@ -5,6 +5,8 @@ class Player {
     this.api = new BilibiliAPI();
     this.settings = new Settings();
     this.playHistory = new PlayHistory();
+    this.pageSelector = new PageSelector(); // 初始化分P选择器
+    this.lyricsSettings = new LyricsSettings(); // 初始化歌词设置
     
     // 播放器元素
     this.playerBar = document.getElementById('playerBar');
@@ -21,6 +23,7 @@ class Player {
     this.volumeSlider = document.getElementById('volumeSlider');
     this.modeBtn = document.getElementById('modeBtn');
     this.expandBtn = document.getElementById('expandBtn');
+    this.lyricsSettingsBtn = document.getElementById('lyricsSettingsBtn'); // 歌词设置按钮
     
     // 播放列表面板元素
     this.playlistBtn = document.getElementById('playlistBtn');
@@ -51,6 +54,20 @@ class Player {
     this.isPanelOpen = false;
     this.isListenPlaylist = false; // 标记是否为试听歌单
     
+    // 歌词相关状态
+    this.currentLyricsLines = null;
+    this.currentLyricsIndex = 0;
+    this.savedLyricsSettings = null;
+    this.savedLyrics = null;
+    
+    // 歌词滚动相关状态
+    this.isUserScrolling = false;
+    this.userScrollTimer = null;
+    this.scrollListener = null;
+    this.touchListener = null;
+    this.wheelListener = null;
+    this.lastUserScrollTime = 0;
+    
     this.init();
   }
 
@@ -58,6 +75,7 @@ class Player {
     this.bindEvents();
     this.loadSettings();
     this.setupAudio();
+    this.loadLyricsSettings(); // 加载歌词设置
   }
 
   bindEvents() {
@@ -88,6 +106,15 @@ class Player {
     // 展开播放界面
     this.expandBtn.addEventListener('click', () => {
       this.openModal();
+    });
+    
+    // 歌词设置
+    this.lyricsSettingsBtn.addEventListener('click', () => {
+      const songInfo = this.currentSong ? {
+        title: this.getOriginalTitle(this.currentSong.title),
+        artist: this.currentSong.owner?.name || this.currentSong.uploader || 'UP主'
+      } : null;
+      this.lyricsSettings.open(songInfo);
     });
     
     // 播放列表面板
@@ -150,6 +177,11 @@ class Player {
         this.openModal();
       }
     });
+    
+    // 监听歌词设置更新事件
+    window.addEventListener('lyricsSettingsUpdate', (e) => {
+      this.updateLyricsDisplay(e.detail);
+    });
   }
 
   setupAudio() {
@@ -166,10 +198,71 @@ class Player {
     this.playMode = settings.playMode;
   }
 
+  // 加载歌词设置
+  loadLyricsSettings() {
+    // 获取已保存的歌词设置
+    const lyricsSettings = this.settings.get('lyricsSettings');
+    const currentLyrics = this.settings.get('currentLyrics');
+    
+    if (lyricsSettings && currentLyrics) {
+      // 应用歌词设置和内容
+      this.updateLyricsDisplay({
+        settings: lyricsSettings,
+        lyrics: currentLyrics
+      });
+    }
+  }
+
   // 播放歌曲
   async playSong(song, playlist = [], index = 0) {
     try {
-      this.currentSong = song;
+      // 检查是否为分P视频
+      let selectedCid = song.cid;
+      let currentSong = song; // 当前要播放的歌曲对象
+      
+      // 如果歌曲已经有pageInfo（说明是从分P列表选择的），直接使用
+      if (song.pageInfo) {
+        selectedCid = song.cid;
+        currentSong = song;
+      } else {
+        // 否则检查是否需要获取分P信息
+        if (!song.pages) {
+          // 如果没有pages信息，先获取视频详细信息
+          try {
+            const videoInfo = await this.api.getVideoInfo(song.bvid);
+            song.pages = videoInfo.pages;
+          } catch (error) {
+            console.warn('获取视频分P信息失败:', error);
+          }
+        }
+        
+        // 如果是分P视频且没有预选的分P，弹出选择窗口
+        if (song.pages && song.pages.length > 1) {
+          try {
+            const selection = await this.pageSelector.show(song.pages);
+            selectedCid = selection.cid;
+            
+            // 为选中的分P创建独立的歌曲对象
+            currentSong = {
+              ...song, // 继承原歌曲的所有属性
+              title: `${this.getOriginalTitle(song.title)} (P${selection.index + 1}: ${selection.page.part})`,
+              cid: selectedCid,
+              pageInfo: {
+                index: selection.index,
+                part: selection.page.part,
+                duration: selection.page.duration
+              }
+            };
+          } catch (error) {
+            // 用户取消选择
+            this.hideLoading();
+            return;
+          }
+        }
+      }
+      
+      // 设置当前播放的歌曲（使用独立的歌曲对象）
+      this.currentSong = currentSong;
       this.playlist = playlist;
       this.currentIndex = index;
       
@@ -178,18 +271,24 @@ class Player {
       this.showLoading();
       
       // 获取音频流
-      const audioData = await this.api.getAudioUrl(song.bvid, song.cid);
+      const audioData = await this.api.getAudioUrl(currentSong.bvid, selectedCid);
       
       // 尝试加载音频
       await this.tryLoadAudioUrls(audioData.all_urls || [audioData.url]);
       
       // 记录播放历史
-      this.playHistory.add(song);
+      this.playHistory.add(currentSong);
       
     } catch (error) {
       console.error('播放失败:', error);
       this.showError('播放失败：' + error.message);
     }
+  }
+
+  // 获取原始标题（去除之前添加的分P信息）
+  getOriginalTitle(title) {
+    // 移除之前可能添加的分P信息，如 " (P1: xxx)" 或 " (P2: yyy)"
+    return title.replace(/\s*\(P\d+:.*?\)$/, '');
   }
 
   // 尝试加载多个音频URL
@@ -393,24 +492,109 @@ class Player {
     this.settings.set('playMode', this.playMode);
   }
 
-  // 打开播放模态框
-  openModal() {
-    if (!this.currentSong) {
-      this.showError('请先播放一首歌曲');
+  // 更新歌词显示
+  updateLyricsDisplay(detail) {
+    const { settings, lyrics } = detail;
+    
+    console.log('收到歌词更新事件:', detail);
+    
+    // 保存歌词设置和内容到实例变量
+    this.savedLyricsSettings = settings;
+    this.savedLyrics = lyrics;
+    
+    // 保存到localStorage以便下次使用
+    if (settings) {
+      this.settings.set('lyricsSettings', settings);
+    }
+    if (lyrics) {
+      this.settings.set('currentLyrics', lyrics);
+    }
+    
+    console.log('歌词设置已保存:', settings);
+    console.log('歌词内容已保存:', lyrics ? lyrics.substring(0, 100) + '...' : '无');
+    
+    // 立即应用到模态框（如果存在）
+    this.applyLyricsToModal();
+  }
+  
+  // 应用歌词到模态框
+  applyLyricsToModal() {
+    // 重新获取歌词内容容器（确保获取到最新的元素）
+    const lyricsContent = document.getElementById('lyricsContent');
+    
+    if (!lyricsContent) {
+      console.warn('歌词内容容器不存在，歌词将在模态框打开时显示');
       return;
     }
     
+    console.log('找到歌词容器，开始应用歌词');
+    
+    // 如果有保存的歌词设置，应用样式
+    if (this.savedLyricsSettings) {
+      console.log('应用歌词样式:', this.savedLyricsSettings);
+      lyricsContent.style.fontSize = this.savedLyricsSettings.fontSize + 'px';
+      lyricsContent.style.color = this.savedLyricsSettings.color;
+      lyricsContent.style.backgroundColor = this.savedLyricsSettings.backgroundColor;
+      lyricsContent.style.fontFamily = this.savedLyricsSettings.fontFamily;
+      lyricsContent.style.lineHeight = this.savedLyricsSettings.lineHeight;
+      lyricsContent.style.padding = '20px';
+      lyricsContent.style.borderRadius = '8px';
+    }
+    
+    // 如果有保存的歌词内容，显示歌词
+    if (this.savedLyrics && this.savedLyrics.trim()) {
+      console.log('显示歌词内容');
+      this.displayLyrics(this.savedLyrics);
+    } else {
+      console.log('没有歌词内容，显示默认文本');
+      lyricsContent.innerHTML = '<p>暂无歌词</p>';
+    }
+  }
+  
+  // 打开模态框
+  openModal() {
+    if (this.isModalOpen) return;
+    
+    console.log('打开播放模态框');
     this.isModalOpen = true;
-    this.updateModalInfo();
     this.playerModal.classList.add('show');
-    this.expandBtn.classList.add('active');
+    this.updateModalInfo();
+    
+    // 等待DOM更新后再应用歌词
+    setTimeout(() => {
+      // 重新获取歌词内容容器（因为模态框可能是动态创建的）
+      this.lyricsContent = document.getElementById('lyricsContent');
+      console.log('歌词容器状态:', this.lyricsContent ? '已找到' : '未找到');
+      
+      // 应用保存的歌词设置和内容
+      this.applyLyricsToModal();
+    }, 100);
+    
+    document.body.style.overflow = 'hidden';
   }
 
   // 关闭播放模态框
   closeModal() {
     this.isModalOpen = false;
     this.playerModal.classList.remove('show');
-    this.expandBtn.classList.remove('active');
+    document.body.style.overflow = '';
+    
+    // 清理歌词滚动事件监听器
+    const lyricsContainer = document.querySelector('.lyrics-container');
+    if (lyricsContainer && this.scrollListener) {
+      lyricsContainer.removeEventListener('scroll', this.scrollListener);
+      lyricsContainer.removeEventListener('touchstart', this.touchListener);
+      lyricsContainer.removeEventListener('wheel', this.wheelListener);
+    }
+    
+    // 清理定时器
+    if (this.userScrollTimer) {
+      clearTimeout(this.userScrollTimer);
+      this.userScrollTimer = null;
+    }
+    
+    // 重置滚动状态
+    this.isUserScrolling = false;
   }
 
   // 音频事件处理
@@ -428,6 +612,9 @@ class Player {
   onTimeUpdate() {
     this.currentTimeValue = this.audio.currentTime;
     this.updateProgress();
+    // 更新歌词显示
+    console.log('TimeUpdate事件触发，当前时间:', this.currentTimeValue, '歌词行数:', this.currentLyricsLines?.length);
+    this.updateCurrentLyricsLine();
   }
 
   onEnded() {
@@ -754,8 +941,20 @@ class Player {
       return 0;
     }
     
-    // 检查歌曲是否已存在
-    const existsIndex = this.playlist.findIndex(item => item.bvid === song.bvid);
+    // 检查歌曲是否已存在（考虑分P信息）
+    const existsIndex = this.playlist.findIndex(item => {
+      // 如果都有pageInfo，比较bvid和cid
+      if (item.pageInfo && song.pageInfo) {
+        return item.bvid === song.bvid && item.cid === song.cid;
+      }
+      // 如果都没有pageInfo，只比较bvid
+      if (!item.pageInfo && !song.pageInfo) {
+        return item.bvid === song.bvid;
+      }
+      // 如果一个有pageInfo一个没有，视为不同歌曲
+      return false;
+    });
+    
     if (existsIndex !== -1) {
       // 如果歌曲已存在，返回现有索引
       return existsIndex;
@@ -767,6 +966,348 @@ class Player {
     
     // 返回新添加歌曲的索引
     return this.playlist.length - 1;
+  }
+  
+  // HTML转义函数
+  escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // 修复编码问题的函数
+  fixEncoding(text) {
+    if (!text) return '';
+    
+    try {
+      // 尝试修复常见的编码问题
+      // 如果是UTF-8编码错误显示，尝试重新解码
+      if (text.includes('â') || text.includes('ã') || text.includes('Â')) {
+        // 尝试将错误编码的字符转换回正确的中文
+        return text
+          .replace(/â/g, '')
+          .replace(/ã/g, '')
+          .replace(/Â/g, '')
+          .replace(/\u00e2\u0080\u0099/g, '\'')
+          .replace(/\u00e2\u0080\u009c/g, '"')
+          .replace(/\u00e2\u0080\u009d/g, '"')
+          .replace(/\u00e2\u0080\u0093/g, '–')
+          .replace(/\u00e2\u0080\u0094/g, '—');
+      }
+      
+      // 检查是否是Base64编码
+      if (/^[A-Za-z0-9+/]+=*$/.test(text.trim()) && text.length > 20) {
+        try {
+          const decoded = atob(text);
+          // 检查解码后是否包含中文字符
+          if (/[\u4e00-\u9fff]/.test(decoded)) {
+            return decoded;
+          }
+        } catch (e) {
+          // 不是有效的Base64，继续原文本
+        }
+      }
+      
+      return text;
+    } catch (error) {
+      console.warn('修复编码失败:', error);
+      return text;
+    }
+  }
+  
+  // 显示歌词
+  displayLyrics(lyricsText) {
+    const lyricsContent = document.getElementById('lyricsContent');
+    if (!lyricsContent) {
+      console.warn('歌词内容容器不存在');
+      return;
+    }
+    
+    console.log('开始显示歌词，歌词内容长度:', lyricsText ? lyricsText.length : 0);
+    
+    if (!lyricsText || !lyricsText.trim()) {
+      console.log('歌词内容为空，显示默认提示');
+      lyricsContent.innerHTML = '<div class="lyrics-display"><p class="lyrics-line">暂无歌词</p></div>';
+      return;
+    }
+    
+    // 修复编码问题
+    const fixedLyricsText = this.fixEncoding(lyricsText);
+    console.log('修复编码后的歌词长度:', fixedLyricsText.length);
+    
+    // 解析LRC格式歌词
+    const lyricsLines = this.parseLyrics(fixedLyricsText);
+    console.log('解析后的歌词行数:', lyricsLines.length);
+    
+    if (lyricsLines.length === 0) {
+      console.log('解析后歌词行数为0，尝试显示纯文本歌词');
+      // 如果没有LRC格式的歌词，尝试显示纯文本歌词
+      const plainTextLines = fixedLyricsText.split('\n').filter(line => line.trim());
+      if (plainTextLines.length > 0) {
+        const lyricsHtml = plainTextLines
+          .map((line, index) => `<p class="lyrics-line" data-index="${index}">${this.escapeHtml(line.trim())}</p>`)
+          .join('');
+        lyricsContent.innerHTML = `<div class="lyrics-display">${lyricsHtml}</div>`;
+      } else {
+        lyricsContent.innerHTML = '<div class="lyrics-display"><p class="lyrics-line">暂无歌词</p></div>';
+      }
+      return;
+    }
+    
+    // 存储当前歌词行数据
+    this.currentLyricsLines = lyricsLines;
+    this.currentLyricsIndex = -1;
+    
+    // 生成歌词HTML，使用HTML转义
+    const lyricsHtml = lyricsLines
+      .map((line, index) => `<p class="lyrics-line" data-time="${line.time}" data-index="${index}">${this.escapeHtml(line.text)}</p>`)
+      .join('');
+    
+    lyricsContent.innerHTML = `<div class="lyrics-display">${lyricsHtml}</div>`;
+    
+    // 设置滚动监听器
+    this.setupLyricsScrollListener();
+    
+    // 初始化用户滚动计时器
+    this.userScrollTimer = null;
+    
+    // 如果当前正在播放，立即定位到当前歌词
+    if (this.audio && this.audio.currentTime > 0) {
+      setTimeout(() => {
+        this.updateCurrentLyricsLine();
+      }, 100);
+    }
+    
+    console.log('歌词显示完成，共', lyricsLines.length, '行');
+  }
+  
+  // 更新当前歌词行（移除renderLyricsWindow方法）
+  updateCurrentLyricsLine() {
+    console.log('开始更新歌词行，当前时间:', this.audio.currentTime, '歌词数据存在:', !!this.currentLyricsLines);
+    
+    if (!this.currentLyricsLines || !this.audio.currentTime) {
+      console.log('歌词更新条件不满足 - 歌词数据:', !!this.currentLyricsLines, '播放时间:', this.audio.currentTime);
+      return;
+    }
+    
+    const currentTime = this.audio.currentTime;
+    let newLyricsIndex = -1;
+    
+    // 找到当前时间对应的歌词行
+    for (let i = 0; i < this.currentLyricsLines.length; i++) {
+      if (this.currentLyricsLines[i].time <= currentTime) {
+        newLyricsIndex = i;
+      } else {
+        break;
+      }
+    }
+    
+    console.log('计算歌词索引:', newLyricsIndex, '当前索引:', this.currentLyricsIndex);
+    
+    // 从歌词内容容器中查找歌词行
+    const lyricsContent = document.getElementById('lyricsContent');
+    if (!lyricsContent) {
+      console.log('歌词内容容器不存在');
+      return;
+    }
+    
+    const lyricsLines = lyricsContent.querySelectorAll('.lyrics-line');
+    console.log('找到歌词行数量:', lyricsLines.length);
+    
+    // 如果歌词索引发生变化，更新高亮状态并滚动
+    if (newLyricsIndex !== this.currentLyricsIndex) {
+      console.log('歌词索引变化，从', this.currentLyricsIndex, '到', newLyricsIndex);
+      
+      // 移除所有高亮
+      lyricsLines.forEach(line => line.classList.remove('current'));
+      
+      // 更新索引
+      this.currentLyricsIndex = newLyricsIndex;
+      
+      // 高亮当前歌词行
+      if (this.currentLyricsIndex >= 0 && lyricsLines[this.currentLyricsIndex]) {
+        const currentLine = lyricsLines[this.currentLyricsIndex];
+        currentLine.classList.add('current');
+        
+        console.log('高亮歌词行:', currentLine.textContent);
+        
+        // 检查是否应该滚动
+        const shouldScroll = !this.isUserScrolling || (Date.now() - this.lastUserScrollTime) > 3000;
+        console.log('是否应该滚动:', shouldScroll, '用户滚动状态:', this.isUserScrolling);
+        
+        if (shouldScroll) {
+          console.log('开始自动滚动到当前歌词');
+          this.autoScrollToCurrentLyrics();
+        }
+      }
+    }
+  }
+  
+  // 自动滚动到当前歌词位置
+  autoScrollToCurrentLyrics() {
+    console.log('执行自动滚动到当前歌词');
+    
+    // 直接查找当前高亮的歌词行
+    const currentLyricsLine = document.querySelector('.lyrics-line.current');
+    if (!currentLyricsLine) {
+      console.log('未找到当前歌词行');
+      return;
+    }
+    
+    console.log('找到当前歌词行，准备滚动:', currentLyricsLine.textContent.substring(0, 20) + '...');
+    
+    // 使用 scrollIntoView 将当前歌词滚动到视图中心
+    try {
+      currentLyricsLine.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      });
+      console.log('scrollIntoView 执行完成');
+    } catch (error) {
+      console.error('scrollIntoView 失败:', error);
+      
+      // 备用方法：手动计算滚动位置
+      const lyricsContainer = document.querySelector('.lyrics-container');
+      if (lyricsContainer) {
+        const containerRect = lyricsContainer.getBoundingClientRect();
+        const lineRect = currentLyricsLine.getBoundingClientRect();
+        const scrollTop = lyricsContainer.scrollTop;
+        const relativeTop = lineRect.top - containerRect.top;
+        const containerHeight = containerRect.height;
+        
+        const targetScrollTop = scrollTop + relativeTop - containerHeight / 2 + lineRect.height / 2;
+        
+        lyricsContainer.scrollTo({
+          top: Math.max(0, targetScrollTop),
+          behavior: 'smooth'
+        });
+        console.log('备用滚动方法执行完成');
+      }
+    }
+  }
+  
+  // 监听用户滚动事件
+  setupLyricsScrollListener() {
+    const lyricsContainer = document.querySelector('.lyrics-container');
+    if (!lyricsContainer) return;
+    
+    // 移除之前的事件监听器（避免重复绑定）
+    if (this.scrollListener) {
+      // 尝试从之前的容器中移除监听器
+      const oldContainer = document.querySelector('.lyrics-container');
+      if (oldContainer) {
+        oldContainer.removeEventListener('scroll', this.scrollListener);
+        oldContainer.removeEventListener('touchstart', this.touchListener);
+        oldContainer.removeEventListener('wheel', this.wheelListener);
+      }
+    }
+    
+    // 创建滚动事件监听器（减少敏感度）
+    let scrollTimeout;
+    this.scrollListener = () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        this.resetUserScrollTimer();
+      }, 100); // 延迟100ms后才认为是用户滚动
+    };
+    
+    // 创建触摸事件监听器
+    this.touchListener = () => {
+      this.resetUserScrollTimer();
+    };
+    
+    // 创建鼠标滚轮事件监听器
+    this.wheelListener = () => {
+      this.resetUserScrollTimer();
+    };
+    
+    // 添加事件监听器
+    lyricsContainer.addEventListener('scroll', this.scrollListener, { passive: true });
+    lyricsContainer.addEventListener('touchstart', this.touchListener, { passive: true });
+    lyricsContainer.addEventListener('wheel', this.wheelListener, { passive: true });
+    
+    // 初始化状态
+    this.isUserScrolling = false;
+    this.lastUserScrollTime = 0;
+  }
+
+  // 重置用户滚动计时器
+  resetUserScrollTimer() {
+    // 记录用户最后滚动时间
+    this.lastUserScrollTime = Date.now();
+    
+    // 标记用户正在滚动
+    this.isUserScrolling = true;
+    
+    // 清除之前的计时器
+    if (this.userScrollTimer) {
+      clearTimeout(this.userScrollTimer);
+    }
+    
+    // 设置新的计时器，1秒后回到自动滚动（进一步减少等待时间）
+    this.userScrollTimer = setTimeout(() => {
+      this.isUserScrolling = false;
+      // 立即检查是否需要滚动到当前歌词
+      this.autoScrollToCurrentLyrics();
+    }, 1000); // 从2秒减少到1秒
+  }
+
+  // 解析LRC格式歌词
+  parseLyrics(lyricsText) {
+    if (!lyricsText) return [];
+    
+    const lines = lyricsText.split('\n');
+    const lyricsLines = [];
+    
+    lines.forEach(line => {
+      // 跳过空行
+      if (!line.trim()) return;
+      
+      // 跳过元数据行（如 [ti:], [ar:], [al:], [by:] 等）
+      if (line.match(/^\[(ti|ar|al|by|offset):/i)) {
+        return;
+      }
+      
+      // 匹配时间标签格式 [mm:ss.xx] 或 [mm:ss] 或 [mm:ss.xxx]
+      const timeMatch = line.match(/\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/);
+      if (timeMatch) {
+        const minutes = parseInt(timeMatch[1]);
+        const seconds = parseInt(timeMatch[2]);
+        let milliseconds = 0;
+        
+        // 处理毫秒部分
+        if (timeMatch[3]) {
+          const msStr = timeMatch[3];
+          if (msStr.length === 1) {
+            milliseconds = parseInt(msStr) * 100; // .x -> x00ms
+          } else if (msStr.length === 2) {
+            milliseconds = parseInt(msStr) * 10;  // .xx -> xx0ms
+          } else {
+            milliseconds = parseInt(msStr);       // .xxx -> xxxms
+          }
+        }
+        
+        const time = minutes * 60 + seconds + milliseconds / 1000;
+        
+        // 提取歌词文本（移除所有时间标签）
+        const text = line.replace(/\[.*?\]/g, '').trim();
+        if (text) {
+          lyricsLines.push({ time, text });
+        }
+      }
+    });
+    
+    // 按时间排序
+    lyricsLines.sort((a, b) => a.time - b.time);
+    
+    console.log('歌词解析完成，提取到', lyricsLines.length, '行有效歌词');
+    if (lyricsLines.length > 0) {
+      console.log('前3行歌词示例:', lyricsLines.slice(0, 3));
+    }
+    
+    return lyricsLines;
   }
 }
 

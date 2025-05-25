@@ -221,12 +221,47 @@ class Playlist {
   }
 
   // 显示添加到歌单对话框
-  showAddToPlaylistDialog(video) {
+  async showAddToPlaylistDialog(video) {
     const playlists = this.playlistManager.getAll();
     
     if (playlists.length === 0) {
       this.showCreatePlaylistDialog();
       return;
+    }
+
+    // 检查是否为分P视频，需要先获取详细信息
+    let videoToAdd = video;
+    if (!video.pages) {
+      try {
+        const api = new BilibiliAPI();
+        const videoInfo = await api.getVideoInfo(video.bvid);
+        video.pages = videoInfo.pages;
+      } catch (error) {
+        console.warn('获取视频分P信息失败:', error);
+      }
+    }
+
+    // 如果是分P视频，先让用户选择分P
+    if (video.pages && video.pages.length > 1) {
+      try {
+        const pageSelector = this.player.pageSelector;
+        const selection = await pageSelector.show(video.pages);
+        
+        // 为选中的分P创建独立的歌曲对象
+        videoToAdd = {
+          ...video,
+          title: `${this.getOriginalTitle(video.title)} (P${selection.index + 1}: ${selection.page.part})`,
+          cid: selection.cid,
+          pageInfo: {
+            index: selection.index,
+            part: selection.page.part,
+            duration: selection.page.duration
+          }
+        };
+      } catch (error) {
+        // 用户取消选择
+        return;
+      }
     }
 
     const playlistOptions = playlists.map(playlist => 
@@ -241,10 +276,10 @@ class Playlist {
     const dialog = this.createDialog('添加到歌单', `
       <div class="dialog-body">
         <div class="song-preview">
-          <img src="${video.cover}" alt="封面">
+          <img src="${videoToAdd.cover}" alt="封面">
           <div class="song-preview-info">
-            <div class="song-preview-title">${video.title}</div>
-            <div class="song-preview-artist">${video.author}</div>
+            <div class="song-preview-title">${videoToAdd.title}</div>
+            <div class="song-preview-artist">${videoToAdd.author}</div>
           </div>
         </div>
         <div class="playlist-options">
@@ -272,7 +307,7 @@ class Playlist {
           const selected = dialog.querySelector('.playlist-option.selected');
           if (selected) {
             const playlistId = selected.dataset.playlistId;
-            this.addSongToPlaylist(playlistId, video);
+            this.addSongToPlaylist(playlistId, videoToAdd);
             dialog.close();
           }
         }
@@ -294,6 +329,12 @@ class Playlist {
       dialog.close();
       this.showCreatePlaylistDialog();
     });
+  }
+
+  // 获取原始标题（去除之前添加的分P信息）
+  getOriginalTitle(title) {
+    // 移除之前可能添加的分P信息，如 " (P1: xxx)" 或 " (P2: yyy)"
+    return title.replace(/\s*\(P\d+:.*?\)$/, '');
   }
 
   // 创建歌单

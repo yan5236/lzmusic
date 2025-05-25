@@ -164,6 +164,7 @@ class BilibiliAPI {
         cover: videoInfo.pic,
         duration: videoInfo.duration,
         cid: videoInfo.pages[0].cid,
+        pages: videoInfo.pages || [],
         desc: videoInfo.desc
       };
     } catch (error) {

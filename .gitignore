@@ -5,6 +5,10 @@ start-win.bat
 # 保留 README.md
 !README.md
 
+.cursor
+
 # 排除依赖包目录和锁定文件
 node_modules/
 package-lock.json
+
+py

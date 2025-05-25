@@ -153,6 +153,23 @@
   padding-bottom: 12px;
 }
 
+.lyrics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 12px;
+}
+
+.lyrics-header h3 {
+  font-size: 24px;
+  margin: 0;
+  color: var(--text-primary);
+  border: none;
+  padding: 0;
+}
+
 .lyrics-content {
   line-height: 2;
   font-size: 16px;
