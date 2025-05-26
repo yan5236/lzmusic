@@ -1,177 +1,71 @@
-name: Build Electron App
+name: Build and Release
 
 on:
   push:
-    branches:
-      - main # 当推送到 main 分支时触发
     tags:
-      - 'v*.*.*' # 当推送版本标签 (如 v1.0.0) 时触发
-  pull_request:
-    branches:
-      - main # 当有 PR 合并到 main 分支时触发 (用于测试构建)
-  workflow_dispatch: # 允许手动触发
+      - 'v*' # 当推送版本标签时触发，比如 v1.0.0
 
 jobs:
-  # --- macOS Build Job ---
-  build-macos:
-    name: Build for macOS
-    runs-on: macos-latest # 必须在 macOS runner 上构建 macOS 应用
+  build:
+    runs-on: ${{ matrix.os }}
+    
     strategy:
       matrix:
-        node-version: [18.x] # 你可以指定多个 Node.js 版本进行测试
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm' # 或 'yarn'
+          node-version: '18'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci # 或者 yarn install --frozen-lockfile
+        run: npm ci
+      
+      # Linux 需要的额外依赖
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgconf-2-4 libatk1.0-0 libatk-bridge2.0-0 libgdk-pixbuf2.0-0 libgtk-3-0 libgbm1
 
-      - name: Build macOS App
-        run: npm run package -- --mac # 假设你的 package.json 中有 "package": "electron-builder"
-        # 或者直接: npx electron-builder --mac
+      - name: Build Electron app
         env:
-          # macOS 代码签名 (需要你在仓库 Secrets 中设置这些变量)
-          # CSC_LINK: ${{ secrets.CSC_LINK }} # Base64 编码的 .p12 证书文件
-          # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }} # 证书密码
-          # APPLE_ID: ${{ secrets.APPLE_ID }} # 用于公证
-          # APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }} # 用于公证
-          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }} # 用于公证
-          DEBUG: electron-builder # 可选: 开启 electron-builder 的详细日志
-
-      - name: Upload macOS Artifact
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run build
+        
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: MyApp-macOS-${{ github.sha }} # Artifact 名称，包含 commit SHA
-          path: | # 根据你的 electron-builder 配置调整路径
+          name: ${{ matrix.os }}-artifacts
+          path: |
+            dist/*.exe
             dist/*.dmg
-            dist/*.zip
-            !dist/builder-effective-config.yaml
-
-  # --- Windows Build Job ---
-  build-windows:
-    name: Build for Windows
-    runs-on: windows-latest # 必须在 Windows runner 上构建 Windows 应用
-    strategy:
-      matrix:
-        node-version: [18.x]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Windows App
-        run: npm run package -- --win
-        # 或者直接: npx electron-builder --win
-        env:
-          # Windows 代码签名 (需要你在仓库 Secrets 中设置这些变量)
-          # WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }} # Base64 编码的 .pfx 证书文件
-          # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }} # 证书密码
-          DEBUG: electron-builder
-
-      - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MyApp-Windows-${{ github.sha }}
-          path: | # 根据你的 electron-builder 配置调整路径
-            dist/* Setup *.exe
-            dist/*.msi
-            dist/*-portable.exe
-            dist/win-unpacked/ # 如果需要上传未打包版本
-            !dist/builder-effective-config.yaml
-
-  # --- Linux Build Job ---
-  build-linux:
-    name: Build for Linux
-    runs-on: ubuntu-latest # Linux 应用可以在 Linux runner 上构建
-    strategy:
-      matrix:
-        node-version: [18.x]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        # 可能需要安装一些 Linux 构建依赖，例如 FUSE, libXScrnSaver 等 (取决于你的 AppImage/deb/rpm 配置)
-        # run: |
-        #   sudo apt-get update
-        #   sudo apt-get install -y libfuse2 libxss1 libasound2 # 示例依赖
-        run: npm ci
-
-      - name: Build Linux App
-        run: npm run package -- --linux
-        # 或者直接: npx electron-builder --linux
-        env:
-          DEBUG: electron-builder
-
-      - name: Upload Linux Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MyApp-Linux-${{ github.sha }}
-          path: | # 根据你的 electron-builder 配置调整路径
-            dist/*.AppImage
             dist/*.deb
-            dist/*.rpm
-            dist/*.snap
-            dist/linux-unpacked/ # 如果需要上传未打包版本
-            !dist/builder-effective-config.yaml
+            dist/*.AppImage
+          if-no-files-found: ignore
 
-  # --- Create GitHub Release (Optional) ---
-  # 此作业仅在推送版本标签时运行，并将构建的 artifacts 附加到 GitHub Release
-  create-release:
-    name: Create GitHub Release
-    if: startsWith(github.ref, 'refs/tags/') # 仅当触发事件是标签推送时运行
-    needs: [build-macos, build-windows, build-linux] # 依赖于所有构建作业成功完成
+  release:
+    needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # 需要写入权限来创建 Release 和上传 asserts
-
+    if: startsWith(github.ref, 'refs/tags/')
+    
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: release-artifacts # 将所有 artifacts 下载到此目录
-          # pattern: MyApp-* # 可选，如果 artifact 名称有统一前缀
-          # merge-multiple: true # 如果有多个同名 artifact (不推荐)，是否合并
-
-      - name: List downloaded files # 调试步骤，查看下载的文件
-        run: ls -R release-artifacts
-
-      - name: Create Release and Upload Assets
+          path: artifacts
+          
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          # tag_name: ${{ github.ref_name }} # action-gh-release v1 自动使用触发的标签
-          # name: Release ${{ github.ref_name }} # Release 标题，默认使用标签名
-          # body: | # Release 描述，可以从 CHANGELOG.md 读取或自定义
-          #   Automated release for version ${{ github.ref_name }}
-          #   See CHANGELOG.md for details.
-          files: | # 要上传的文件，使用 glob 模式
-            release-artifacts/MyApp-macOS-*/*
-            release-artifacts/MyApp-Windows-*/*
-            release-artifacts/MyApp-Linux-*/*
-          # draft: false # 设置为 true 以创建草稿 Release
-          # prerelease: contains(github.ref, '-beta') || contains(github.ref, '-alpha') # 如果标签包含 -beta 或 -alpha，则标记为预发布
+          files: artifacts/**/*
+          draft: false
+          prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub Actions 自动提供
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
