@@ -30,7 +30,45 @@
       "main.js",
       "src/**/*",
       "assets/**/*",
-      "node_modules/**/*"
-    ]
+      "node_modules/**/*",
+      "preload.js"
+    ],
+    "mac": {
+      "category": "public.app-category.music",
+      "target": ["dmg"],
+      "darkModeSupport": true
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "linux": {
+      "target": ["deb", "AppImage"],
+      "category": "Audio"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "LZ Music"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    }
   }
 }
