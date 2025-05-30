@@ -14,6 +14,7 @@ class App {
     
     // 设置全局引用
     window.app = this;
+    window.neteaseAPI = neteaseAPI; // 添加网易云API全局引用
     
     this.init();
   }

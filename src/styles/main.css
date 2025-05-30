@@ -552,6 +552,95 @@ body {
   font-size: 14px;
 }
 
+.setting-item input[type="number"],
+.setting-item input[type="text"] {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  width: 200px;
+}
+
+.setting-item input[type="number"]:focus,
+.setting-item input[type="text"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.2);
+}
+
+/* API控制按钮样式 */
+.api-control-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.api-control-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.api-control-btn.start-btn {
+  background: var(--success-color, #28a745);
+  color: white;
+}
+
+.api-control-btn.start-btn:hover {
+  background: var(--success-hover, #218838);
+}
+
+.api-control-btn.stop-btn {
+  background: var(--danger-color, #dc3545);
+  color: white;
+}
+
+.api-control-btn.stop-btn:hover {
+  background: var(--danger-hover, #c82333);
+}
+
+.api-control-btn.check-btn {
+  background: var(--info-color, #17a2b8);
+  color: white;
+}
+
+.api-control-btn.check-btn:hover {
+  background: var(--info-hover, #138496);
+}
+
+.api-control-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.api-status {
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.api-status.running {
+  background: rgba(40, 167, 69, 0.1);
+  border-color: var(--success-color, #28a745);
+  color: var(--success-color, #28a745);
+}
+
+.api-status.stopped {
+  background: rgba(220, 53, 69, 0.1);
+  border-color: var(--danger-color, #dc3545);
+  color: var(--danger-color, #dc3545);
+}
+
 /* 加载动画 */
 .loading {
   display: flex;

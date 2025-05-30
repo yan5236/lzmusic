@@ -214,8 +214,32 @@ class Sidebar {
         this.settings.set('quality', e.target.value);
       });
     }
+    
+    // 网易云API设置
+    this.loadNeteaseApiSettings(settings);
   }
-
+  
+  // 加载网易云API设置
+  loadNeteaseApiSettings(settings) {
+    const neteaseApiSettings = settings.neteaseApi || {};
+    
+    // 启用网易云API
+    const enabledCheckbox = document.getElementById('neteaseApiEnabled');
+    if (enabledCheckbox) {
+      enabledCheckbox.checked = neteaseApiSettings.enabled !== false;
+      enabledCheckbox.addEventListener('change', (e) => {
+        const currentSettings = this.settings.get('neteaseApi', {});
+        currentSettings.enabled = e.target.checked;
+        this.settings.set('neteaseApi', currentSettings);
+        
+        // 通知网易云API模块更新配置
+        if (window.neteaseAPI) {
+          window.neteaseAPI.updateConfig();
+        }
+      });
+    }
+  }
+  
   // 设置工具提示
   setActiveTooltips() {
     this.navItems.forEach(item => {

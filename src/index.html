@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob: https://api.bilibili.com https://*.hdslb.com https://*.bilivideo.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: data: https:; connect-src 'self' http://localhost:3000 https://api.bilibili.com https://*.bilibili.com https://music.163.com http://mobileservice.kugou.com http://krcs.kugou.com http://lyrics.kugou.com https://songsearch.kugou.com https://*.kugou.com https://api.vkeys.cn https://*.vkeys.cn https://c.y.qq.com https://y.qq.com https://*.qq.com https://www.kuwo.cn https://*.kuwo.cn wss:; script-src 'self' 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob: https://api.bilibili.com https://*.hdslb.com https://*.bilivideo.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: data: https:; connect-src 'self' http://localhost:* https://api.bilibili.com https://*.bilibili.com https://music.163.com http://mobileservice.kugou.com http://krcs.kugou.com http://lyrics.kugou.com https://songsearch.kugou.com https://*.kugou.com https://api.vkeys.cn https://*.vkeys.cn https://c.y.qq.com https://y.qq.com https://*.qq.com https://www.kuwo.cn https://*.kuwo.cn wss:; script-src 'self' 'unsafe-inline';">
   <title>LZ Music</title>
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/sidebar.css">
@@ -207,6 +207,20 @@
               </select>
             </div>
           </div>
+          
+          <div class="setting-group">
+            <h3>网易云音乐API设置</h3>
+            <div class="setting-item">
+              <label for="neteaseApiEnabled">启用网易云API</label>
+              <input type="checkbox" id="neteaseApiEnabled" checked>
+            </div>
+            <div class="setting-item">
+              <p style="color: #666; font-size: 14px;">
+                使用网易云音乐官方API模块，无需启动独立服务器。
+              </p>
+            </div>
+          </div>
+          
           <div class="setting-group">
             <h3>关于</h3>
             <p>LZ Music v1.0.0</p>

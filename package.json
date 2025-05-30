@@ -6,6 +6,8 @@
   "scripts": {
     "start": "cross-env FORCE_COLOR=true electron .",
     "build": "electron-builder",
+    "build-win": "electron-builder --win --x64",
+    "build-test": "electron-builder --win --x64 --config.directories.output=exe",
     "dev": "cross-env FORCE_COLOR=true NODE_ENV=development electron . --enable-logging",
     "dev-win": "chcp 65001 && set FORCE_COLOR=true && set NODE_ENV=development && electron . --enable-logging"
   },
@@ -24,13 +26,30 @@
     "appId": "com.lzmusic.app",
     "productName": "LZ Music",
     "directories": {
-      "output": "dist"
+      "output": "exe"
     },
     "files": [
       "main.js",
+      "preload.js",
       "src/**/*",
       "assets/**/*",
-      "node_modules/**/*"
-    ]
+      "node_modules/**/*",
+      "!node_modules/.cache",
+      "!node_modules/.bin"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "portable": {
+      "artifactName": "LZ-Music-${version}-portable.exe"
+    }
   }
 }

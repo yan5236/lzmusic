@@ -1,93 +1,65 @@
 // 网易云音乐API模块
 class NeteaseAPI {
   constructor() {
-    this.baseUrl = 'http://localhost:3000'; // 默认本地服务器地址
-    this.isServerRunning = false;
-    this.startupAttempted = false;
-    this.checkServerStatus();
+    this.loadConfig();
+    this.enabled = true;
+    this.isModuleMode = true; // 使用模块调用模式
   }
 
-  // 检查API服务器状态
-  async checkServerStatus() {
+  // 从设置中加载配置
+  loadConfig() {
     try {
-      const response = await fetch(`${this.baseUrl}/`);
-      this.isServerRunning = response.ok;
-      return this.isServerRunning;
+      const settings = new Settings();
+      const neteaseApiSettings = settings.get('neteaseApi', {});
+      
+      this.enabled = neteaseApiSettings.enabled !== false;
+      
+      console.log(`网易云API配置: 模块调用模式, 启用状态: ${this.enabled}`);
     } catch (error) {
-      this.isServerRunning = false;
-      return false;
+      console.warn('加载网易云API配置失败，使用默认配置:', error.message);
+      this.enabled = true;
     }
   }
+  
+  // 更新配置
+  updateConfig() {
+    this.loadConfig();
+  }
 
-  // 启动本地API服务器
-  async startLocalServer() {
+  // 检查API模块状态
+  async checkModuleStatus() {
     try {
-      if (this.startupAttempted) {
-        console.log('API服务器启动已尝试过，跳过重复启动');
-        return false;
+      // 检查是否可以调用网易云API模块
+      if (window.electronAPI && window.electronAPI.callNeteaseApi) {
+        const result = await window.electronAPI.callNeteaseApi('banner', { type: 0 });
+        return result && result.status === 200;
       }
-      
-      this.startupAttempted = true;
-      console.log('正在尝试启动网易云音乐API服务器...');
-      
-      // 如果是Electron环境，通过主进程启动服务器
-      if (window.electronAPI && window.electronAPI.startNeteaseAPI) {
-        const result = await window.electronAPI.startNeteaseAPI();
-        console.log('API服务器启动结果:', result);
-        
-        if (result.success) {
-          this.isServerRunning = true;
-          console.log('网易云音乐API服务器启动成功');
-          return true;
-        } else {
-          console.error('启动API服务器失败:', result.message);
-          throw new Error(result.message);
-        }
-      }
-      
-      // 如果没有Electron API，提示用户手动启动
-      console.warn('需要手动启动网易云API服务器: npx NeteaseCloudMusicApi@latest');
-      throw new Error('无法自动启动API服务器，请手动启动');
+      return false;
     } catch (error) {
-      console.error('启动API服务器失败:', error);
-      throw error;
+      console.error('检查网易云API模块状态失败:', error);
+      return false;
     }
   }
 
   // 搜索歌曲
   async searchSongs(keyword, limit = 20) {
     try {
-      // 首先检查服务器状态
-      if (!this.isServerRunning) {
-        console.log('检查服务器状态...');
-        const isRunning = await this.checkServerStatus();
-        
-        if (!isRunning) {
-          console.log('服务器未运行，尝试启动...');
-          await this.startLocalServer();
-          
-          // 启动后再次检查
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          const finalCheck = await this.checkServerStatus();
-          
-          if (!finalCheck) {
-            throw new Error('网易云音乐API服务器启动失败，请手动运行: npx NeteaseCloudMusicApi@latest');
-          }
-        }
+      if (!this.enabled) {
+        throw new Error('网易云API已禁用');
       }
 
       console.log(`开始搜索歌曲: ${keyword}`);
-      const response = await fetch(`${this.baseUrl}/search?keywords=${encodeURIComponent(keyword)}&limit=${limit}`);
       
-      if (!response.ok) {
-        throw new Error(`搜索请求失败: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('搜索响应:', data);
+      // 通过Electron主进程调用网易云API模块
+      const result = await window.electronAPI.callNeteaseApi('search', {
+        keywords: keyword,
+        limit: limit
+      });
       
-      if (data.code === 200 && data.result && data.result.songs) {
-        const songs = data.result.songs.map(song => ({
+      console.log('搜索响应:', result);
+      
+      if (result.status === 200 && result.body && result.body.result && result.body.result.songs) {
+        const songs = result.body.result.songs.map(song => ({
           id: song.id,
           name: song.name,
           artist: song.artists ? song.artists.map(a => a.name).join('/') : '未知艺术家',
@@ -99,34 +71,26 @@ class NeteaseAPI {
         return songs;
       }
       
-      console.warn('搜索结果格式异常:', data);
+      console.warn('搜索结果格式异常:', result);
       return [];
     } catch (error) {
       console.error('搜索歌曲失败:', error);
-      throw error; // 抛出错误而不是返回空数组
+      throw error;
     }
   }
 
   // 获取歌词
   async getLyrics(songId) {
     try {
-      if (!this.isServerRunning) {
-        await this.checkServerStatus();
-        if (!this.isServerRunning) {
-          throw new Error('API服务器未运行');
-        }
+      if (!this.enabled) {
+        throw new Error('网易云API已禁用');
       }
 
-      const response = await fetch(`${this.baseUrl}/lyric?id=${songId}`);
+      const result = await window.electronAPI.callNeteaseApi('lyric', { id: songId });
       
-      if (!response.ok) {
-        throw new Error(`歌词请求失败: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.code === 200) {
-        const result = {
+      if (result.status === 200 && result.body) {
+        const data = result.body;
+        const lyrics = {
           lrc: null,
           tlyric: null,
           romalrc: null
@@ -134,20 +98,20 @@ class NeteaseAPI {
 
         // 原文歌词
         if (data.lrc && data.lrc.lyric) {
-          result.lrc = data.lrc.lyric;
+          lyrics.lrc = data.lrc.lyric;
         }
 
         // 翻译歌词
         if (data.tlyric && data.tlyric.lyric) {
-          result.tlyric = data.tlyric.lyric;
+          lyrics.tlyric = data.tlyric.lyric;
         }
 
         // 罗马音歌词
         if (data.romalrc && data.romalrc.lyric) {
-          result.romalrc = data.romalrc.lyric;
+          lyrics.romalrc = data.romalrc.lyric;
         }
 
-        return result;
+        return lyrics;
       }
       
       throw new Error('获取歌词失败');

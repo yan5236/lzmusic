@@ -211,7 +211,14 @@ class Settings {
       playMode: 'sequence', // sequence, random, repeat
       quality: 'medium', // high, medium, low
       theme: 'light',
-      sidebarCollapsed: false
+      sidebarCollapsed: false,
+      // 网易云API设置
+      neteaseApi: {
+        enabled: true,        // 是否启用网易云API
+        autoStart: true,      // 是否自动启动
+        port: 3000,          // API端口
+        host: 'localhost'    // API主机地址
+      }
     };
   }
 
