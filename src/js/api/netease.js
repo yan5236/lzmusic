@@ -31,7 +31,8 @@ class NeteaseAPI {
     try {
       // 检查是否可以调用网易云API模块
       if (window.electronAPI && window.electronAPI.callNeteaseApi) {
-        const result = await window.electronAPI.callNeteaseApi('banner', { type: 0 });
+        const response = await window.electronAPI.callNeteaseApi('banner', { type: 0 });
+        const result = response.success ? response.data : null;
         return result && result.status === 200;
       }
       return false;
@@ -51,11 +52,16 @@ class NeteaseAPI {
       console.log(`开始搜索歌曲: ${keyword}`);
       
       // 通过Electron主进程调用网易云API模块
-      const result = await window.electronAPI.callNeteaseApi('search', {
+      const response = await window.electronAPI.callNeteaseApi('search', {
         keywords: keyword,
         limit: limit
       });
       
+      if (!response.success) {
+        throw new Error(response.error || '网易云API调用失败');
+      }
+      
+      const result = response.data;
       console.log('搜索响应:', result);
       
       if (result.status === 200 && result.body && result.body.result && result.body.result.songs) {
@@ -86,7 +92,13 @@ class NeteaseAPI {
         throw new Error('网易云API已禁用');
       }
 
-      const result = await window.electronAPI.callNeteaseApi('lyric', { id: songId });
+      const response = await window.electronAPI.callNeteaseApi('lyric', { id: songId });
+      
+      if (!response.success) {
+        throw new Error(response.error || '网易云API调用失败');
+      }
+      
+      const result = response.data;
       
       if (result.status === 200 && result.body) {
         const data = result.body;

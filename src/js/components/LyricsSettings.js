@@ -5,6 +5,8 @@ class LyricsSettings {
     this.lyricsData = null;
     this.settings = new Settings();
     this.currentLyrics = '';
+    this.currentSongInfo = null; // 当前歌曲信息
+    this.lyricsDB = null; // 歌词数据库引用，稍后初始化
     
     // 默认设置
     this.defaultSettings = {
@@ -1056,8 +1058,8 @@ class LyricsSettings {
       return;
     }
 
-    resultsList.innerHTML = results.map(result => `
-      <div class="result-item" data-lyrics="${encodeURIComponent(result.lyrics)}">
+    resultsList.innerHTML = results.map((result, index) => `
+      <div class="result-item" data-result-index="${index}">
         <div class="result-header">
           <span class="platform-badge">${result.platformName}</span>
           <span class="result-info">${result.song} - ${result.artist}</span>
@@ -1074,8 +1076,9 @@ class LyricsSettings {
     resultsList.querySelectorAll('.use-lyrics-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const resultItem = e.target.closest('.result-item');
-        const lyrics = decodeURIComponent(resultItem.dataset.lyrics);
-        this.selectLyrics(lyrics);
+        const resultIndex = parseInt(resultItem.dataset.resultIndex);
+        const lyricsData = results[resultIndex];
+        this.selectLyrics(lyricsData);
       });
     });
   }
@@ -1089,8 +1092,40 @@ class LyricsSettings {
   }
 
   selectLyrics(lyrics) {
-    this.currentLyrics = lyrics;
+    // 提取歌词文本，确保this.currentLyrics是字符串
+    this.currentLyrics = lyrics.lyrics || '';
+    
+    // 尝试保存歌词到数据库
+    this.saveLyricsToDatabase(lyrics);
+    
     this.showMessage('歌词已选择，保存设置后将应用到播放器', 'success');
+  }
+  
+  // 保存歌词到数据库
+  async saveLyricsToDatabase(lyricsData) {
+    if (!this.lyricsDB || !this.currentSongInfo) {
+      console.warn('无法保存歌词：数据库未初始化或缺少歌曲信息');
+      return;
+    }
+    
+    try {
+      await this.lyricsDB.saveLyrics(
+        this.currentSongInfo.title,
+        this.currentSongInfo.artist,
+        {
+          lyrics: lyricsData.lyrics,
+          translation: lyricsData.translation,
+          romaLyrics: lyricsData.romaLyrics,
+          platform: lyricsData.platform,
+          platformName: lyricsData.platformName,
+          quality: lyricsData.quality || 0
+        }
+      );
+      
+      console.log('歌词已保存到数据库');
+    } catch (error) {
+      console.error('保存歌词到数据库失败:', error);
+    }
   }
 
   saveSettings() {
@@ -1137,6 +1172,13 @@ class LyricsSettings {
   }
 
   open(songInfo = null) {
+    this.currentSongInfo = songInfo; // 保存当前歌曲信息
+    
+    // 初始化数据库引用（如果还没有的话）
+    if (!this.lyricsDB && typeof LyricsDB !== 'undefined') {
+      this.lyricsDB = new LyricsDB();
+    }
+    
     if (songInfo) {
       this.modal.querySelector('#songNameInput').value = songInfo.title || '';
       this.modal.querySelector('#artistInput').value = songInfo.artist || '';
@@ -1159,6 +1201,11 @@ class LyricsSettings {
 
   getCurrentLyrics() {
     return this.settings.get('currentLyrics', '');
+  }
+
+  // 设置当前歌词（供外部调用）
+  setCurrentLyrics(lyrics) {
+    this.currentLyrics = lyrics;
   }
 
   // 手动输入歌词相关事件
@@ -1192,7 +1239,36 @@ class LyricsSettings {
     }
 
     this.currentLyrics = processedLyrics;
+    
+    // 保存手动输入的歌词到数据库
+    this.saveManualLyricsToDatabase(songName || this.currentSongInfo?.title, artist || this.currentSongInfo?.artist, processedLyrics);
+    
     this.showMessage('歌词已设置成功！', 'success');
+  }
+  
+  // 保存手动输入的歌词到数据库
+  async saveManualLyricsToDatabase(title, artist, lyrics) {
+    if (!this.lyricsDB || !title || !artist) {
+      console.warn('无法保存手动歌词：数据库未初始化或缺少歌曲信息');
+      return;
+    }
+    
+    try {
+      await this.lyricsDB.saveLyrics(
+        title,
+        artist,
+        {
+          lyrics: lyrics,
+          platform: 'manual',
+          platformName: '手动输入',
+          quality: 50 // 手动输入的歌词给中等质量评分
+        }
+      );
+      
+      console.log('手动歌词已保存到数据库');
+    } catch (error) {
+      console.error('保存手动歌词到数据库失败:', error);
+    }
   }
 
   clearManualLyrics() {
