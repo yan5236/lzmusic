@@ -1,0 +1,60 @@
+name: Electron Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: win
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Electron Build
+      uses: paneron/action-electron-builder@v1.8.1
+      with:
+        package_manager: npm
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        release: false
+        args: |
+          --${{ matrix.platform }} 
+          --config.extraMetadata.main=src/main.js
+          --config.${{ matrix.platform }}.target=[
+            ${{ matrix.platform == 'win' && '"nsis", "zip", "portable"' || 
+               matrix.platform == 'mac' && '"dmg", "zip"' || 
+               matrix.platform == 'linux' && '"AppImage", "tar.gz"' }}
+          ]
+      env:
+        CI: true
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: electron-build-${{ matrix.platform }}
+        path: |
+          dist/*
+          !dist/*.yml
+          !dist/*.blockmap
