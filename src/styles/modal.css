@@ -1,7 +1,7 @@
 /* 播放模态框样式 */
 .player-modal {
   position: fixed;
-  top: 0;
+  top: 32px; /* 从自定义标题栏下方开始 */
   left: 0;
   right: 0;
   bottom: var(--player-height);

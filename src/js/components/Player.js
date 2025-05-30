@@ -868,6 +868,9 @@ class Player {
       return;
     }
 
+    // 保存当前滚动位置
+    const scrollTop = this.playlistPanelContent.scrollTop;
+
     const fragment = document.createDocumentFragment();
     
     this.playlist.forEach((song, index) => {
@@ -877,6 +880,9 @@ class Player {
 
     this.playlistPanelContent.innerHTML = '';
     this.playlistPanelContent.appendChild(fragment);
+    
+    // 恢复滚动位置
+    this.playlistPanelContent.scrollTop = scrollTop;
   }
 
   createPlaylistItem(song, index) {

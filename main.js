@@ -446,9 +446,11 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    titleBarStyle: 'default',
+    frame: false,
+    titleBarStyle: 'hidden',
     icon: path.join(__dirname, 'assets/icon.png'),
-    show: false
+    show: false,
+    backgroundColor: '#1a1a1a'
   });
 
   // 设置请求头拦截器解决防盗链问题
@@ -661,6 +663,33 @@ ipcMain.handle('fix-corrupted-lyrics', async (event) => {
     console.error('修复损坏歌词数据失败:', error);
     return { success: false, error: error.message };
   }
+});
+
+// 窗口控制相关IPC事件
+ipcMain.handle('window-minimize', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.handle('window-close', () => {
+  if (mainWindow) {
+    mainWindow.close();
+  }
+});
+
+ipcMain.handle('window-is-maximized', () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
 });
 
 // 生成buvid3值的简单函数

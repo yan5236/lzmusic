@@ -24,6 +24,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 修复损坏的歌词数据
   fixCorruptedLyrics: () => ipcRenderer.invoke('fix-corrupted-lyrics'),
   
+  // 窗口控制API
+  window: {
+    minimize: () => ipcRenderer.invoke('window-minimize'),
+    maximize: () => ipcRenderer.invoke('window-maximize'),
+    close: () => ipcRenderer.invoke('window-close'),
+    isMaximized: () => ipcRenderer.invoke('window-is-maximized')
+  },
+  
   // 文件系统操作API
   path: {
     join: (...paths) => ipcRenderer.invoke('path-join', paths)

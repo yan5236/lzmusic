@@ -1,0 +1,159 @@
+/* 自定义标题栏样式 */
+.custom-titlebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 10000;
+  user-select: none;
+}
+
+.titlebar-drag-region {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  -webkit-app-region: drag; /* 启用拖拽 */
+  cursor: move;
+}
+
+.titlebar-icon {
+  margin-right: 8px;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.titlebar-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titlebar-controls {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  -webkit-app-region: no-drag; /* 控制按钮区域不可拖拽 */
+}
+
+.titlebar-button {
+  width: 46px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  font-size: 0;
+}
+
+.titlebar-button:hover {
+  background: var(--background-hover);
+}
+
+.titlebar-button:active {
+  background: var(--background-active);
+}
+
+.titlebar-button.close-btn:hover {
+  background: #e81123;
+  color: white;
+}
+
+.titlebar-button.close-btn:active {
+  background: #c50e1f;
+  color: white;
+}
+
+.titlebar-button svg {
+  transition: opacity 0.2s ease;
+}
+
+/* 最大化/还原按钮切换 */
+.titlebar-button.maximize-btn.maximized .maximize-icon {
+  display: none;
+}
+
+.titlebar-button.maximize-btn.maximized .restore-icon {
+  display: block !important;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .titlebar-title {
+    font-size: 12px;
+  }
+  
+  .titlebar-icon {
+    margin-right: 6px;
+  }
+  
+  .titlebar-button {
+    width: 40px;
+  }
+}
+
+/* 深色主题适配 */
+@media (prefers-color-scheme: dark) {
+  .custom-titlebar {
+    background: var(--background-primary, #1a1a1a);
+    border-bottom-color: var(--border-color, #333);
+  }
+  
+  .titlebar-title {
+    color: var(--text-primary, #fff);
+  }
+  
+  .titlebar-button {
+    color: var(--text-primary, #fff);
+  }
+  
+  .titlebar-button:hover {
+    background: var(--background-hover, rgba(255, 255, 255, 0.1));
+  }
+}
+
+/* 当窗口失去焦点时的样式 */
+.app-container.window-blurred .custom-titlebar {
+  opacity: 0.8;
+}
+
+.app-container.window-blurred .titlebar-title {
+  color: var(--text-secondary);
+}
+
+.app-container.window-blurred .titlebar-button {
+  color: var(--text-secondary);
+}
+
+/* 为应用主体内容添加顶部间距 */
+.app-container {
+  padding-top: 32px;
+}
+
+/* 确保侧边栏不被标题栏遮挡 */
+.sidebar {
+  top: 32px;
+  height: calc(100vh - 32px - var(--player-height));
+}
+
+/* 确保模态框不被标题栏遮挡 */
+.player-modal {
+  top: 32px;
+  height: calc(100vh - 32px);
+} 

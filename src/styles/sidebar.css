@@ -2,7 +2,7 @@
 .sidebar {
   position: fixed;
   left: 0;
-  top: 0;
+  top: 32px; /* 从自定义标题栏下方开始 */
   bottom: var(--player-height);
   width: var(--sidebar-width);
   background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);

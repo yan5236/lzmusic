@@ -6,6 +6,7 @@ class App {
     this.playHistory = new PlayHistory();
     
     // 组件实例
+    this.titleBar = new TitleBar();
     this.player = new Player();
     this.sidebar = new Sidebar();
     this.searchComponent = new Search(this.player, this.api);

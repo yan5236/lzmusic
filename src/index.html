@@ -6,6 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob: https://api.bilibili.com https://*.hdslb.com https://*.bilivideo.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: data: https:; connect-src 'self' http://localhost:* https://api.bilibili.com https://*.bilibili.com https://music.163.com http://mobileservice.kugou.com http://krcs.kugou.com http://lyrics.kugou.com https://songsearch.kugou.com https://*.kugou.com https://api.vkeys.cn https://*.vkeys.cn https://c.y.qq.com https://y.qq.com https://*.qq.com https://www.kuwo.cn https://*.kuwo.cn wss:; script-src 'self' 'unsafe-inline';">
   <title>LZ Music</title>
   <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/titlebar.css">
   <link rel="stylesheet" href="styles/sidebar.css">
   <link rel="stylesheet" href="styles/player.css">
   <link rel="stylesheet" href="styles/modal.css">
@@ -13,6 +14,38 @@
   <link rel="stylesheet" href="styles/lyrics-settings.css">
 </head>
 <body>
+  <!-- 自定义标题栏 -->
+  <div class="custom-titlebar">
+    <div class="titlebar-drag-region">
+      <div class="titlebar-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+        </svg>
+      </div>
+      <div class="titlebar-title">LZ Music</div>
+    </div>
+    <div class="titlebar-controls">
+      <button class="titlebar-button minimize-btn" id="minimizeBtn" title="最小化">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+          <path d="M0 5h10v1H0z"/>
+        </svg>
+      </button>
+      <button class="titlebar-button maximize-btn" id="maximizeBtn" title="最大化">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+          <path d="M0 0v10h10V0H0zm1 1h8v8H1V1z"/>
+        </svg>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" class="restore-icon" style="display: none;">
+          <path d="M0 2v8h8V2H0zm1 1h6v6H1V3zm2-2h6v6h-1V1H3V0z"/>
+        </svg>
+      </button>
+      <button class="titlebar-button close-btn" id="closeBtn" title="关闭">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+          <path d="M1.41 0L5 3.59L8.59 0L10 1.41L6.41 5L10 8.59L8.59 10L5 6.41L1.41 10L0 8.59L3.59 5L0 1.41z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
   <!-- 主容器 -->
   <div class="app-container">
     <!-- 侧边栏 -->
@@ -395,6 +428,7 @@
   <script src="js/api/netease.js"></script>
   <script src="js/components/PageSelector.js"></script>
   <script src="js/components/LyricsSettings.js"></script>
+  <script src="js/components/TitleBar.js"></script>
   <script src="js/components/Sidebar.js"></script>
   <script src="js/components/Player.js"></script>
   <script src="js/components/Search.js"></script>
