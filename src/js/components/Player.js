@@ -4,7 +4,7 @@ class Player {
     this.audio = document.getElementById('audioPlayer');
     this.api = new BilibiliAPI();
     this.settings = new Settings();
-    this.playHistory = new PlayHistory();
+    this.historyDB = new HistoryDB(); // 使用新的历史记录数据库
     this.pageSelector = new PageSelector(); // 初始化分P选择器
     this.lyricsSettings = new LyricsSettings(); // 初始化歌词设置
     this.lyricsDB = new LyricsDB(); // 初始化歌词数据库
@@ -73,12 +73,20 @@ class Player {
     this.init();
   }
 
-  init() {
+  async init() {
     this.bindEvents();
     this.loadSettings();
     this.setupAudio();
     this.loadLyricsSettings(); // 加载歌词设置
     this.fixCorruptedLyricsData(); // 修复损坏的歌词数据
+    
+    // 初始化历史记录数据库
+    try {
+      await this.historyDB.init();
+      console.log('播放器历史记录数据库初始化成功');
+    } catch (error) {
+      console.error('播放器历史记录数据库初始化失败:', error);
+    }
   }
 
   bindEvents() {
@@ -277,7 +285,49 @@ class Player {
       await this.tryLoadAudioUrls(audioData.all_urls || [audioData.url]);
       
       // 记录播放历史
-      this.playHistory.add(currentSong);
+      try {
+        // 确保duration是有效数字
+        let duration = 0;
+        
+        if (currentSong.duration) {
+          // 如果是字符串格式（如"3:45"），转换为秒数
+          if (typeof currentSong.duration === 'string' && currentSong.duration.includes(':')) {
+            const parts = currentSong.duration.split(':');
+            if (parts.length === 2) {
+              const minutes = parseInt(parts[0]) || 0;
+              const seconds = parseInt(parts[1]) || 0;
+              duration = minutes * 60 + seconds;
+            } else if (parts.length === 3) {
+              // 支持 "1:23:45" 格式（小时:分钟:秒）
+              const hours = parseInt(parts[0]) || 0;
+              const minutes = parseInt(parts[1]) || 0;
+              const seconds = parseInt(parts[2]) || 0;
+              duration = hours * 3600 + minutes * 60 + seconds;
+            }
+          } 
+          // 如果是数字格式，直接使用
+          else if (!isNaN(Number(currentSong.duration))) {
+            duration = Number(currentSong.duration);
+          }
+        }
+        
+        // 如果duration仍然是0，尝试从音频元素获取
+        if (duration === 0 && this.audio && this.audio.duration && !isNaN(this.audio.duration)) {
+          duration = Math.floor(this.audio.duration);
+        }
+        
+        await this.historyDB.add({
+          bvid: currentSong.bvid,
+          title: currentSong.title,
+          author: currentSong.author || currentSong.owner?.name || currentSong.uploader || 'UP主',
+          cover: currentSong.pic || currentSong.cover,
+          duration: duration,
+          cid: selectedCid
+        });
+        console.log('播放历史记录已添加，duration:', duration, 'original:', currentSong.duration);
+      } catch (error) {
+        console.error('添加播放历史失败:', error);
+      }
       
     } catch (error) {
       console.error('播放失败:', error);

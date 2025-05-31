@@ -21,6 +21,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getStats: () => ipcRenderer.invoke('get-lyrics-stats')
   },
   
+  // 历史记录数据库API
+  historyDB: {
+    init: () => ipcRenderer.invoke('init-history-db'),
+    addRecord: (record) => ipcRenderer.invoke('add-history-record', record),
+    getAllRecords: (options) => ipcRenderer.invoke('get-all-history', options),
+    getRecordsByTimeRange: (timeRange, limit) => ipcRenderer.invoke('get-history-by-time', { timeRange, limit }),
+    searchRecords: (keyword, limit) => ipcRenderer.invoke('search-history', { keyword, limit }),
+    removeRecord: (bvid) => ipcRenderer.invoke('remove-history-record', bvid),
+    clearAllRecords: () => ipcRenderer.invoke('clear-all-history'),
+    getStats: () => ipcRenderer.invoke('get-history-stats')
+  },
+  
   // 修复损坏的歌词数据
   fixCorruptedLyrics: () => ipcRenderer.invoke('fix-corrupted-lyrics'),
   

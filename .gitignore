@@ -9,7 +9,6 @@ start-win.bat
 
 # 排除依赖包目录和锁定文件
 node_modules/
-package-lock.json
 
 py
 

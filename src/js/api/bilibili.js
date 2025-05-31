@@ -124,7 +124,7 @@ class BilibiliAPI {
           title: this.cleanTitle(video.title),
           author: video.author,
           cover: video.pic.startsWith('//') ? 'https:' + video.pic : video.pic,
-          duration: this.formatDuration(video.duration),
+          duration: video.duration,
           play: video.play,
           pubdate: video.pubdate
         })),
@@ -179,7 +179,7 @@ class BilibiliAPI {
       const url = `${this.baseURL}/x/player/playurl`;
       const params = new URLSearchParams({
         bvid,
-        cid: cid.toString(),
+        cid: Math.floor(Number(cid)).toString(),
         qn: '0',
         fnval: '16',
         fourk: '1'
@@ -357,7 +357,7 @@ class BilibiliAPI {
         title: video.title,
         author: video.owner.name,
         cover: video.pic,
-        duration: this.formatDuration(video.duration),
+        duration: video.duration,
         play: video.stat.view,
         pubdate: video.pubdate
       }));

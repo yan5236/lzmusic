@@ -37,6 +37,23 @@ class Search {
     this.loadSearchHistory();
     this.createSuggestionsContainer();
     this.loadHotSearches();
+    this.setupIntersectionObserver();
+  }
+
+  // 设置交集观察器用于懒加载
+  setupIntersectionObserver() {
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          if (img.dataset.src) {
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+            this.observer.unobserve(img);
+          }
+        }
+      });
+    });
   }
 
   // 创建搜索建议容器
@@ -286,10 +303,14 @@ class Search {
     // 检查是否为分P视频
     const isMultiPart = video.pages && video.pages.length > 1;
     
+    // 格式化时长显示
+    const durationDisplay = this.formatDuration(video.duration);
+    
     item.innerHTML = `
       <div class="search-item-cover">
-        <img src="${video.cover}" alt="封面" loading="lazy">
-        <div class="search-item-play">
+        <img data-src="${video.cover}" alt="${video.title}" loading="lazy">
+        <div class="duration">${durationDisplay}</div>
+        <div class="play-overlay">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8 5v14l11-7z"/>
           </svg>
@@ -300,7 +321,6 @@ class Search {
         <div class="search-item-artist" title="${video.author}">UP主: ${video.author}</div>
         ${isMultiPart ? `<div class="search-item-parts">共${video.pages.length}个分P</div>` : ''}
       </div>
-      <div class="search-item-duration">${video.duration}</div>
       <div class="search-item-actions">
         ${isMultiPart ? `
           <button class="expand-parts-btn" title="展开分P">
@@ -362,9 +382,20 @@ class Search {
   }
 
   // 格式化时长
-  formatDuration(seconds) {
+  formatDuration(duration) {
+    // 如果已经是字符串格式（如"3:45"），直接返回
+    if (typeof duration === 'string' && duration.includes(':')) {
+      return duration;
+    }
+    
+    // 如果是数字，转换为分:秒格式
+    const seconds = Number(duration);
+    if (isNaN(seconds) || seconds < 0) {
+      return '00:00';
+    }
+    
     const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
+    const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
 
@@ -373,6 +404,12 @@ class Search {
     const playBtn = item.querySelector('.play-single-btn');
     const addBtn = item.querySelector('.add-to-playlist-btn');
     const expandBtn = item.querySelector('.expand-parts-btn');
+    
+    // 懒加载图片
+    const img = item.querySelector('img[data-src]');
+    if (img && this.observer) {
+      this.observer.observe(img);
+    }
     
     // 双击播放
     item.addEventListener('dblclick', (e) => {

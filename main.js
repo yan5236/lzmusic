@@ -28,6 +28,7 @@ if (process.platform === 'win32') {
 
 let mainWindow;
 let lyricsDB = null;
+let historyDB = null;
 
 // 歌词数据库管理
 const LyricsDBManager = {
@@ -411,6 +412,312 @@ const LyricsDBManager = {
   },
 };
 
+// 历史记录数据库管理
+const HistoryDBManager = {
+  // 初始化数据库
+  init(dbPath) {
+    return new Promise((resolve, reject) => {
+      // 确保数据目录存在
+      const dataDir = path.dirname(dbPath);
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      
+      historyDB = new sqlite3.Database(dbPath, (err) => {
+        if (err) {
+          console.error('打开历史记录数据库失败:', err);
+          reject(err);
+          return;
+        }
+        
+        console.log('SQLite历史记录数据库连接成功:', dbPath);
+        
+        // 创建历史记录表
+        const createTableSQL = `
+          CREATE TABLE IF NOT EXISTS history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            bvid TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            author TEXT NOT NULL,
+            cover TEXT,
+            duration INTEGER,
+            cid TEXT,
+            play_time INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `;
+        
+        historyDB.run(createTableSQL, (err) => {
+          if (err) {
+            console.error('创建历史记录表失败:', err);
+            reject(err);
+            return;
+          }
+          
+          // 创建索引
+          const indexes = [
+            'CREATE INDEX IF NOT EXISTS idx_bvid ON history(bvid)',
+            'CREATE INDEX IF NOT EXISTS idx_play_time ON history(play_time)',
+            'CREATE INDEX IF NOT EXISTS idx_title ON history(title)',
+            'CREATE INDEX IF NOT EXISTS idx_author ON history(author)',
+            'CREATE INDEX IF NOT EXISTS idx_created_at ON history(created_at)'
+          ];
+          
+          let indexCount = 0;
+          indexes.forEach((indexSQL) => {
+            historyDB.run(indexSQL, (err) => {
+              if (err) {
+                console.warn('创建历史记录索引失败:', err);
+              }
+              indexCount++;
+              if (indexCount === indexes.length) {
+                console.log('历史记录数据库初始化完成');
+                resolve();
+              }
+            });
+          });
+        });
+      });
+    });
+  },
+
+  // 添加播放记录
+  addRecord(record) {
+    return new Promise((resolve, reject) => {
+      if (!historyDB) {
+        reject(new Error('历史记录数据库未初始化'));
+        return;
+      }
+      
+      // 先删除已存在的记录（如果有）
+      const deleteSQL = 'DELETE FROM history WHERE bvid = ?';
+      historyDB.run(deleteSQL, [record.bvid], (err) => {
+        if (err) {
+          console.warn('删除旧历史记录失败:', err);
+        }
+        
+        // 确保duration是有效数字
+        let duration = 0;
+        if (record.duration !== null && record.duration !== undefined && !isNaN(Number(record.duration))) {
+          duration = Number(record.duration);
+        }
+        
+        // 插入新记录
+        const insertSQL = `
+          INSERT INTO history (bvid, title, author, cover, duration, cid, play_time)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        const params = [
+          record.bvid,
+          record.title,
+          record.author,
+          record.cover,
+          duration,
+          record.cid,
+          record.play_time
+        ];
+        
+        historyDB.run(insertSQL, params, function(err) {
+          if (err) {
+            console.error('添加历史记录失败:', err);
+            reject(err);
+            return;
+          }
+          
+          console.log('历史记录添加成功，ID:', this.lastID);
+          resolve({ id: this.lastID, changes: this.changes });
+        });
+      });
+    });
+  },
+
+  // 获取所有历史记录
+  getAllRecords(options = {}) {
+    return new Promise((resolve, reject) => {
+      if (!historyDB) {
+        reject(new Error('历史记录数据库未初始化'));
+        return;
+      }
+      
+      const { limit = 1000, offset = 0 } = options;
+      const sql = `
+        SELECT * FROM history 
+        ORDER BY play_time DESC 
+        LIMIT ? OFFSET ?
+      `;
+      
+      historyDB.all(sql, [limit, offset], (err, rows) => {
+        if (err) {
+          console.error('获取历史记录失败:', err);
+          reject(err);
+          return;
+        }
+        
+        resolve(rows || []);
+      });
+    });
+  },
+
+  // 按时间范围获取历史记录
+  getRecordsByTimeRange(timeRange, limit = 1000) {
+    return new Promise((resolve, reject) => {
+      if (!historyDB) {
+        reject(new Error('历史记录数据库未初始化'));
+        return;
+      }
+      
+      let timeCondition = '';
+      const now = Date.now();
+      
+      switch (timeRange) {
+        case 'today':
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          timeCondition = `AND play_time >= ${todayStart.getTime()}`;
+          break;
+        case 'week':
+          const weekStart = now - (7 * 24 * 60 * 60 * 1000);
+          timeCondition = `AND play_time >= ${weekStart}`;
+          break;
+        case 'month':
+          const monthStart = now - (30 * 24 * 60 * 60 * 1000);
+          timeCondition = `AND play_time >= ${monthStart}`;
+          break;
+        default:
+          timeCondition = '';
+      }
+      
+      const sql = `
+        SELECT * FROM history 
+        WHERE 1=1 ${timeCondition}
+        ORDER BY play_time DESC 
+        LIMIT ?
+      `;
+      
+      historyDB.all(sql, [limit], (err, rows) => {
+        if (err) {
+          console.error('按时间获取历史记录失败:', err);
+          reject(err);
+          return;
+        }
+        
+        resolve(rows || []);
+      });
+    });
+  },
+
+  // 搜索历史记录
+  searchRecords(keyword, limit = 100) {
+    return new Promise((resolve, reject) => {
+      if (!historyDB) {
+        reject(new Error('历史记录数据库未初始化'));
+        return;
+      }
+      
+      const sql = `
+        SELECT * FROM history 
+        WHERE title LIKE ? OR author LIKE ?
+        ORDER BY play_time DESC 
+        LIMIT ?
+      `;
+      
+      const searchPattern = `%${keyword}%`;
+      
+      historyDB.all(sql, [searchPattern, searchPattern, limit], (err, rows) => {
+        if (err) {
+          console.error('搜索历史记录失败:', err);
+          reject(err);
+          return;
+        }
+        
+        resolve(rows || []);
+      });
+    });
+  },
+
+  // 删除指定记录
+  removeRecord(bvid) {
+    return new Promise((resolve, reject) => {
+      if (!historyDB) {
+        reject(new Error('历史记录数据库未初始化'));
+        return;
+      }
+      
+      const sql = 'DELETE FROM history WHERE bvid = ?';
+      
+      historyDB.run(sql, [bvid], function(err) {
+        if (err) {
+          console.error('删除历史记录失败:', err);
+          reject(err);
+          return;
+        }
+        
+        console.log('历史记录删除成功，BVID:', bvid, '影响行数:', this.changes);
+        resolve({ bvid: bvid, changes: this.changes });
+      });
+    });
+  },
+
+  // 清空所有历史记录
+  clearAllRecords() {
+    return new Promise((resolve, reject) => {
+      if (!historyDB) {
+        reject(new Error('历史记录数据库未初始化'));
+        return;
+      }
+      
+      const sql = 'DELETE FROM history';
+      
+      historyDB.run(sql, function(err) {
+        if (err) {
+          console.error('清空历史记录失败:', err);
+          reject(err);
+          return;
+        }
+        
+        console.log('历史记录已清空，删除行数:', this.changes);
+        resolve({ changes: this.changes });
+      });
+    });
+  },
+
+  // 获取统计信息
+  getStats() {
+    return new Promise((resolve, reject) => {
+      if (!historyDB) {
+        reject(new Error('历史记录数据库未初始化'));
+        return;
+      }
+      
+      const now = Date.now();
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const weekStart = now - (7 * 24 * 60 * 60 * 1000);
+      const monthStart = now - (30 * 24 * 60 * 60 * 1000);
+      
+      const sql = `
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN play_time >= ${todayStart.getTime()} THEN 1 END) as today,
+          COUNT(CASE WHEN play_time >= ${weekStart} THEN 1 END) as week,
+          COUNT(CASE WHEN play_time >= ${monthStart} THEN 1 END) as month
+        FROM history
+      `;
+      
+      historyDB.get(sql, (err, row) => {
+        if (err) {
+          console.error('获取历史记录统计信息失败:', err);
+          reject(err);
+          return;
+        }
+        
+        resolve(row);
+      });
+    });
+  }
+};
+
 // 网易云API模块管理
 const NeteaseAPIModule = {
   // 调用网易云API模块
@@ -650,6 +957,99 @@ ipcMain.handle('netease-api', async (event, method, params = {}) => {
     const result = await NeteaseAPIModule.callApi(method, params);
     return { success: true, data: result };
   } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// 历史记录数据库IPC处理器
+// 初始化历史记录数据库
+ipcMain.handle('init-history-db', async (event, dbPath) => {
+  try {
+    // 如果没有传递dbPath，使用默认路径
+    if (!dbPath) {
+      dbPath = path.join(process.cwd(), 'data', 'history.db');
+    }
+    await HistoryDBManager.init(dbPath);
+    return { success: true };
+  } catch (error) {
+    console.error('初始化历史记录数据库失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 添加播放记录
+ipcMain.handle('add-history-record', async (event, record) => {
+  try {
+    const result = await HistoryDBManager.addRecord(record);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('添加播放记录失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 获取所有历史记录
+ipcMain.handle('get-all-history', async (event, options) => {
+  try {
+    const result = await HistoryDBManager.getAllRecords(options);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('获取历史记录失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 按时间范围获取历史记录
+ipcMain.handle('get-history-by-time', async (event, { timeRange, limit }) => {
+  try {
+    const result = await HistoryDBManager.getRecordsByTimeRange(timeRange, limit);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('按时间获取历史记录失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 搜索历史记录
+ipcMain.handle('search-history', async (event, { keyword, limit }) => {
+  try {
+    const result = await HistoryDBManager.searchRecords(keyword, limit);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('搜索历史记录失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 删除历史记录
+ipcMain.handle('remove-history-record', async (event, bvid) => {
+  try {
+    const result = await HistoryDBManager.removeRecord(bvid);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('删除历史记录失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 清空所有历史记录
+ipcMain.handle('clear-all-history', async (event) => {
+  try {
+    const result = await HistoryDBManager.clearAllRecords();
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('清空历史记录失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 获取历史记录统计信息
+ipcMain.handle('get-history-stats', async (event) => {
+  try {
+    const result = await HistoryDBManager.getStats();
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('获取历史记录统计信息失败:', error);
     return { success: false, error: error.message };
   }
 });

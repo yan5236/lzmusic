@@ -151,6 +151,9 @@ class Sidebar {
       case 'search':
         this.focusSearchInput();
         break;
+      case 'history':
+        this.loadHistoryPage();
+        break;
       case 'playlist':
         this.loadPlaylistPage();
         break;
@@ -185,6 +188,13 @@ class Sidebar {
   loadPlaylistPage() {
     if (window.app && window.app.playlistComponent) {
       window.app.playlistComponent.loadPlaylists();
+    }
+  }
+
+  // 加载历史记录页面
+  loadHistoryPage() {
+    if (window.app && window.app.historyComponent) {
+      window.app.historyComponent.loadHistory();
     }
   }
 

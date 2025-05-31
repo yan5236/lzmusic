@@ -3,7 +3,6 @@ class App {
   constructor() {
     this.api = new BilibiliAPI();
     this.settings = new Settings();
-    this.playHistory = new PlayHistory();
     
     // 组件实例
     this.titleBar = new TitleBar();
@@ -11,6 +10,7 @@ class App {
     this.sidebar = new Sidebar();
     this.searchComponent = new Search(this.player, this.api);
     this.playlistComponent = new Playlist(this.player);
+    this.historyComponent = new History(this.player);
     this.playlistManagement = null;
     
     // 设置全局引用
@@ -104,7 +104,6 @@ class App {
     switch (pageId) {
       case 'home':
         this.loadRecommendations();
-        this.loadRecentHistory();
         break;
       case 'search':
         // 搜索页面已在 Sidebar 中处理
@@ -142,34 +141,6 @@ class App {
     }
   }
 
-  // 加载最近播放历史
-  loadRecentHistory() {
-    const recentSection = document.getElementById('recentSection');
-    const recentMusic = document.getElementById('recentMusic');
-    
-    if (!recentSection || !recentMusic) return;
-
-    const history = this.playHistory.getAll();
-    
-    if (history.length > 0) {
-      // 显示最近播放区域
-      recentSection.style.display = 'block';
-      
-      // 渲染最近播放的音乐，最多显示6个
-      const recentVideos = history.slice(0, 6);
-      this.renderMusicGrid(recentVideos, recentMusic);
-      
-      // 绑定清空历史按钮事件
-      const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-      if (clearHistoryBtn) {
-        clearHistoryBtn.onclick = () => this.clearPlayHistory();
-      }
-    } else {
-      // 隐藏最近播放区域
-      recentSection.style.display = 'none';
-    }
-  }
-
   // 获取混合推荐内容
   async getMixedRecommendations() {
     const recommendations = [];
@@ -195,18 +166,13 @@ class App {
             })
           );
           
-          // 过滤掉已播放过的视频，避免历史重复
-          const history = this.playHistory.getAll();
-          const playedBvids = new Set(history.map(h => h.bvid));
-          const filteredVideos = detailedVideos.filter(video => !playedBvids.has(video.bvid));
-          
-          recommendations.push(...filteredVideos);
+          recommendations.push(...detailedVideos);
         }
       } catch (error) {
         console.warn('获取B站推荐失败，使用默认推荐');
       }
       
-      // 2. 如果推荐数量不够，添加默认推荐内容（但不包含历史）
+      // 2. 如果推荐数量不够，添加默认推荐内容
       if (recommendations.length < 8) {
         const defaultRecommendations = this.getDefaultRecommendations();
         recommendations.push(...defaultRecommendations.slice(0, 12 - recommendations.length));
@@ -408,19 +374,13 @@ class App {
     }
   }
 
-  // 清空播放历史
-  clearPlayHistory() {
-    if (confirm('确定要清空播放历史吗？此操作无法撤销。')) {
-      this.playHistory.clear();
-      this.loadRecentHistory();
-      this.showSuccess('播放历史已清空');
-    }
-  }
-
   // 创建音乐卡片
   createMusicCard(video) {
     const card = document.createElement('div');
     card.className = 'music-card';
+    
+    // 格式化时长显示
+    const durationDisplay = this.formatDuration(video.duration);
     
     // 处理封面图片
     const coverHTML = video.cover && video.cover.trim() ? 
@@ -442,7 +402,7 @@ class App {
       </div>
       <div class="music-card-info">
         <h4 class="music-card-title" title="${video.title}">${video.title}</h4>
-        <p class="music-card-artist">${video.author} • ${video.duration}</p>
+        <p class="music-card-artist">${video.author} • ${durationDisplay}</p>
       </div>
     `;
 
@@ -450,6 +410,27 @@ class App {
     this.bindMusicCardEvents(card, video);
     
     return card;
+  }
+
+  // 格式化时长
+  formatDuration(duration) {
+    // 如果是字符串格式，直接返回
+    if (typeof duration === 'string') {
+      return duration;
+    }
+    
+    // 处理无效值
+    if (!duration || duration === null || duration === undefined) return '00:00';
+    
+    // 将duration转换为数字
+    const numDuration = Number(duration);
+    
+    // 检查是否为有效数字
+    if (isNaN(numDuration) || numDuration < 0) return '00:00';
+    
+    const minutes = Math.floor(numDuration / 60);
+    const seconds = Math.floor(numDuration % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
   // 绑定音乐卡片事件
