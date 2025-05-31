@@ -1,6 +1,6 @@
 {
   "name": "lzmusic",
-  "version": "1.0.0",
+  "version": "1.0.5-beta",
   "description": "基于 Bilibili API 的音乐播放器",
   "main": "main.js",
   "scripts": {
@@ -9,11 +9,15 @@
     "build-win": "electron-builder --win --x64",
     "build-test": "electron-builder --win --x64 --config.directories.output=exe",
     "dev": "cross-env FORCE_COLOR=true NODE_ENV=development electron . --enable-logging",
-    "dev-win": "chcp 65001 && set FORCE_COLOR=true && set NODE_ENV=development && electron . --enable-logging"
+    "dev-win": "chcp 65001 && set FORCE_COLOR=true && set NODE_ENV=development && electron . --enable-logging",
+    "rebuild": "electron-rebuild",
+    "postinstall": "electron-builder install-app-deps",
+    "rebuild-sqlite": "npm rebuild sqlite3 --build-from-source"
   },
   "author": "lzmusic",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "devDependencies": {
+    "@electron/rebuild": "^4.0.1",
     "cross-env": "^7.0.3",
     "electron": "^25.0.0",
     "electron-builder": "^24.0.0"
@@ -21,13 +25,14 @@
   "dependencies": {
     "axios": "^1.4.0",
     "NeteaseCloudMusicApi": "^4.27.0",
-    "sqlite3": "^5.1.7"
+    "smart-buffer": "^4.2.0",
+    "sqlite3": "5.1.6"
   },
   "build": {
     "appId": "com.lzmusic.app",
     "productName": "LZ Music",
     "directories": {
-      "output": "exe"
+      "output": "dist"
     },
     "files": [
       "main.js",

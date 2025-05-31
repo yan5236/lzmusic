@@ -329,6 +329,11 @@ class Player {
         console.error('添加播放历史失败:', error);
       }
       
+      // 更新播放列表面板（如果面板是打开状态）
+      if (this.isPanelOpen) {
+        this.updatePlaylistPanel();
+      }
+      
     } catch (error) {
       console.error('播放失败:', error);
       this.showError('播放失败：' + error.message);
@@ -422,7 +427,7 @@ class Player {
   }
 
   // 上一首
-  playPrevious() {
+  async playPrevious() {
     if (this.playlist.length === 0) return;
     
     // 如果是试听歌单且只有一首歌，重新播放当前歌曲
@@ -446,16 +451,11 @@ class Player {
     }
     
     this.currentIndex = newIndex;
-    this.playSong(this.playlist[newIndex], this.playlist, newIndex);
-    
-    // 更新播放列表面板
-    if (this.isPanelOpen) {
-      this.updatePlaylistPanel();
-    }
+    await this.playSong(this.playlist[newIndex], this.playlist, newIndex);
   }
 
   // 下一首
-  playNext() {
+  async playNext() {
     if (this.playlist.length === 0) return;
     
     // 如果是试听歌单且只有一首歌，重新播放当前歌曲
@@ -479,12 +479,7 @@ class Player {
     }
     
     this.currentIndex = newIndex;
-    this.playSong(this.playlist[newIndex], this.playlist, newIndex);
-    
-    // 更新播放列表面板
-    if (this.isPanelOpen) {
-      this.updatePlaylistPanel();
-    }
+    await this.playSong(this.playlist[newIndex], this.playlist, newIndex);
   }
 
   // 跳转到指定时间
@@ -712,12 +707,12 @@ class Player {
     this.updateCurrentLyricsLine();
   }
 
-  onEnded() {
+  async onEnded() {
     if (this.playMode === 'repeat') {
       this.audio.currentTime = 0;
       this.play();
     } else if (this.settings.get('autoPlay', true)) {
-      this.playNext();
+      await this.playNext();
     } else {
       this.isPlaying = false;
       this.updatePlayButton();
