@@ -81,12 +81,12 @@ jobs:
       - name: 设置 Node.js
         uses: actions/setup-node@v4
         with:
-          node-js-version: '18'  # 使用 Node.js 18
+          node-version: '18'  # 使用 Node.js 18
           cache: 'npm'           # 启用 npm 缓存
 
       # 步骤3：配置 npm 缓存以加速构建
       - name: 配置 npm 缓存
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ matrix.npm_config_cache }}
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -128,7 +128,7 @@ jobs:
       # 包含安装版和解压版
       - name: 上传构建产物 (Windows)
         if: matrix.platform == 'win32'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-builds
           path: |
@@ -140,7 +140,7 @@ jobs:
       # 包含多种 Linux 发行版格式
       - name: 上传构建产物 (Linux)
         if: matrix.platform == 'linux'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-builds
           path: |
@@ -153,7 +153,7 @@ jobs:
       # 步骤10：上传 macOS 构建产物
       - name: 上传构建产物 (macOS)
         if: matrix.platform == 'darwin'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos-builds
           path: |
@@ -180,7 +180,7 @@ jobs:
         if: |
           github.event_name == 'push' || 
           (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true')
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       # 步骤3：获取版本信息
       # 从标签或手动输入中提取版本号
@@ -198,7 +198,7 @@ jobs:
       # 步骤4：创建 GitHub Release
       # 自动生成发行说明并上传所有构建产物
       - name: 创建发行版
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: LZ Music ${{ steps.version.outputs.version }}
@@ -259,7 +259,7 @@ jobs:
         if: |
           github.event_name == 'push' || 
           (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true')
-        uses: geekyeggo/delete-artifact@v2
+        uses: geekyeggo/delete-artifact@v5
         with:
           name: |
             windows-builds
