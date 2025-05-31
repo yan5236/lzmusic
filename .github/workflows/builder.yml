@@ -103,7 +103,10 @@ jobs:
       - name: 构建应用 (Windows)
         if: matrix.platform == 'win32'
         run: |
+          echo "开始构建Windows应用..."
           npm run build-win
+          echo "构建完成，检查输出目录..."
+          dir dist
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -112,7 +115,12 @@ jobs:
       - name: 构建应用 (Linux)
         if: matrix.platform == 'linux'
         run: |
-          npx electron-builder --linux --x64
+          echo "开始构建Linux应用..."
+          echo "当前package.json作者信息:"
+          cat package.json | grep -A 3 '"author"'
+          npm run build-linux
+          echo "构建完成，检查输出目录..."
+          ls -la dist/
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -133,9 +141,10 @@ jobs:
         with:
           name: windows-builds
           path: |
-            dist/*.exe    # 安装版
-            dist/*.zip    # 解压版
+            dist/*.exe
+            dist/*.zip
           retention-days: 30
+          if-no-files-found: warn
 
       # 步骤9：上传 Linux 构建产物
       # 包含多种 Linux 发行版格式
@@ -145,11 +154,12 @@ jobs:
         with:
           name: linux-builds
           path: |
-            dist/*.AppImage  # 通用 Linux 格式
-            dist/*.deb       # Debian/Ubuntu 格式
-            dist/*.rpm       # RedHat/CentOS 格式
-            dist/*.tar.gz    # 压缩包格式
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.tar.gz
           retention-days: 30
+          if-no-files-found: warn
 
       # 步骤10：上传 macOS 构建产物 (暂时禁用)
       # - name: 上传构建产物 (macOS)

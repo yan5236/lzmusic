@@ -17,3 +17,5 @@ exe
 data
 
 dist
+
+.npmrc

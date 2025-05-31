@@ -17,7 +17,10 @@
     "postinstall": "electron-builder install-app-deps",
     "rebuild-sqlite": "npm rebuild sqlite3 --build-from-source"
   },
-  "author": "lzmusic",
+  "author": {
+    "name": "lzmusic",
+    "email": "jmzcc10@126.com"
+  },
   "license": "GPL-3.0-only",
   "devDependencies": {
     "@electron/rebuild": "^4.0.1",
@@ -90,7 +93,8 @@
           "arch": ["x64"]
         }
       ],
-      "category": "AudioVideo"
+      "category": "AudioVideo",
+      "maintainer": "lzmusic <lzmusic@example.com>"
     },
     "appImage": {
       "artifactName": "LZ-Music-${version}.AppImage"
