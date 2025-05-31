@@ -6,6 +6,8 @@
   "scripts": {
     "start": "cross-env FORCE_COLOR=true electron .",
     "build": "electron-builder",
+    "build-win": "electron-builder --win --x64",
+    "build-test": "electron-builder --win --x64 --config.directories.output=exe",
     "dev": "cross-env FORCE_COLOR=true NODE_ENV=development electron . --enable-logging",
     "dev-win": "chcp 65001 && set FORCE_COLOR=true && set NODE_ENV=development && electron . --enable-logging"
   },
@@ -18,57 +20,37 @@
   },
   "dependencies": {
     "axios": "^1.4.0",
-    "NeteaseCloudMusicApi": "^4.27.0"
+    "NeteaseCloudMusicApi": "^4.27.0",
+    "sqlite3": "^5.1.7"
   },
   "build": {
     "appId": "com.lzmusic.app",
     "productName": "LZ Music",
     "directories": {
-      "output": "dist"
+      "output": "exe"
     },
     "files": [
       "main.js",
+      "preload.js",
       "src/**/*",
       "assets/**/*",
       "node_modules/**/*",
-      "preload.js"
+      "!node_modules/.cache",
+      "!node_modules/.bin"
     ],
-    "mac": {
-      "category": "public.app-category.music",
-      "target": ["dmg"],
-      "darkModeSupport": true
-    },
     "win": {
-      "target": ["nsis"]
-    },
-    "linux": {
-      "target": ["deb", "AppImage"],
-      "category": "Audio"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "LZ Music"
-    },
-    "dmg": {
-      "contents": [
+      "target": [
         {
-          "x": 130,
-          "y": 220
-        },
-        {
-          "x": 410,
-          "y": 220,
-          "type": "link",
-          "path": "/Applications"
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
         }
-      ]
+      ],
+      "requestedExecutionLevel": "asInvoker"
     },
-    "publish": {
-      "provider": "github",
-      "releaseType": "release"
+    "portable": {
+      "artifactName": "LZ-Music-${version}-portable.exe"
     }
   }
 }
