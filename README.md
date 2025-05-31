@@ -72,7 +72,7 @@ npm run build-all
 
 **Windows:**
 - 安装版: `LZ-Music-{version}-Setup.exe`
-- 便携版: `LZ-Music-{version}-portable.exe`
+- 解压版: `LZ-Music-{version}-win32-x64.zip`
 
 **Linux:**
 - AppImage: `LZ-Music-{version}.AppImage`

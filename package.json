@@ -59,10 +59,6 @@
         {
           "target": "nsis",
           "arch": ["x64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
         }
       ],
       "requestedExecutionLevel": "asInvoker"
@@ -73,9 +69,6 @@
       "artifactName": "LZ-Music-${version}-Setup.exe",
       "shortcutName": "LZ Music",
       "uninstallDisplayName": "LZ Music"
-    },
-    "portable": {
-      "artifactName": "LZ-Music-${version}-portable.exe"
     },
     "linux": {
       "icon": "assets/icon.png",
