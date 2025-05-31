@@ -129,7 +129,12 @@ jobs:
       - name: 构建应用 (macOS)
         if: matrix.platform == 'darwin'
         run: |
-          npx electron-builder --mac --x64
+          echo "开始构建macOS应用..."
+          npm run build-mac
+          echo "构建完成，检查输出目录..."
+          ls -la dist/
+          echo "查找所有构建产物..."
+          find dist/ -name "*.dmg" -o -name "*.zip" -o -name "*.app" | head -10
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -168,9 +173,10 @@ jobs:
         with:
           name: macos-builds
           path: |
-            dist/*.dmg    # macOS 安装包
-            dist/*.zip    # macOS 压缩包
+            dist/*.dmg
+            dist/*.zip
           retention-days: 30
+          if-no-files-found: warn
 
   # 发布任务：创建 GitHub Release 并上传构建产物
   release:
