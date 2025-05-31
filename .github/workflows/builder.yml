@@ -43,6 +43,12 @@ on:
         required: false
         type: string
 
+# 权限配置：允许工作流创建release和写入内容
+permissions:
+  contents: write    # 允许创建release和上传文件
+  actions: read      # 允许读取actions
+  packages: write    # 允许写入包（如果需要）
+
 # 全局环境变量
 env:
   FORCE_COLOR: true  # 启用彩色输出
@@ -68,10 +74,10 @@ jobs:
             arch: x64
             npm_config_cache: ~/.npm
           # macOS 构建环境 (暂时禁用，因为可能需要付费开发者账户)
-          # - os: macos-latest
-          #   platform: darwin
-          #   arch: x64
-          #   npm_config_cache: ~/.npm
+          - os: macos-latest
+            platform: darwin
+            arch: x64
+            npm_config_cache: ~/.npm
 
     steps:
       # 步骤1：检出源代码
@@ -124,14 +130,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 步骤7：构建 macOS 应用 (暂时禁用)
+      # 步骤7：构建 macOS 应用
       # 生成 DMG 安装包
-      # - name: 构建应用 (macOS)
-      #   if: matrix.platform == 'darwin'
-      #   run: |
-      #     npx electron-builder --mac --x64
-      #   env:
-      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 构建应用 (macOS)
+        if: matrix.platform == 'darwin'
+        run: |
+          echo "开始构建macOS应用..."
+          npm run build-mac
+          echo "构建完成，检查输出目录..."
+          ls -la dist/
+          echo "查找所有构建产物..."
+          find dist/ -name "*.dmg" -o -name "*.zip" -o -name "*.app" | head -10
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # 步骤8：上传 Windows 构建产物
       # 包含安装版和解压版
@@ -161,21 +172,27 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # 步骤10：上传 macOS 构建产物 (暂时禁用)
-      # - name: 上传构建产物 (macOS)
-      #   if: matrix.platform == 'darwin'
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: macos-builds
-      #     path: |
-      #       dist/*.dmg    # macOS 安装包
-      #       dist/*.zip    # macOS 压缩包
-      #     retention-days: 30
+      # 步骤10：上传 macOS 构建产物
+      - name: 上传构建产物 (macOS)
+        if: matrix.platform == 'darwin'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-builds
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          retention-days: 30
+          if-no-files-found: warn
 
   # 发布任务：创建 GitHub Release 并上传构建产物
   release:
     needs: build  # 依赖构建任务完成
     runs-on: ubuntu-latest
+    # 权限配置：确保release任务有足够权限
+    permissions:
+      contents: write      # 创建release和上传文件
+      actions: read        # 读取actions状态
+      packages: write      # 写入包权限
     # 发布条件：推送标签或手动触发且选择创建发行版
     if: |
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||

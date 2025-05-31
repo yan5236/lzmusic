@@ -49,11 +49,13 @@
       "!node_modules/.cache",
       "!node_modules/.bin"
     ],
+    "asarUnpack": [
+      "assets/**/*"
+    ],
     "extraResources": [
       {
         "from": "assets/",
-        "to": "assets/",
-        "filter": ["**/*"]
+        "to": "assets/"
       }
     ],
     "win": {
@@ -94,13 +96,24 @@
         }
       ],
       "category": "AudioVideo",
-      "maintainer": "lzmusic <lzmusic@example.com>"
+      "maintainer": "lzmusic <lzmusic@example.com>",
+      "desktop": {
+        "Name": "LZ Music",
+        "Comment": "基于 Bilibili API 的音乐播放器",
+        "Categories": "AudioVideo;Audio;Player;Music;",
+        "MimeType": "audio/mpeg;audio/mp3;audio/wav;audio/flac;"
+      }
     },
     "appImage": {
       "artifactName": "LZ-Music-${version}.AppImage"
     },
     "deb": {
-      "artifactName": "LZ-Music-${version}.deb"
+      "artifactName": "LZ-Music-${version}-linux.deb",
+      "fpm": [
+        "--no-deb-use-file-permissions",
+        "--deb-no-default-config-files",
+        "--force"
+      ]
     },
     "rpm": {
       "artifactName": "LZ-Music-${version}.rpm"
