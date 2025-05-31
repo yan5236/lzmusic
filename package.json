@@ -115,7 +115,6 @@
       "fpm": [
         "--no-deb-use-file-permissions",
         "--deb-no-default-config-files",
-        "--deb-no-auto-provides",
         "--no-deb-systemd-restart-after-upgrade",
         "--deb-compression=xz",
         "--force"
