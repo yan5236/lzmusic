@@ -32,8 +32,61 @@ npm run dev-win  # Windows环境开发模式
 
 ### 生产构建
 ```bash
+# 构建当前平台
 npm run build
+
+# 构建Windows版本
+npm run build-win
+
+# 构建Linux版本
+npm run build-linux
+
+# 构建macOS版本
+npm run build-mac
+
+# 构建所有平台
+npm run build-all
 ```
+
+## 发布流程
+
+### 自动发布（推荐）
+
+1. **创建版本标签**：
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+   推送标签后会自动触发GitHub Actions构建所有平台的安装包并创建发行版。
+
+2. **手动触发构建**：
+   - 在GitHub仓库的Actions页面
+   - 选择"Build and Release"工作流
+   - 点击"Run workflow"
+   - 选择是否创建发行版
+   - 输入版本标签（可选）
+
+### 构建产物
+
+工作流会自动构建以下平台的安装包：
+
+**Windows:**
+- 安装版: `LZ-Music-{version}-Setup.exe`
+- 便携版: `LZ-Music-{version}-portable.exe`
+
+**Linux:**
+- AppImage: `LZ-Music-{version}.AppImage`
+- Debian包: `LZ-Music-{version}.deb`
+- RPM包: `LZ-Music-{version}.rpm`
+
+**macOS:**
+- DMG安装包: `LZ-Music-{version}.dmg`
+
+### 发布控制
+
+- **自动发布**: 推送以`v`开头的标签时自动创建发行版
+- **手动发布**: 在GitHub Actions中手动触发，可选择是否创建发行版
+- **仅构建**: 普通提交只会构建但不发布，构建产物保留30天
 
 ## 技术栈
 
@@ -41,6 +94,7 @@ npm run build
 - Vanilla JavaScript
 - Bilibili API
 - HTML5 Audio
+- SQLite3 (数据存储)
 
 ## 项目结构
 

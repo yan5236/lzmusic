@@ -7,6 +7,9 @@
     "start": "cross-env FORCE_COLOR=true electron .",
     "build": "electron-builder",
     "build-win": "electron-builder --win --x64",
+    "build-linux": "electron-builder --linux --x64",
+    "build-mac": "electron-builder --mac --x64",
+    "build-all": "electron-builder --win --linux --mac --x64",
     "build-test": "electron-builder --win --x64 --config.directories.output=exe",
     "dev": "cross-env FORCE_COLOR=true NODE_ENV=development electron . --enable-logging",
     "dev-win": "chcp 65001 && set FORCE_COLOR=true && set NODE_ENV=development && electron . --enable-logging",
@@ -43,19 +46,77 @@
       "!node_modules/.cache",
       "!node_modules/.bin"
     ],
+    "extraResources": [
+      {
+        "from": "assets/",
+        "to": "assets/",
+        "filter": ["**/*"]
+      }
+    ],
     "win": {
+      "icon": "assets/icon.png",
       "target": [
         {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
           "target": "portable",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         }
       ],
       "requestedExecutionLevel": "asInvoker"
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "LZ-Music-${version}-Setup.exe",
+      "shortcutName": "LZ Music",
+      "uninstallDisplayName": "LZ Music"
+    },
     "portable": {
       "artifactName": "LZ-Music-${version}-portable.exe"
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        },
+        {
+          "target": "rpm",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "AudioVideo"
+    },
+    "appImage": {
+      "artifactName": "LZ-Music-${version}.AppImage"
+    },
+    "deb": {
+      "artifactName": "LZ-Music-${version}.deb"
+    },
+    "rpm": {
+      "artifactName": "LZ-Music-${version}.rpm"
+    },
+    "mac": {
+      "icon": "assets/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "public.app-category.music"
+    },
+    "dmg": {
+      "artifactName": "LZ-Music-${version}.dmg",
+      "title": "LZ Music ${version}"
     }
   }
 }
