@@ -97,6 +97,8 @@
       ],
       "category": "AudioVideo",
       "maintainer": "lzmusic <lzmusic@example.com>",
+      "synopsis": "基于 Bilibili API 的音乐播放器",
+      "description": "LZ Music 是一款基于 Bilibili API 的音乐播放器，提供高质量的音乐播放体验。",
       "desktop": {
         "Name": "LZ Music",
         "Comment": "基于 Bilibili API 的音乐播放器",
@@ -109,9 +111,13 @@
     },
     "deb": {
       "artifactName": "LZ-Music-${version}-linux.deb",
+      "compression": "xz",
       "fpm": [
         "--no-deb-use-file-permissions",
         "--deb-no-default-config-files",
+        "--deb-no-auto-provides",
+        "--no-deb-systemd-restart-after-upgrade",
+        "--deb-compression=xz",
         "--force"
       ]
     },
