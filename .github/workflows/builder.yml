@@ -54,6 +54,7 @@ jobs:
     
     # 构建矩阵：定义不同平台的构建环境
     strategy:
+      fail-fast: false  # 不因为一个平台失败而取消其他平台的构建
       matrix:
         include:
           # Windows 构建环境
@@ -66,11 +67,11 @@ jobs:
             platform: linux
             arch: x64
             npm_config_cache: ~/.npm
-          # macOS 构建环境
-          - os: macos-latest
-            platform: darwin
-            arch: x64
-            npm_config_cache: ~/.npm
+          # macOS 构建环境 (暂时禁用，因为可能需要付费开发者账户)
+          # - os: macos-latest
+          #   platform: darwin
+          #   arch: x64
+          #   npm_config_cache: ~/.npm
 
     steps:
       # 步骤1：检出源代码
@@ -115,14 +116,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 步骤7：构建 macOS 应用
+      # 步骤7：构建 macOS 应用 (暂时禁用)
       # 生成 DMG 安装包
-      - name: 构建应用 (macOS)
-        if: matrix.platform == 'darwin'
-        run: |
-          npx electron-builder --mac --x64
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: 构建应用 (macOS)
+      #   if: matrix.platform == 'darwin'
+      #   run: |
+      #     npx electron-builder --mac --x64
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # 步骤8：上传 Windows 构建产物
       # 包含安装版和解压版
@@ -150,16 +151,16 @@ jobs:
             dist/*.tar.gz    # 压缩包格式
           retention-days: 30
 
-      # 步骤10：上传 macOS 构建产物
-      - name: 上传构建产物 (macOS)
-        if: matrix.platform == 'darwin'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-builds
-          path: |
-            dist/*.dmg    # macOS 安装包
-            dist/*.zip    # macOS 压缩包
-          retention-days: 30
+      # 步骤10：上传 macOS 构建产物 (暂时禁用)
+      # - name: 上传构建产物 (macOS)
+      #   if: matrix.platform == 'darwin'
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: macos-builds
+      #     path: |
+      #       dist/*.dmg    # macOS 安装包
+      #       dist/*.zip    # macOS 压缩包
+      #     retention-days: 30
 
   # 发布任务：创建 GitHub Release 并上传构建产物
   release:
@@ -229,7 +230,6 @@ jobs:
             - **Linux**: 
               - AppImage：下载后添加执行权限 `chmod +x *.AppImage`，双击运行
               - deb/rpm：使用系统包管理器安装
-            - **macOS**: 下载 dmg 文件，拖拽到应用程序文件夹
             
             ### ✨ 主要功能
             
@@ -249,7 +249,6 @@ jobs:
           files: |
             ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true')) && 'windows-builds/*' || '' }}
             ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true')) && 'linux-builds/*' || '' }}
-            ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true')) && 'macos-builds/*' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -264,4 +263,3 @@ jobs:
           name: |
             windows-builds
             linux-builds
-            macos-builds
