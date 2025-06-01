@@ -1,5 +1,11 @@
 # LZ Music
 
+![image](https://raw.githubusercontent.com/yan5236/lzmusic/refs/tags/1.0.6-beta/assets/icon.ico)
+![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)
+![GitHub release](https://img.shields.io/github/v/release/yan5236/lzmusic)
+![GitHub language count](https://img.shields.io/github/languages/count/yan5236/lzmusic)
+![Top Language](https://img.shields.io/github/languages/top/yan5236/lzmusic)
+
 基于 Bilibili API 的音乐播放器
 
 ## 功能特点
@@ -21,6 +27,9 @@
 - 音乐MV、音乐合集
 
 如果音乐分区内容获取失败，会降级到热门视频作为推荐。
+
+## 界面展示
+![image](https://lzmusic.nanhaiblog.top/_next/image?url=%2Fscreenshot.png&w=1200&q=75)
 
 ## 安装和运行
 
