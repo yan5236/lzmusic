@@ -1,6 +1,8 @@
 # LZ Music
 
-![image](https://raw.githubusercontent.com/yan5236/lzmusic/refs/tags/1.0.6-beta/assets/icon.ico)
+![image](https://raw.githubusercontent.com/yan5236/lzmusic/refs/tags/1.0.6-beta/assets/icon.ico#pic_center)
+
+
 ![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)
 ![GitHub release](https://img.shields.io/github/v/release/yan5236/lzmusic)
 ![GitHub language count](https://img.shields.io/github/languages/count/yan5236/lzmusic)
