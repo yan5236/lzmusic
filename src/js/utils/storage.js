@@ -212,6 +212,9 @@ class Settings {
       quality: 'medium', // high, medium, low
       theme: 'light',
       sidebarCollapsed: false,
+      // 关闭行为设置
+      closeAction: 'ask', // 'ask': 询问, 'close': 直接关闭, 'minimize': 最小化到托盘
+      dontAskAgain: false, // 不再询问
       // 网易云API设置
       neteaseApi: {
         enabled: true,        // 是否启用网易云API

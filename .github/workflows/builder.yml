@@ -24,15 +24,15 @@ on:
     inputs:
       create_release:
         description: '是否创建发行版'
-        required: false
-        default: 'false'
+        required: true
+        default: 'true'
         type: choice
         options:
           - 'true'
           - 'false'
       upload_to_release:
         description: '是否上传构建产物到发行版'
-        required: false
+        required: true
         default: 'true'
         type: choice
         options:

@@ -15,8 +15,7 @@ class LyricsSettings {
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
       fontFamily: 'Microsoft YaHei, sans-serif',
       lineHeight: 1.5,
-      platform: 'netease', // 默认网易云
-      showTranslation: false
+      platform: 'netease' // 默认网易云
     };
     
     this.lyricsSettings = this.settings.get('lyricsSettings', this.defaultSettings);
@@ -160,10 +159,21 @@ class LyricsSettings {
               </div>
               
               <div class="form-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" id="showTranslation" ${this.lyricsSettings.showTranslation ? 'checked' : ''}>
-                  显示翻译
-                </label>
+                <label>歌词偏移</label>
+                <div class="range-input">
+                  <input type="range" id="lyricsOffsetRange" min="-10" max="10" step="0.1" value="0">
+                  <span id="lyricsOffsetValue">0.0秒</span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                  负值：歌词提前显示 | 正值：歌词延迟显示
+                </div>
+                <div class="offset-buttons" style="margin-top: 8px; display: flex; gap: 8px;">
+                  <button type="button" class="offset-btn" data-offset="-0.5">-0.5秒</button>
+                  <button type="button" class="offset-btn" data-offset="-0.1">-0.1秒</button>
+                  <button type="button" class="offset-btn" data-offset="0">重置</button>
+                  <button type="button" class="offset-btn" data-offset="0.1">+0.1秒</button>
+                  <button type="button" class="offset-btn" data-offset="0.5">+0.5秒</button>
+                </div>
               </div>
               
               <div class="preview-section">
@@ -244,23 +254,28 @@ class LyricsSettings {
     const fontFamilySelect = this.modal.querySelector('#fontFamilySelect');
     const lineHeightRange = this.modal.querySelector('#lineHeightRange');
     const lineHeightValue = this.modal.querySelector('#lineHeightValue');
-    const showTranslation = this.modal.querySelector('#showTranslation');
+    const lyricsOffsetRange = this.modal.querySelector('#lyricsOffsetRange');
+    const lyricsOffsetValue = this.modal.querySelector('#lyricsOffsetValue');
 
     fontSizeRange.addEventListener('input', (e) => {
-      fontSizeValue.textContent = e.target.value + 'px';
+      const value = e.target.value;
+      fontSizeValue.textContent = value + 'px';
       this.updatePreview();
     });
 
-    fontColorPicker.addEventListener('input', () => {
+    fontColorPicker.addEventListener('change', () => {
       this.updatePreview();
     });
 
-    backgroundColorPicker.addEventListener('input', () => {
+    backgroundColorPicker.addEventListener('change', () => {
       this.updatePreview();
     });
 
     backgroundOpacity.addEventListener('input', (e) => {
-      opacityValue.textContent = e.target.value + '%';
+      const opacity = e.target.value;
+      if (opacityValue) {
+        opacityValue.textContent = opacity + '%';
+      }
       this.updatePreview();
     });
 
@@ -269,12 +284,26 @@ class LyricsSettings {
     });
 
     lineHeightRange.addEventListener('input', (e) => {
-      lineHeightValue.textContent = e.target.value;
+      const value = e.target.value;
+      lineHeightValue.textContent = value;
       this.updatePreview();
     });
 
-    showTranslation.addEventListener('change', () => {
-      this.updatePreview();
+    // 歌词偏移滑块事件
+    lyricsOffsetRange.addEventListener('input', (e) => {
+      const value = parseFloat(e.target.value);
+      lyricsOffsetValue.textContent = value.toFixed(1) + '秒';
+      this.applyLyricsOffset(value);
+    });
+
+    // 歌词偏移快捷按钮事件
+    this.modal.querySelectorAll('.offset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const offset = parseFloat(e.target.dataset.offset);
+        lyricsOffsetRange.value = offset;
+        lyricsOffsetValue.textContent = offset.toFixed(1) + '秒';
+        this.applyLyricsOffset(offset);
+      });
     });
   }
 
@@ -630,151 +659,6 @@ class LyricsSettings {
       }
     }
 
-    /* 注释掉第三方API调用 - 现在只使用网易云官方API
-    // 网易云音乐API - 使用落月API增加更多搜索结果
-    if (platforms.includes('netease')) {
-      try {
-        console.log('开始使用落月API搜索网易云歌词:', searchKeyword);
-        
-        // 第一步：搜索歌曲获取ID列表
-        const searchUrl = `https://api.vkeys.cn/v2/music/netease?word=${encodeURIComponent(searchKeyword)}&page=1&num=20`;
-        console.log('网易云搜索URL:', searchUrl);
-        
-        const searchResponse = await fetch(searchUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'https://music.163.com/'
-          }
-        });
-        
-        if (searchResponse.ok) {
-          const searchData = await searchResponse.json();
-          console.log('落月API搜索响应:', searchData);
-          
-          if (searchData.code === 200 && searchData.data) {
-            // 处理搜索结果，可能是单个结果或数组
-            let searchResults = [];
-            if (Array.isArray(searchData.data)) {
-              searchResults = searchData.data;
-            } else {
-              // 如果是单个结果，也放入数组中
-              searchResults = [searchData.data];
-            }
-            
-            console.log('网易云搜索结果数量:', searchResults.length);
-            
-            // 为每个搜索结果获取歌词
-            for (let i = 0; i < Math.min(15, searchResults.length); i++) {
-              const song = searchResults[i];
-              
-              if (!song.id) {
-                console.warn('歌曲缺少ID，跳过:', song);
-                continue;
-              }
-              
-              try {
-                // 第二步：使用歌曲ID获取歌词
-                const lyricsUrl = `https://api.vkeys.cn/v2/music/netease/lyric?id=${song.id}`;
-                console.log(`获取歌词 ${i+1}/${searchResults.length}:`, lyricsUrl);
-                
-                const lyricsResponse = await fetch(lyricsUrl, {
-                  headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Referer': 'https://music.163.com/'
-                  }
-                });
-                
-                if (lyricsResponse.ok) {
-                  const lyricsData = await lyricsResponse.json();
-                  console.log('歌词API响应:', lyricsData);
-                  
-                  if (lyricsData.code === 200 && lyricsData.data && lyricsData.data.lrc) {
-                    let lyrics = lyricsData.data.lrc;
-                    
-                    // 过滤掉模版数据和无效歌词
-                    if (lyrics && lyrics.trim() && 
-                        !lyrics.includes('作词') && 
-                        !lyrics.includes('作曲') && 
-                        !lyrics.includes('编曲') && 
-                        lyrics.length > 50) {
-                      
-                      // 检查是否已存在相同歌词
-                      const isDuplicate = results.some(result => 
-                        result.platform === 'netease' && 
-                        result.lyrics === lyrics
-                      );
-                      
-                      if (!isDuplicate) {
-                        results.push({
-                          platform: 'netease',
-                          platformName: '网易云音乐 (落月API)',
-                          song: song.song || song.name || songName,
-                          artist: song.singer || song.artist || artist || '未知艺术家',
-                          lyrics: lyrics,
-                          duration: song.interval || '未知时长',
-                          quality: song.quality || 0
-                        });
-                        
-                        console.log('网易云歌词添加成功:', song.song || song.name);
-                      }
-                    }
-                    
-                    // 如果有逐字歌词(yrc)，也添加进来
-                    if (lyricsData.data.yrc && lyricsData.data.yrc.trim()) {
-                      let yrcLyrics = lyricsData.data.yrc;
-                      
-                      // 简单处理yrc格式，转换为标准LRC格式
-                      yrcLyrics = this.convertYrcToLrc(yrcLyrics);
-                      
-                      if (yrcLyrics && yrcLyrics !== lyrics) {
-                        const isDuplicateYrc = results.some(result => 
-                          result.platform === 'netease' && 
-                          result.lyrics === yrcLyrics
-                        );
-                        
-                        if (!isDuplicateYrc) {
-                          results.push({
-                            platform: 'netease',
-                            platformName: '网易云音乐 (逐字歌词)',
-                            song: song.song || song.name || songName,
-                            artist: song.singer || song.artist || artist || '未知艺术家',
-                            lyrics: yrcLyrics,
-                            duration: song.interval || '未知时长',
-                            quality: (song.quality || 0) + 1,
-                            type: 'yrc'
-                          });
-                          
-                          console.log('网易云逐字歌词添加成功:', song.song || song.name);
-                        }
-                      }
-                    }
-                  } else {
-                    console.warn('歌词API返回无效数据:', lyricsData);
-                  }
-                } else {
-                  console.warn('歌词API请求失败，状态码:', lyricsResponse.status);
-                }
-              } catch (lyricError) {
-                console.warn(`获取网易云歌曲歌词失败:`, lyricError);
-              }
-              
-              // 添加小延迟避免请求过快
-              if (i % 3 === 0) {
-                await new Promise(resolve => setTimeout(resolve, 200));
-              }
-            }
-          } else {
-            console.warn('搜索API返回无效数据:', searchData);
-          }
-        } else {
-          console.warn('搜索API请求失败，状态码:', searchResponse.status);
-        }
-      } catch (error) {
-        console.warn('网易云音乐API失败:', error);
-      }
-    }
-    */
-    
     // QQ音乐API - 新增支持
     if (platforms.includes('qq')) {
       try {
@@ -1091,102 +975,121 @@ class LyricsSettings {
     }).join('<br>') + (lyrics.split('\n').length > 3 ? '<br>...' : '');
   }
 
-  selectLyrics(lyrics) {
+  async selectLyrics(lyrics) {
     // 提取歌词文本，确保this.currentLyrics是字符串
     this.currentLyrics = lyrics.lyrics || '';
     
     // 尝试保存歌词到数据库
     this.saveLyricsToDatabase(lyrics);
     
-    this.showMessage('歌词已选择，保存设置后将应用到播放器', 'success');
+    // 立即触发歌词更新事件，将歌词应用到播放器
+    const updateEvent = new CustomEvent('lyricsSettingsUpdate', {
+      detail: {
+        settings: this.lyricsSettings,
+        lyrics: this.currentLyrics
+      }
+    });
+    window.dispatchEvent(updateEvent);
+    
+    this.showMessage('歌词已选择并应用到播放器', 'success');
   }
   
   // 保存歌词到数据库
   async saveLyricsToDatabase(lyricsData) {
-    if (!this.lyricsDB || !this.currentSongInfo) {
-      console.warn('无法保存歌词：数据库未初始化或缺少歌曲信息');
-      return;
-    }
-    
     try {
-      await this.lyricsDB.saveLyrics(
-        this.currentSongInfo.title,
-        this.currentSongInfo.artist,
-        {
-          lyrics: lyricsData.lyrics,
-          translation: lyricsData.translation,
-          romaLyrics: lyricsData.romaLyrics,
-          platform: lyricsData.platform,
-          platformName: lyricsData.platformName,
-          quality: lyricsData.quality || 0
-        }
-      );
+      if (!this.lyricsDB) {
+        console.log('歌词数据库未初始化，无法保存');
+        return;
+      }
+
+      const songName = lyricsData.title || this.modal.querySelector('#songNameInput')?.value || '未知歌曲';
+      const artist = lyricsData.artist || this.modal.querySelector('#artistInput')?.value || '未知歌手';
+      const lyrics = lyricsData.lyrics || this.currentLyrics;
       
-      console.log('歌词已保存到数据库');
+      if (!lyrics) {
+        console.log('没有歌词内容，无法保存');
+        return;
+      }
+
+      await this.lyricsDB.saveLyrics(songName, artist, {
+        lyrics: lyrics,
+        platform: lyricsData.platform || 'manual',
+        platformName: lyricsData.platformName || '手动输入'
+      });
+      
+      console.log('歌词已保存到数据库:', songName, '-', artist);
     } catch (error) {
       console.error('保存歌词到数据库失败:', error);
     }
   }
 
   saveSettings() {
-    const fontSize = this.modal.querySelector('#fontSizeRange').value;
-    const fontColor = this.modal.querySelector('#fontColorPicker').value;
-    const backgroundColor = this.modal.querySelector('#backgroundColorPicker').value;
-    const backgroundOpacity = this.modal.querySelector('#backgroundOpacity').value;
-    const fontFamily = this.modal.querySelector('#fontFamilySelect').value;
-    const lineHeight = this.modal.querySelector('#lineHeightRange').value;
-    const showTranslation = this.modal.querySelector('#showTranslation').checked;
+    const fontSizeRange = this.modal.querySelector('#fontSizeRange');
+    const fontColorPicker = this.modal.querySelector('#fontColorPicker');
+    const backgroundColorPicker = this.modal.querySelector('#backgroundColorPicker');
+    const backgroundOpacity = this.modal.querySelector('#backgroundOpacity');
+    const fontFamilySelect = this.modal.querySelector('#fontFamilySelect');
+    const lineHeightRange = this.modal.querySelector('#lineHeightRange');
 
-    const bgRgb = this.hexToRgb(backgroundColor);
-    const bgColor = `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, ${backgroundOpacity / 100})`;
-
-    this.lyricsSettings = {
-      fontSize: parseInt(fontSize),
-      color: fontColor,
-      backgroundColor: bgColor,
-      fontFamily: fontFamily,
-      lineHeight: parseFloat(lineHeight),
-      showTranslation: showTranslation
-    };
-
-    this.settings.set('lyricsSettings', this.lyricsSettings);
-    
-    if (this.currentLyrics) {
-      this.settings.set('currentLyrics', this.currentLyrics);
+    if (!fontSizeRange || !fontColorPicker || !backgroundColorPicker || !backgroundOpacity || !fontFamilySelect || !lineHeightRange) {
+      console.error('无法找到设置元素');
+      return;
     }
 
-    // 触发歌词样式更新事件
-    window.dispatchEvent(new CustomEvent('lyricsSettingsUpdate', {
+    // 获取当前设置值
+    const bgColor = this.hexToRgb(backgroundColorPicker.value);
+    const bgOpacity = backgroundOpacity.value / 100;
+    
+    this.lyricsSettings = {
+      fontSize: parseInt(fontSizeRange.value),
+      color: fontColorPicker.value,
+      backgroundColor: `rgba(${bgColor.r}, ${bgColor.g}, ${bgColor.b}, ${bgOpacity})`,
+      fontFamily: fontFamilySelect.value,
+      lineHeight: parseFloat(lineHeightRange.value)
+    };
+
+    console.log('保存的歌词设置:', this.lyricsSettings);
+
+    // 保存到本地存储
+    this.settings.set('lyricsSettings', this.lyricsSettings);
+
+    // 触发歌词样式更新事件 - 修复事件名称
+    const updateEvent = new CustomEvent('lyricsSettingsUpdate', {
       detail: {
         settings: this.lyricsSettings,
-        lyrics: this.currentLyrics
+        lyrics: this.currentLyrics || null
       }
-    }));
+    });
+    window.dispatchEvent(updateEvent);
 
     this.showMessage('设置已保存', 'success');
-    
-    // 延迟关闭窗口，让用户看到成功提示
-    setTimeout(() => {
-      this.close();
-    }, 1000);
   }
 
   open(songInfo = null) {
-    this.currentSongInfo = songInfo; // 保存当前歌曲信息
+    this.currentSongInfo = songInfo;
     
-    // 初始化数据库引用（如果还没有的话）
-    if (!this.lyricsDB && typeof LyricsDB !== 'undefined') {
-      this.lyricsDB = new LyricsDB();
-    }
-    
+    // 如果提供了歌曲信息，自动填充搜索表单
     if (songInfo) {
-      this.modal.querySelector('#songNameInput').value = songInfo.title || '';
-      this.modal.querySelector('#artistInput').value = songInfo.artist || '';
+      const songNameInput = this.modal.querySelector('#songNameInput');
+      const artistInput = this.modal.querySelector('#artistInput');
+      
+      if (songNameInput && songInfo.title) {
+        songNameInput.value = songInfo.title;
+      }
+      if (artistInput && songInfo.artist) {
+        artistInput.value = songInfo.artist;
+      }
     }
     
-    this.modal.style.display = 'flex';
     this.isOpen = true;
-    document.body.style.overflow = 'hidden';
+    this.modal.style.display = 'flex';
+    this.syncSettingsToUI();
+    this.loadCurrentOffset(); // 加载当前歌词偏移值
+    
+    // 确保样式预览是最新的
+    setTimeout(() => {
+      this.updatePreview();
+    }, 100);
   }
 
   close() {
@@ -1243,7 +1146,16 @@ class LyricsSettings {
     // 保存手动输入的歌词到数据库
     this.saveManualLyricsToDatabase(songName || this.currentSongInfo?.title, artist || this.currentSongInfo?.artist, processedLyrics);
     
-    this.showMessage('歌词已设置成功！', 'success');
+    // 立即触发歌词更新事件，将歌词应用到播放器
+    const updateEvent = new CustomEvent('lyricsSettingsUpdate', {
+      detail: {
+        settings: this.lyricsSettings,
+        lyrics: this.currentLyrics
+      }
+    });
+    window.dispatchEvent(updateEvent);
+    
+    this.showMessage('歌词已设置并应用到播放器！', 'success');
   }
   
   // 保存手动输入的歌词到数据库
@@ -1360,4 +1272,93 @@ class LyricsSettings {
       return yrcLyrics; // 转换失败时返回原文本
     }
   }
+
+  // 新增方法：同步设置到UI
+  syncSettingsToUI() {
+    if (!this.modal) return;
+    
+    const fontSizeRange = this.modal.querySelector('#fontSizeRange');
+    const fontSizeValue = this.modal.querySelector('#fontSizeValue');
+    const fontColorPicker = this.modal.querySelector('#fontColorPicker');
+    const backgroundColorPicker = this.modal.querySelector('#backgroundColorPicker');
+    const backgroundOpacity = this.modal.querySelector('#backgroundOpacity');
+    const opacityValue = this.modal.querySelector('#opacityValue');
+    const fontFamilySelect = this.modal.querySelector('#fontFamilySelect');
+    const lineHeightRange = this.modal.querySelector('#lineHeightRange');
+    const lineHeightValue = this.modal.querySelector('#lineHeightValue');
+
+    if (fontSizeRange) {
+      fontSizeRange.value = this.lyricsSettings.fontSize;
+      fontSizeValue.textContent = this.lyricsSettings.fontSize + 'px';
+    }
+
+    if (fontColorPicker) {
+      fontColorPicker.value = this.lyricsSettings.color;
+    }
+
+    if (backgroundColorPicker && backgroundOpacity) {
+      // 解析背景颜色
+      const bgMatch = this.lyricsSettings.backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+      if (bgMatch) {
+        const r = parseInt(bgMatch[1]);
+        const g = parseInt(bgMatch[2]);
+        const b = parseInt(bgMatch[3]);
+        const alpha = bgMatch[4] ? parseFloat(bgMatch[4]) : 1;
+        
+        backgroundColorPicker.value = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        backgroundOpacity.value = Math.round(alpha * 100);
+        opacityValue.textContent = Math.round(alpha * 100) + '%';
+      }
+    }
+
+    if (fontFamilySelect) {
+      fontFamilySelect.value = this.lyricsSettings.fontFamily;
+    }
+
+    if (lineHeightRange) {
+      lineHeightRange.value = this.lyricsSettings.lineHeight;
+      lineHeightValue.textContent = this.lyricsSettings.lineHeight;
+    }
+
+    this.updatePreview();
+  }
+
+  // 获取播放器实例
+  getPlayerInstance() {
+    // 从全局window对象获取播放器实例
+    return window.player || null;
+  }
+
+  // 应用歌词偏移
+  applyLyricsOffset(offset) {
+    const player = this.getPlayerInstance();
+    if (player && typeof player.setLyricsOffset === 'function') {
+      player.setLyricsOffset(offset);
+      console.log('歌词偏移已应用:', offset, '秒');
+    } else {
+      console.warn('无法获取播放器实例或播放器不支持歌词偏移功能');
+    }
+  }
+
+  // 在打开设置界面时加载当前的歌词偏移值
+  loadCurrentOffset() {
+    const player = this.getPlayerInstance();
+    if (player && typeof player.getLyricsOffset === 'function') {
+      const currentOffset = player.getLyricsOffset();
+      const lyricsOffsetRange = this.modal?.querySelector('#lyricsOffsetRange');
+      const lyricsOffsetValue = this.modal?.querySelector('#lyricsOffsetValue');
+      
+      if (lyricsOffsetRange && lyricsOffsetValue) {
+        lyricsOffsetRange.value = currentOffset;
+        lyricsOffsetValue.textContent = currentOffset.toFixed(1) + '秒';
+      }
+    }
+  }
+}
+
+// 导出类
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = LyricsSettings;
+} else {
+  window.LyricsSettings = LyricsSettings;
 } 

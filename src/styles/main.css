@@ -2782,4 +2782,206 @@ body {
     padding: 6px 8px;
     font-size: 14px;
   }
+}
+
+/* 翻译设置样式 */
+.translation-config {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  /* 移除导致不可见的样式 */
+  opacity: 1;
+  transform: none;
+}
+
+.translation-config .setting-item {
+  margin-bottom: 12px;
+}
+
+.translation-config .setting-item:last-child {
+  margin-bottom: 0;
+}
+
+.translation-config input[type="text"],
+.translation-config input[type="password"],
+.translation-config textarea,
+.translation-config select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all var(--transition-speed) ease;
+}
+
+.translation-config input[type="text"]:focus,
+.translation-config input[type="password"]:focus,
+.translation-config textarea:focus,
+.translation-config select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.1);
+}
+
+.translation-config textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.translation-config label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* 测试翻译按钮 */
+.test-translation-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--primary-color);
+  color: var(--text-light);
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+  margin-right: 12px;
+}
+
+.test-translation-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 191, 255, 0.2);
+}
+
+.test-translation-btn:disabled {
+  background: var(--background-secondary);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 测试结果显示 */
+.test-result {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all var(--transition-speed) ease;
+}
+
+.test-result.success {
+  color: #00c851;
+  background: rgba(0, 200, 81, 0.1);
+  border: 1px solid rgba(0, 200, 81, 0.2);
+}
+
+.test-result.error {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.2);
+}
+
+/* AI模型类型特定样式 */
+.translation-config[data-model-type="glm4"] .setting-item:has(#aiApiUrl) label::after {
+  content: " (智谱AI)";
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.translation-config[data-model-type="deepseek"] .setting-item:has(#aiApiUrl) label::after {
+  content: " (DeepSeek)";
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.translation-config[data-model-type="openai"] .setting-item:has(#aiApiUrl) label::after {
+  content: " (OpenAI兼容)";
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: normal;
+}
+
+/* 翻译配置切换动画 - 重新定义为可选的过渡效果 */
+.translation-config.animated {
+  opacity: 0;
+  transform: translateY(-10px);
+  animation: slideInUp 0.3s ease-out forwards;
+}
+
+@keyframes slideInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 翻译状态指示器 */
+.translation-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.translation-status.enabled {
+  background: rgba(0, 200, 81, 0.1);
+  color: #00c851;
+  border: 1px solid rgba(0, 200, 81, 0.2);
+}
+
+.translation-status.disabled {
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+  border: 1px solid rgba(255, 68, 68, 0.2);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .translation-config {
+    padding: 12px;
+    margin-top: 12px;
+  }
+  
+  .translation-config input[type="text"],
+  .translation-config input[type="password"],
+  .translation-config textarea,
+  .translation-config select {
+    padding: 8px 10px;
+    font-size: 16px; /* 防止iOS缩放 */
+  }
+  
+  .test-translation-btn {
+    width: 100%;
+    justify-content: center;
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+  
+  .test-result {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
 } 

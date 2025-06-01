@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob: https://api.bilibili.com https://*.hdslb.com https://*.bilivideo.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: data: https:; connect-src 'self' http://localhost:* https://api.bilibili.com https://*.bilibili.com https://music.163.com http://mobileservice.kugou.com http://krcs.kugou.com http://lyrics.kugou.com https://songsearch.kugou.com https://*.kugou.com https://api.vkeys.cn https://*.vkeys.cn https://c.y.qq.com https://y.qq.com https://*.qq.com https://www.kuwo.cn https://*.kuwo.cn wss:; script-src 'self' 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob: https://api.bilibili.com https://*.hdslb.com https://*.bilivideo.com; img-src 'self' data: blob: https: http:; media-src 'self' blob: data: https:; connect-src 'self' http://localhost:* https://api.bilibili.com https://*.bilibili.com https://music.163.com http://mobileservice.kugou.com http://krcs.kugou.com http://lyrics.kugou.com https://songsearch.kugou.com https://*.kugou.com https://api.vkeys.cn https://*.vkeys.cn https://c.y.qq.com https://y.qq.com https://*.qq.com https://www.kuwo.cn https://*.kuwo.cn https://*.bigmodel.cn https://fanyi-api.baidu.com https://translation.googleapis.com https://openapi.youdao.com https://api.deepseek.com https://api.openai.com wss:; script-src 'self' 'unsafe-inline';">
   <title>LZ Music</title>
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/titlebar.css">
@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="styles/playlist-management.css">
   <link rel="stylesheet" href="styles/lyrics-settings.css">
   <link rel="stylesheet" href="styles/history.css">
+  <link rel="stylesheet" href="styles/close-confirm-dialog.css">
 </head>
 <body>
   <!-- 自定义标题栏 -->
@@ -275,21 +276,20 @@
           </div>
           
           <div class="setting-group">
-            <h3>网易云音乐API设置</h3>
+            <h3>窗口设置</h3>
             <div class="setting-item">
-              <label for="neteaseApiEnabled">启用网易云API</label>
-              <input type="checkbox" id="neteaseApiEnabled" checked>
-            </div>
-            <div class="setting-item">
-              <p style="color: #666; font-size: 14px;">
-                使用网易云音乐官方API模块，无需启动独立服务器。
-              </p>
+              <label for="closeAction">点击关闭按钮时</label>
+              <select id="closeAction">
+                <option value="ask">询问我要执行的操作</option>
+                <option value="close">直接关闭程序</option>
+                <option value="minimize">最小化到系统托盘</option>
+              </select>
             </div>
           </div>
-          
+
           <div class="setting-group">
             <h3>关于</h3>
-            <p>LZ Music v1.0.0</p>
+            <p>LZ Music 1.0.6-beta</p>
             <p>基于 Bilibili API 的音乐播放器</p>
           </div>
         </div>

@@ -41,11 +41,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
     minimize: () => ipcRenderer.invoke('window-minimize'),
     maximize: () => ipcRenderer.invoke('window-maximize'),
     close: () => ipcRenderer.invoke('window-close'),
-    isMaximized: () => ipcRenderer.invoke('window-is-maximized')
+    forceClose: () => ipcRenderer.invoke('window-force-close'),
+    isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+    minimizeToTray: () => ipcRenderer.invoke('window-minimize-to-tray'),
+    updateTrayMenu: (playerState) => ipcRenderer.invoke('update-tray-menu', playerState)
   },
   
   // 文件系统操作API
   path: {
     join: (...paths) => ipcRenderer.invoke('path-join', paths)
+  },
+  
+  // 托盘事件监听
+  onTrayTogglePlay: (callback) => ipcRenderer.on('tray-toggle-play', callback),
+  onTrayPlayPrevious: (callback) => ipcRenderer.on('tray-play-previous', callback),
+  onTrayPlayNext: (callback) => ipcRenderer.on('tray-play-next', callback),
+  
+  removeTrayListeners: () => {
+    ipcRenderer.removeAllListeners('tray-toggle-play');
+    ipcRenderer.removeAllListeners('tray-play-previous');
+    ipcRenderer.removeAllListeners('tray-play-next');
   }
 }); 

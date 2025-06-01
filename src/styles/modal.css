@@ -193,6 +193,15 @@
 }
 
 /* 空歌词状态 */
+.lyrics-content.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 .lyrics-content .empty-lyrics {
   text-align: center;
   padding: 60px 20px;
@@ -216,6 +225,34 @@
 .lyrics-loading .loading-spinner {
   border-color: var(--border-color);
   border-top-color: var(--primary-color);
+}
+
+/* 歌词翻译样式 */
+.lyrics-translation {
+  display: block;
+  font-size: 0.9em;
+  color: rgba(var(--text-secondary-rgb), 0.8);
+  font-style: italic;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.lyrics-line.current .lyrics-translation {
+  color: rgba(var(--primary-color-rgb), 0.8);
+}
+
+/* 歌词行样式优化 */
+.lyrics-line {
+  margin-bottom: 16px;
+  padding: 8px 0;
+  transition: all var(--transition-speed) ease;
+  border-radius: 4px;
+}
+
+.lyrics-line.current {
+  background: rgba(var(--primary-color-rgb), 0.1);
+  padding: 12px 16px;
+  margin: 8px -16px;
 }
 
 /* 响应式设计 */

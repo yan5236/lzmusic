@@ -22,6 +22,7 @@ class Player {
     this.totalTime = document.getElementById('totalTime');
     this.volumeBtn = document.getElementById('volumeBtn');
     this.volumeSlider = document.getElementById('volumeSlider');
+    this.volumeSliderContainer = document.getElementById('volumeSliderContainer');
     this.modeBtn = document.getElementById('modeBtn');
     this.expandBtn = document.getElementById('expandBtn');
     this.lyricsSettingsBtn = document.getElementById('lyricsSettingsBtn'); // 歌词设置按钮
@@ -49,8 +50,8 @@ class Player {
     this.isPlaying = false;
     this.duration = 0;
     this.currentTimeValue = 0;
-    this.volume = this.settings.get('volume', 100);
-    this.playMode = this.settings.get('playMode', 'sequence');
+    this.volume = 100;
+    this.playMode = 'sequence'; // sequence, random, repeat
     this.isModalOpen = false;
     this.isPanelOpen = false;
     this.isListenPlaylist = false; // 标记是否为试听歌单
@@ -58,9 +59,10 @@ class Player {
     // 歌词相关状态
     this.currentLyricsLines = null;
     this.currentLyricsIndex = 0;
-    this.savedLyricsSettings = null;
-    this.savedLyrics = null;
+    this.savedLyrics = null; // 保存的歌词内容
+    this.savedLyricsSettings = null; // 保存的歌词设置
     this.currentSongLyrics = null; // 当前歌曲的歌词数据
+    this.lyricsOffset = 0; // 歌词偏移时间（秒），正数表示歌词延迟，负数表示歌词提前
     
     // 歌词滚动相关状态
     this.isUserScrolling = false;
@@ -70,6 +72,19 @@ class Player {
     this.wheelListener = null;
     this.lastUserScrollTime = 0;
     
+    // API 实例
+    this.translationAPI = null; // 翻译API实例
+    
+    // 默认歌词设置
+    this.defaultLyricsSettings = {
+      fontSize: 16,
+      color: '#ffffff',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      fontFamily: 'Microsoft YaHei, sans-serif',
+      lineHeight: 1.5,
+      platform: 'netease' // 默认网易云
+    };
+    
     this.init();
   }
 
@@ -78,7 +93,9 @@ class Player {
     this.loadSettings();
     this.setupAudio();
     this.loadLyricsSettings(); // 加载歌词设置
+    this.loadLyricsOffset(); // 加载歌词偏移设置
     this.fixCorruptedLyricsData(); // 修复损坏的歌词数据
+    this.initTrayListeners(); // 初始化托盘事件监听
     
     // 初始化历史记录数据库
     try {
@@ -217,7 +234,11 @@ class Player {
     if (lyricsSettings) {
       // 只应用歌词设置，不加载歌词内容
       this.savedLyricsSettings = lyricsSettings;
-      console.log('歌词设置已加载');
+      console.log('歌词设置已加载:', this.savedLyricsSettings);
+    } else {
+      // 如果没有保存的设置，使用默认设置
+      this.savedLyricsSettings = this.defaultLyricsSettings;
+      console.log('使用默认歌词设置:', this.savedLyricsSettings);
     }
   }
 
@@ -334,6 +355,12 @@ class Player {
         this.updatePlaylistPanel();
       }
       
+      // 加载当前歌曲的歌词偏移设置
+      this.loadLyricsOffset();
+      
+      // 更新托盘菜单
+      this.updateTrayMenu();
+      
     } catch (error) {
       console.error('播放失败:', error);
       this.showError('播放失败：' + error.message);
@@ -413,6 +440,7 @@ class Player {
       await this.audio.play();
       this.isPlaying = true;
       this.updatePlayButton();
+      this.updateTrayMenu(); // 更新托盘菜单
     } catch (error) {
       console.error('播放失败:', error);
       this.showError('播放失败');
@@ -424,6 +452,7 @@ class Player {
     this.audio.pause();
     this.isPlaying = false;
     this.updatePlayButton();
+    this.updateTrayMenu(); // 更新托盘菜单
   }
 
   // 上一首
@@ -543,6 +572,7 @@ class Player {
     
     // 保存歌词设置到实例变量
     this.savedLyricsSettings = settings;
+    console.log('歌词设置已更新:', this.savedLyricsSettings);
     
     // 保存歌词设置到localStorage
     if (settings) {
@@ -554,7 +584,7 @@ class Player {
       // 确保歌词是字符串类型
       this.savedLyrics = typeof lyrics === 'string' ? lyrics : '';
       
-      // 保存歌词到数据库，确保传入字符串
+      // 保存歌词到数据库
       this.saveLyricsToDatabase(this.savedLyrics);
     }
     
@@ -626,6 +656,7 @@ class Player {
       // 确保从数据库获取的歌词也是字符串类型
       const lyricsFromDB = this.currentSongLyrics.lyrics;
       lyricsToDisplay = typeof lyricsFromDB === 'string' ? lyricsFromDB : '';
+      
       // 同时更新savedLyrics以保持一致
       this.savedLyrics = lyricsToDisplay;
       console.log('applyLyricsToModal: 使用currentSongLyrics从数据库');
@@ -1129,25 +1160,26 @@ class Player {
   // 显示歌词
   displayLyrics(lyricsText) {
     const lyricsContent = document.getElementById('lyricsContent');
+    
     if (!lyricsContent) {
-      console.warn('歌词内容容器不存在');
+      console.error('歌词容器不存在');
       return;
     }
     
-    console.log('开始显示歌词，歌词内容长度:', lyricsText ? lyricsText.length : 0);
-    
-    if (!lyricsText || !lyricsText.trim()) {
-      console.log('歌词内容为空，显示默认提示');
+    if (!lyricsText || typeof lyricsText !== 'string') {
+      console.log('无效的歌词数据，显示默认文本');
       lyricsContent.innerHTML = '<div class="lyrics-display"><p class="lyrics-line">暂无歌词</p></div>';
       return;
     }
     
-    // 修复编码问题
-    const fixedLyricsText = this.fixEncoding(lyricsText);
-    console.log('修复编码后的歌词长度:', fixedLyricsText.length);
+    // 确保歌词内容是字符串并进行清理
+    let fixedLyricsText = this.fixEncoding(lyricsText.toString());
     
-    // 解析LRC格式歌词
+    console.log('开始解析歌词:', fixedLyricsText.substring(0, 200) + '...');
+    
+    // 解析歌词
     const lyricsLines = this.parseLyrics(fixedLyricsText);
+    
     console.log('解析后的歌词行数:', lyricsLines.length);
     
     if (lyricsLines.length === 0) {
@@ -1169,9 +1201,11 @@ class Player {
     this.currentLyricsLines = lyricsLines;
     this.currentLyricsIndex = -1;
     
-    // 生成歌词HTML，使用HTML转义
+    // 生成歌词HTML
     const lyricsHtml = lyricsLines
-      .map((line, index) => `<p class="lyrics-line" data-time="${line.time}" data-index="${index}">${this.escapeHtml(line.text)}</p>`)
+      .map((line, index) => {
+        return `<p class="lyrics-line" data-time="${line.time}" data-index="${index}">${this.escapeHtml(line.text)}</p>`;
+      })
       .join('');
     
     lyricsContent.innerHTML = `<div class="lyrics-display">${lyricsHtml}</div>`;
@@ -1194,26 +1228,27 @@ class Player {
   
   // 更新当前歌词行（移除renderLyricsWindow方法）
   updateCurrentLyricsLine() {
-    console.log('开始更新歌词行，当前时间:', this.audio.currentTime, '歌词数据存在:', !!this.currentLyricsLines);
+    console.log('开始更新歌词行，当前时间:', this.audio.currentTime, '歌词数据存在:', !!this.currentLyricsLines, '歌词偏移:', this.lyricsOffset);
     
     if (!this.currentLyricsLines || !this.audio.currentTime) {
       console.log('歌词更新条件不满足 - 歌词数据:', !!this.currentLyricsLines, '播放时间:', this.audio.currentTime);
       return;
     }
     
-    const currentTime = this.audio.currentTime;
+    // 应用歌词偏移：当前播放时间减去偏移量
+    const adjustedTime = this.audio.currentTime - this.lyricsOffset;
     let newLyricsIndex = -1;
     
     // 找到当前时间对应的歌词行
     for (let i = 0; i < this.currentLyricsLines.length; i++) {
-      if (this.currentLyricsLines[i].time <= currentTime) {
+      if (this.currentLyricsLines[i].time <= adjustedTime) {
         newLyricsIndex = i;
       } else {
         break;
       }
     }
     
-    console.log('计算歌词索引:', newLyricsIndex, '当前索引:', this.currentLyricsIndex);
+    console.log('计算歌词索引:', newLyricsIndex, '当前索引:', this.currentLyricsIndex, '调整后时间:', adjustedTime);
     
     // 从歌词内容容器中查找歌词行
     const lyricsContent = document.getElementById('lyricsContent');
@@ -1427,6 +1462,14 @@ class Player {
       return;
     }
 
+    // 检查歌词数据库是否已初始化
+    if (!this.lyricsDB) {
+      console.warn('loadCurrentSongLyrics: 歌词数据库未初始化');
+      this.currentSongLyrics = null;
+      this.clearLyricsDisplay();
+      return;
+    }
+
     try {
       const title = this.getOriginalTitle(this.currentSong.title);
       const artist = this.currentSong.author || this.currentSong.owner?.name || this.currentSong.uploader || 'UP主';
@@ -1506,14 +1549,131 @@ class Player {
   // 修复损坏的歌词数据
   async fixCorruptedLyricsData() {
     try {
-      if (this.lyricsDB && typeof this.lyricsDB.fixCorruptedLyrics === 'function') {
-        const result = await this.lyricsDB.fixCorruptedLyrics();
-        if (result.fixed > 0) {
-          console.log(`已修复${result.fixed}条损坏的歌词记录`);
+      // 获取所有歌词数据
+      const keys = Object.keys(localStorage);
+      const lyricsKeys = keys.filter(key => key.startsWith('lyrics_'));
+      
+      let fixedCount = 0;
+      
+      for (const key of lyricsKeys) {
+        try {
+          const data = localStorage.getItem(key);
+          if (data && typeof data === 'string') {
+            // 尝试解析数据
+            const parsed = JSON.parse(data);
+            
+            // 检查是否是老格式的数据（包含无效的数据结构）
+            if (parsed && (typeof parsed === 'string' || !parsed.lyrics)) {
+              console.log(`发现损坏的歌词数据: ${key}`);
+              localStorage.removeItem(key);
+              fixedCount++;
+            }
+          }
+        } catch (error) {
+          console.log(`删除无效歌词数据: ${key}`);
+          localStorage.removeItem(key);
+          fixedCount++;
         }
       }
+      
+      if (fixedCount > 0) {
+        console.log(`已修复 ${fixedCount} 条损坏的歌词数据`);
+      }
     } catch (error) {
-      console.warn('修复损坏歌词数据失败:', error);
+      console.error('修复歌词数据失败:', error);
+    }
+  }
+
+  // 设置歌词偏移
+  setLyricsOffset(offset) {
+    this.lyricsOffset = offset;
+    console.log('歌词偏移已设置为:', offset, '秒');
+    
+    // 立即更新歌词显示
+    if (this.currentLyricsLines) {
+      this.updateCurrentLyricsLine();
+    }
+    
+    // 为当前歌曲单独保存偏移设置
+    if (this.currentSong) {
+      const songKey = this.generateSongKey(this.currentSong);
+      this.settings.set(`lyricsOffset_${songKey}`, offset);
+      console.log('歌词偏移已保存到歌曲:', songKey);
+    }
+  }
+
+  // 获取歌词偏移
+  getLyricsOffset() {
+    return this.lyricsOffset;
+  }
+
+  // 从设置中加载歌词偏移
+  loadLyricsOffset() {
+    let savedOffset = 0;
+    
+    // 如果有当前歌曲，加载该歌曲的偏移设置
+    if (this.currentSong) {
+      const songKey = this.generateSongKey(this.currentSong);
+      savedOffset = this.settings.get(`lyricsOffset_${songKey}`, 0);
+      console.log('加载歌曲歌词偏移设置:', songKey, savedOffset);
+    } else {
+      // 如果没有当前歌曲，使用默认值
+      savedOffset = 0;
+      console.log('无当前歌曲，使用默认歌词偏移设置:', savedOffset);
+    }
+    
+    this.lyricsOffset = savedOffset;
+  }
+
+  // 生成歌曲的唯一键值（用于存储单独的设置）
+  generateSongKey(song) {
+    if (!song) return '';
+    
+    const title = this.getOriginalTitle(song.title);
+    const artist = song.author || song.owner?.name || song.uploader || 'UP主';
+    
+    // 清理字符串，只保留字母数字和中文
+    const cleanTitle = title.replace(/[^\w\u4e00-\u9fa5]/g, '').toLowerCase();
+    const cleanArtist = artist.replace(/[^\w\u4e00-\u9fa5]/g, '').toLowerCase();
+    
+    return `${cleanTitle}_${cleanArtist}`;
+  }
+
+  // 初始化托盘事件监听
+  initTrayListeners() {
+    if (window.electronAPI) {
+      if (window.electronAPI.onTrayTogglePlay) {
+        window.electronAPI.onTrayTogglePlay(() => {
+          this.togglePlay();
+        });
+      }
+      
+      if (window.electronAPI.onTrayPlayPrevious) {
+        window.electronAPI.onTrayPlayPrevious(() => {
+          this.playPrevious();
+        });
+      }
+      
+      if (window.electronAPI.onTrayPlayNext) {
+        window.electronAPI.onTrayPlayNext(() => {
+          this.playNext();
+        });
+      }
+    }
+  }
+  
+  // 更新托盘菜单
+  updateTrayMenu() {
+    if (window.electronAPI && window.electronAPI.window && window.electronAPI.window.updateTrayMenu) {
+      const playerState = {
+        isPlaying: this.isPlaying,
+        currentSong: this.currentSong ? {
+          title: this.getOriginalTitle(this.currentSong.title),
+          artist: this.currentSong.owner?.name || this.currentSong.uploader || 'UP主'
+        } : null,
+        hasPlaylist: this.playlist.length > 1
+      };
+      window.electronAPI.window.updateTrayMenu(playerState);
     }
   }
 }

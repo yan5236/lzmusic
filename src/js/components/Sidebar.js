@@ -225,6 +225,19 @@ class Sidebar {
       });
     }
     
+    // 关闭行为设置
+    const closeActionSelect = document.getElementById('closeAction');
+    if (closeActionSelect) {
+      closeActionSelect.value = settings.closeAction || 'ask';
+      closeActionSelect.addEventListener('change', (e) => {
+        this.settings.set('closeAction', e.target.value);
+        // 如果选择了其他选项，重置"不再询问"状态
+        if (e.target.value !== 'ask') {
+          this.settings.set('dontAskAgain', false);
+        }
+      });
+    }
+    
     // 网易云API设置
     this.loadNeteaseApiSettings(settings);
   }

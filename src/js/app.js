@@ -15,6 +15,7 @@ class App {
     
     // 设置全局引用
     window.app = this;
+    window.player = this.player; // 添加播放器全局引用
     window.neteaseAPI = neteaseAPI; // 添加网易云API全局引用
     
     this.init();
@@ -112,7 +113,8 @@ class App {
         // 歌单页面已在 Sidebar 中处理
         break;
       case 'settings':
-        // 设置页面已在 Sidebar 中处理
+        // 设置页面处理
+        console.log('设置页面已加载');
         break;
     }
   }

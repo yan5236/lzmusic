@@ -1,0 +1,205 @@
+/* 关闭确认对话框样式 */
+.close-confirm-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.close-confirm-dialog.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.close-confirm-dialog .dialog-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1;
+}
+
+.close-confirm-dialog .dialog-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: var(--background-primary);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 400px;
+  max-width: 90vw;
+  transition: transform 0.3s ease;
+  border: 1px solid var(--border-color);
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.close-confirm-dialog.show .dialog-content {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.close-confirm-dialog .dialog-header {
+  padding: 20px 24px 0;
+  border-bottom: none;
+}
+
+.close-confirm-dialog .dialog-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.close-confirm-dialog .dialog-body {
+  padding: 16px 24px;
+}
+
+.close-confirm-dialog .dialog-body p {
+  margin: 0 0 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.close-confirm-dialog .dialog-options {
+  margin-bottom: 20px;
+}
+
+.close-confirm-dialog .dialog-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 6px;
+  position: relative;
+  z-index: 3;
+}
+
+.close-confirm-dialog .dialog-option:hover {
+  background: var(--background-hover);
+}
+
+.close-confirm-dialog .dialog-option input[type="radio"] {
+  margin: 0 12px 0 0;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+  z-index: 4;
+  position: relative;
+}
+
+.close-confirm-dialog .dialog-option span {
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.close-confirm-dialog .dialog-checkbox {
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.close-confirm-dialog .dialog-checkbox label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px 0;
+  position: relative;
+  z-index: 3;
+}
+
+.close-confirm-dialog .dialog-checkbox input[type="checkbox"] {
+  margin: 0 12px 0 0;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+  z-index: 4;
+  position: relative;
+}
+
+.close-confirm-dialog .dialog-checkbox span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.close-confirm-dialog .dialog-footer {
+  padding: 0 24px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  z-index: 3;
+  position: relative;
+}
+
+.close-confirm-dialog .dialog-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 70px;
+  position: relative;
+  z-index: 4;
+  pointer-events: auto;
+  outline: none;
+}
+
+.close-confirm-dialog .dialog-btn:hover {
+  opacity: 0.9;
+}
+
+.close-confirm-dialog .cancel-btn {
+  background: var(--background-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.close-confirm-dialog .cancel-btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+}
+
+.close-confirm-dialog .confirm-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.close-confirm-dialog .confirm-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+/* 暗色主题适配 */
+[data-theme="dark"] .close-confirm-dialog .dialog-content {
+  background: #2a2a2a;
+  border-color: #404040;
+}
+
+[data-theme="dark"] .close-confirm-dialog .dialog-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .close-confirm-dialog .dialog-checkbox {
+  border-color: #404040;
+}
+
+[data-theme="dark"] .close-confirm-dialog .cancel-btn {
+  background: #404040;
+  border-color: #555;
+}
+
+[data-theme="dark"] .close-confirm-dialog .cancel-btn:hover {
+  background: #4a4a4a;
+} 

@@ -1,6 +1,6 @@
 {
   "name": "lzmusic",
-  "version": "1.0.5-beta",
+  "version": "1.0.6-beta",
   "description": "基于 Bilibili API 的音乐播放器",
   "main": "main.js",
   "scripts": {
@@ -26,7 +26,7 @@
     "@electron/rebuild": "^4.0.1",
     "cross-env": "^7.0.3",
     "electron": "^25.0.0",
-    "electron-builder": "^24.0.0"
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "axios": "^1.4.0",
@@ -70,12 +70,13 @@
           "arch": ["x64"]
         }
       ],
-      "requestedExecutionLevel": "asInvoker"
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "LZ.Music-${version}-win.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "LZ-Music-${version}-Setup.exe",
+      "artifactName": "LZ-Music-${version}-Setup-win.exe",
       "shortcutName": "LZ Music",
       "uninstallDisplayName": "LZ Music"
     },
@@ -100,14 +101,16 @@
       "synopsis": "基于 Bilibili API 的音乐播放器",
       "description": "LZ Music 是一款基于 Bilibili API 的音乐播放器，提供高质量的音乐播放体验。",
       "desktop": {
-        "Name": "LZ Music",
-        "Comment": "基于 Bilibili API 的音乐播放器",
-        "Categories": "AudioVideo;Audio;Player;Music;",
-        "MimeType": "audio/mpeg;audio/mp3;audio/wav;audio/flac;"
+        "entry": {
+          "Name": "LZ Music",
+          "Comment": "基于 Bilibili API 的音乐播放器",
+          "Categories": "AudioVideo;Audio;Player;Music;",
+          "MimeType": "audio/mpeg;audio/mp3;audio/wav;audio/flac;"
+        }
       }
     },
     "appImage": {
-      "artifactName": "LZ-Music-${version}.AppImage"
+      "artifactName": "LZ-Music-${version}-linux.AppImage"
     },
     "deb": {
       "artifactName": "LZ-Music-${version}-linux.deb",
@@ -121,7 +124,7 @@
       ]
     },
     "rpm": {
-      "artifactName": "LZ-Music-${version}.rpm"
+      "artifactName": "LZ-Music-${version}-linux.rpm"
     },
     "mac": {
       "icon": "assets/icon.png",
@@ -134,7 +137,7 @@
       "category": "public.app-category.music"
     },
     "dmg": {
-      "artifactName": "LZ-Music-${version}.dmg",
+      "artifactName": "LZ-Music-${version}-mac.dmg",
       "title": "LZ Music ${version}"
     }
   }

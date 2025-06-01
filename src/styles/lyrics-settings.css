@@ -692,4 +692,85 @@ select:focus {
 
 .lyrics-content .lyrics-line:hover {
   background: rgba(0, 191, 255, 0.05);
+}
+
+/* 翻译标识样式 */
+.translation-badge {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 8px;
+  box-shadow: 0 1px 3px rgba(76, 175, 80, 0.3);
+}
+
+/* 翻译预览样式 */
+.translation-preview {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(76, 175, 80, 0.1);
+  border-left: 3px solid #4CAF50;
+  border-radius: 4px;
+  font-style: italic;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.translation-preview::before {
+  content: "翻译: ";
+  font-weight: 600;
+  color: #4CAF50;
+}
+
+/* 翻译预览分隔线 */
+.translation-preview::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-color), transparent);
+}
+
+/* 歌词偏移控制按钮样式 */
+.offset-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.offset-btn {
+  padding: 6px 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 50px;
+  text-align: center;
+}
+
+.offset-btn:hover {
+  background: var(--background-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.offset-btn:active {
+  transform: scale(0.95);
+}
+
+/* 歌词偏移说明文字样式 */
+.form-group .range-input + div {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  line-height: 1.4;
 } 

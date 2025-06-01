@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, session, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, session, ipcMain, Tray, Menu } = require('electron');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
@@ -27,6 +27,7 @@ if (process.platform === 'win32') {
 }
 
 let mainWindow;
+let tray = null; // 系统托盘
 let lyricsDB = null;
 let historyDB = null;
 
@@ -742,6 +743,146 @@ const NeteaseAPIModule = {
   }
 };
 
+// 创建系统托盘
+function createTray() {
+  // 根据操作系统选择图标
+  let iconPath;
+  if (process.platform === 'win32') {
+    iconPath = path.join(__dirname, 'assets/icon.ico'); // Windows使用.ico格式
+  } else if (process.platform === 'darwin') {
+    iconPath = path.join(__dirname, 'assets/iconTemplate.png'); // macOS使用Template.png
+  } else {
+    iconPath = path.join(__dirname, 'assets/icon.png'); // Linux使用.png格式
+  }
+
+  // 如果图标文件不存在，使用默认图标
+  if (!fs.existsSync(iconPath)) {
+    iconPath = path.join(__dirname, 'assets/icon.png');
+  }
+
+  try {
+    tray = new Tray(iconPath);
+    
+    // 设置托盘提示文本
+    tray.setToolTip('LZ Music');
+    
+    // 初始创建托盘菜单
+    updateTrayMenu();
+    
+    // 双击托盘图标显示/隐藏窗口
+    tray.on('double-click', () => {
+      if (mainWindow) {
+        if (mainWindow.isVisible()) {
+          mainWindow.hide();
+        } else {
+          showMainWindow();
+        }
+      }
+    });
+    
+    console.log('系统托盘创建成功');
+  } catch (error) {
+    console.error('创建系统托盘失败:', error);
+  }
+}
+
+// 更新托盘菜单
+function updateTrayMenu(playerState = null) {
+  if (!tray) return;
+  
+  // 默认播放状态
+  const defaultState = {
+    isPlaying: false,
+    currentSong: null,
+    hasPlaylist: false
+  };
+  
+  const state = playerState || defaultState;
+  
+  // 创建托盘菜单
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: state.currentSong ? 
+        `正在播放: ${state.currentSong.title}`.substring(0, 50) + (state.currentSong.title.length > 50 ? '...' : '') : 
+        '暂无播放内容',
+      enabled: false
+    },
+    { type: 'separator' },
+    {
+      label: state.isPlaying ? '暂停' : '播放',
+      enabled: !!state.currentSong,
+      click: () => {
+        if (mainWindow) {
+          mainWindow.webContents.send('tray-toggle-play');
+        }
+      }
+    },
+    {
+      label: '上一首',
+      enabled: state.hasPlaylist,
+      click: () => {
+        if (mainWindow) {
+          mainWindow.webContents.send('tray-play-previous');
+        }
+      }
+    },
+    {
+      label: '下一首',
+      enabled: state.hasPlaylist,
+      click: () => {
+        if (mainWindow) {
+          mainWindow.webContents.send('tray-play-next');
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '显示主窗口',
+      click: () => {
+        showMainWindow();
+      }
+    },
+    {
+      label: '隐藏窗口',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.hide();
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '退出程序',
+      click: () => {
+        app.isQuiting = true;
+        app.quit();
+      }
+    }
+  ]);
+  
+  tray.setContextMenu(contextMenu);
+}
+
+// 显示主窗口
+function showMainWindow() {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+  }
+}
+
+// 销毁托盘
+function destroyTray() {
+  if (tray) {
+    tray.destroy();
+    tray = null;
+    console.log('系统托盘已销毁');
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -781,6 +922,24 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     console.log('LZ Music 应用已启动');
+  });
+
+  // 修改关闭行为：关闭时隐藏到托盘而不是退出
+  mainWindow.on('close', (event) => {
+    if (!app.isQuiting && !mainWindow.forceClose) {
+      event.preventDefault();
+      mainWindow.hide();
+      
+      // 首次最小化到托盘时显示提示（可选）
+      if (!mainWindow.hasShownTrayTip) {
+        tray.displayBalloon({
+          iconType: 'info',
+          title: 'LZ Music',
+          content: '应用已最小化到系统托盘'
+        });
+        mainWindow.hasShownTrayTip = true;
+      }
+    }
   });
 
   mainWindow.on('closed', () => {
@@ -1088,8 +1247,30 @@ ipcMain.handle('window-close', () => {
   }
 });
 
+// 强制关闭程序
+ipcMain.handle('window-force-close', () => {
+  if (mainWindow) {
+    mainWindow.forceClose = true;
+    app.isQuiting = true;
+    destroyTray();
+    app.quit();
+  }
+});
+
+// 最小化到系统托盘
+ipcMain.handle('window-minimize-to-tray', () => {
+  if (mainWindow) {
+    mainWindow.hide();
+  }
+});
+
 ipcMain.handle('window-is-maximized', () => {
   return mainWindow ? mainWindow.isMaximized() : false;
+});
+
+// 托盘播放控制IPC处理器
+ipcMain.handle('update-tray-menu', (event, playerState) => {
+  updateTrayMenu(playerState);
 });
 
 // 生成buvid3值的简单函数
@@ -1119,10 +1300,15 @@ function generateBuvid3() {
   return result;
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  createTray(); // 创建系统托盘
+});
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  // 在Windows和Linux上，即使关闭所有窗口也不退出应用（保持托盘运行）
+  // 只有在macOS上才退出应用
+  if (process.platform === 'darwin') {
     app.quit();
   }
 });
@@ -1130,7 +1316,14 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  } else if (mainWindow) {
+    showMainWindow();
   }
+});
+
+app.on('before-quit', () => {
+  app.isQuiting = true;
+  destroyTray();
 });
 
 // 处理外部链接

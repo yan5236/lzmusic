@@ -64,8 +64,9 @@ class LyricsDB {
     try {
       const songKey = this.generateSongKey(title, artist);
       const id = `${songKey}_${Date.now()}`;
+      const now = new Date().toISOString();
       
-      const lyricsRecord = {
+      const result = await window.electronAPI.lyricsDB.saveLyrics({
         id: id,
         songKey: songKey,
         title: title,
@@ -73,18 +74,16 @@ class LyricsDB {
         lyrics: lyricsData.lyrics,
         translation: lyricsData.translation || null,
         romaLyrics: lyricsData.romaLyrics || null,
-        platform: lyricsData.platform || 'manual',
-        platformName: lyricsData.platformName || '手动输入',
+        platform: lyricsData.platform || 'unknown',
+        platformName: lyricsData.platformName || '未知平台',
         quality: lyricsData.quality || 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      const result = await window.electronAPI.lyricsDB.saveLyrics(lyricsRecord);
+        createdAt: now,
+        updatedAt: now
+      });
       
       if (result.success) {
         console.log('歌词保存成功:', title, '-', artist);
-        return lyricsRecord;
+        return result.data;
       } else {
         throw new Error(result.error);
       }
@@ -254,4 +253,9 @@ class LyricsDB {
   }
 }
 
-// 在浏览器环境中LyricsDB类会自动可用 
+// 导出类
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = LyricsDB;
+} else {
+  window.LyricsDB = LyricsDB;
+} 
