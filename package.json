@@ -32,7 +32,7 @@
     "axios": "^1.4.0",
     "NeteaseCloudMusicApi": "^4.27.0",
     "smart-buffer": "^4.2.0",
-    "sqlite3": "5.1.6"
+    "sqlite3": "5.1.7"
   },
   "build": {
     "appId": "com.lzmusic.app",
