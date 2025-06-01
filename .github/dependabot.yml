@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"   # 使用 npm 生态系统
+    directory: "/"             # 根目录的 package.json
+    schedule:
+      interval: "weekly"       # 每周检查更新
+    # Electron 特殊配置
+    ignore:
+      # 忽略 Electron 自身的大版本更新（避免破坏性变更）
+      - dependency-name: "electron"
+        update-types: ["version-update:semver-major"]
+    
+    # 可选：限制同时打开的 PR 数量
+    open-pull-requests-limit: 5
