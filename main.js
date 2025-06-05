@@ -2,6 +2,7 @@ const { app, BrowserWindow, shell, session, ipcMain, Tray, Menu } = require('ele
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
+const os = require('os');
 
 // 设置控制台输出编码为UTF-8，解决中文乱码
 if (process.platform === 'win32') {
@@ -26,6 +27,31 @@ if (process.platform === 'win32') {
   });
 }
 
+// 获取用户数据目录
+function getUserDataDir() {
+  // 优先使用XDG_CONFIG_HOME（Linux标准）
+  if (process.env.XDG_CONFIG_HOME) {
+    return path.join(process.env.XDG_CONFIG_HOME, 'lzmusic');
+  }
+  
+  // 根据不同平台设置默认路径
+  switch (process.platform) {
+    case 'win32':
+      return path.join(os.homedir(), 'AppData', 'Roaming', 'lzmusic');
+    case 'darwin':
+      return path.join(os.homedir(), 'Library', 'Application Support', 'lzmusic');
+    case 'linux':
+      return path.join(os.homedir(), '.config', 'lzmusic');
+    default:
+      return path.join(os.homedir(), '.lzmusic');
+  }
+}
+
+// 获取数据目录
+function getDataDir() {
+  return path.join(getUserDataDir(), 'data');
+}
+
 let mainWindow;
 let tray = null; // 系统托盘
 let lyricsDB = null;
@@ -36,10 +62,22 @@ const LyricsDBManager = {
   // 初始化数据库
   init(dbPath) {
     return new Promise((resolve, reject) => {
+      // 如果没有提供路径，使用默认路径
+      if (!dbPath) {
+        dbPath = path.join(getDataDir(), 'lyrics.db');
+      }
+      
       // 确保数据目录存在
       const dataDir = path.dirname(dbPath);
       if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
+        try {
+          fs.mkdirSync(dataDir, { recursive: true });
+          console.log('创建数据目录:', dataDir);
+        } catch (error) {
+          console.error('创建数据目录失败:', error);
+          reject(error);
+          return;
+        }
       }
       
       lyricsDB = new sqlite3.Database(dbPath, (err) => {
@@ -418,10 +456,22 @@ const HistoryDBManager = {
   // 初始化数据库
   init(dbPath) {
     return new Promise((resolve, reject) => {
+      // 如果没有传递dbPath，使用默认路径
+      if (!dbPath) {
+        dbPath = path.join(getDataDir(), 'history.db');
+      }
+      
       // 确保数据目录存在
       const dataDir = path.dirname(dbPath);
       if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
+        try {
+          fs.mkdirSync(dataDir, { recursive: true });
+          console.log('创建历史记录数据目录:', dataDir);
+        } catch (error) {
+          console.error('创建历史记录数据目录失败:', error);
+          reject(error);
+          return;
+        }
       }
       
       historyDB = new sqlite3.Database(dbPath, (err) => {
@@ -1124,10 +1174,6 @@ ipcMain.handle('netease-api', async (event, method, params = {}) => {
 // 初始化历史记录数据库
 ipcMain.handle('init-history-db', async (event, dbPath) => {
   try {
-    // 如果没有传递dbPath，使用默认路径
-    if (!dbPath) {
-      dbPath = path.join(process.cwd(), 'data', 'history.db');
-    }
     await HistoryDBManager.init(dbPath);
     return { success: true };
   } catch (error) {
