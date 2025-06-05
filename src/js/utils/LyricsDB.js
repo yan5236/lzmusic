@@ -12,14 +12,12 @@ class LyricsDB {
       // 确保数据目录存在
       await this.ensureDataDirectory();
       
-      // 设置数据库文件路径
-      this.dbPath = await window.electronAPI.path.join('data', 'lyrics.db');
-      
-      // 使用IPC调用主进程来初始化数据库
-      const result = await window.electronAPI.lyricsDB.init(this.dbPath);
+      // 不再硬编码路径，让主进程决定数据库位置
+      // 使用IPC调用主进程来初始化数据库，不传递路径参数
+      const result = await window.electronAPI.lyricsDB.init();
       
       if (result.success) {
-        console.log('歌词数据库初始化成功:', this.dbPath);
+        console.log('歌词数据库初始化成功');
         this.db = true; // 标记数据库已初始化
       } else {
         throw new Error(result.error);
