@@ -512,11 +512,9 @@ body {
 
 /* 设置页面 */
 .settings-content {
-  max-width: 600px;
-  background: transparent;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: var(--shadow-light);
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 16px;
 }
 
 .setting-group {
@@ -529,10 +527,11 @@ body {
 
 .setting-group h3 {
   font-size: 18px;
-  color: var(--text-primary);
+  font-weight: 600;
   margin-bottom: 16px;
-  padding-bottom: 8px;
+  color: var(--text-primary);
   border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
 }
 
 .setting-item {
@@ -540,42 +539,103 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
+  border-bottom: 1px solid rgba(var(--text-secondary-rgb), 0.1);
+}
+
+.setting-item a.external-link {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.setting-item a.external-link:hover {
+  text-decoration: underline;
 }
 
 .setting-item label {
-  font-size: 14px;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
 .setting-item input[type="checkbox"] {
-  accent-color: var(--primary-color);
+  transform: scale(1.2);
 }
 
 .setting-item select {
-  padding: 8px 12px;
+  padding: 6px 12px;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: rgba(var(--background-primary-rgb), 0.9);
+  border-radius: 4px;
+  background: var(--background-primary);
   color: var(--text-primary);
-  font-size: 14px;
+  min-width: 120px;
 }
 
 .setting-item input[type="number"],
 .setting-item input[type="text"] {
-  padding: 8px 12px;
+  padding: 6px 12px;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: rgba(var(--background-primary-rgb), 0.9);
+  border-radius: 4px;
+  background: var(--background-primary);
   color: var(--text-primary);
-  font-size: 14px;
-  width: 200px;
+  min-width: 120px;
 }
 
 .setting-item input[type="number"]:focus,
-.setting-item input[type="text"]:focus {
+.setting-item input[type="text"]:focus,
+.setting-item select:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+/* 检查更新按钮样式 */
+#checkUpdateBtn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 100px;
+  justify-content: center;
+}
+
+#checkUpdateBtn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+}
+
+#checkUpdateBtn:active {
+  transform: translateY(0);
+}
+
+#checkUpdateBtn:disabled {
+  background: var(--text-secondary);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+#checkUpdateBtn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 版本显示样式 */
+#appVersion {
+  font-family: 'Courier New', monospace;
+  background: var(--bg-secondary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 /* API控制按钮样式 */

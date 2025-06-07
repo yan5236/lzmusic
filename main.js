@@ -1374,9 +1374,22 @@ app.on('before-quit', () => {
 
 // 处理外部链接
 app.on('web-contents-created', (event, contents) => {
-  contents.on('new-window', (navigationEvent, url) => {
-    navigationEvent.preventDefault();
+  // 使用新的API替代已废弃的new-window事件
+  contents.setWindowOpenHandler(({ url }) => {
+    // 在外部浏览器中打开链接
     shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  
+  // 处理导航事件，确保外部链接在外部浏览器中打开
+  contents.on('will-navigate', (event, navigationUrl) => {
+    const parsedUrl = new URL(navigationUrl);
+    
+    // 如果是外部链接（不是本地文件），在外部浏览器中打开
+    if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+      event.preventDefault();
+      shell.openExternal(navigationUrl);
+    }
   });
 });
 

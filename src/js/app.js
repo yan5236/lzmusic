@@ -80,6 +80,15 @@ class App {
       refreshBtn.addEventListener('click', () => this.refreshRecommendations());
     }
 
+    // 绑定检查更新按钮
+    const checkUpdateBtn = document.getElementById('checkUpdateBtn');
+    if (checkUpdateBtn) {
+      checkUpdateBtn.addEventListener('click', () => this.checkForUpdates());
+    }
+
+    // 绑定版本显示
+    this.updateVersionDisplay();
+
     // 应用错误处理
     window.addEventListener('error', (e) => {
       console.error('全局错误:', e.error);
@@ -663,6 +672,298 @@ class App {
         playlist: !!this.playlistComponent
       }
     };
+  }
+
+  // 更新版本显示
+  updateVersionDisplay() {
+    const appVersionElement = document.getElementById('appVersion');
+    if (appVersionElement) {
+      appVersionElement.textContent = this.getCurrentVersion();
+    }
+  }
+
+  // 获取当前版本
+  getCurrentVersion() {
+    return '1.0.7-beta'; // 从package.json获取
+  }
+
+  // 检查更新
+  async checkForUpdates() {
+    const checkUpdateBtn = document.getElementById('checkUpdateBtn');
+    if (!checkUpdateBtn) return;
+
+    // 显示检查中状态
+    const originalText = checkUpdateBtn.textContent;
+    checkUpdateBtn.disabled = true;
+    checkUpdateBtn.textContent = '检查中...';
+
+    try {
+      // 从GitHub API获取最新版本信息
+      const response = await fetch('https://api.github.com/repos/yan5236/lzmusic/releases/latest', {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'LZ-Music-App'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const releaseData = await response.json();
+      const latestVersion = releaseData.tag_name.replace(/^v/, ''); // 移除v前缀
+      const currentVersion = this.getCurrentVersion();
+
+      // 比较版本
+      if (this.compareVersions(latestVersion, currentVersion) > 0) {
+        // 有新版本
+        this.showUpdateAvailable(releaseData);
+      } else {
+        // 已是最新版本
+        this.showSuccess('当前已是最新版本！');
+      }
+
+    } catch (error) {
+      console.error('检查更新失败:', error);
+      
+      let errorMessage = '检查更新失败';
+      if (error.message.includes('HTTP 403')) {
+        errorMessage = '检查更新失败：API请求限制，请稍后再试';
+      } else if (error.message.includes('HTTP 404')) {
+        errorMessage = '检查更新失败：未找到版本信息';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = '检查更新失败：网络连接错误';
+      } else {
+        errorMessage = `检查更新失败：${error.message}`;
+      }
+      
+      this.showError(errorMessage);
+    } finally {
+      // 恢复按钮状态
+      checkUpdateBtn.disabled = false;
+      checkUpdateBtn.textContent = originalText;
+    }
+  }
+
+  // 版本比较函数
+  compareVersions(version1, version2) {
+    // 移除beta、alpha等后缀进行比较
+    const v1 = version1.replace(/-.*$/, '').split('.').map(Number);
+    const v2 = version2.replace(/-.*$/, '').split('.').map(Number);
+    
+    for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
+      const num1 = v1[i] || 0;
+      const num2 = v2[i] || 0;
+      
+      if (num1 > num2) return 1;
+      if (num1 < num2) return -1;
+    }
+    
+    return 0;
+  }
+
+  // 显示更新可用对话框
+  showUpdateAvailable(releaseData) {
+    const dialog = document.createElement('div');
+    dialog.className = 'update-dialog';
+    dialog.innerHTML = `
+      <div class="dialog-overlay"></div>
+      <div class="dialog-content">
+        <div class="dialog-header">
+          <h3>发现新版本</h3>
+          <button class="dialog-close-btn" onclick="this.closest('.update-dialog').remove()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="dialog-body">
+          <div class="version-info">
+            <p><strong>当前版本：</strong>${this.getCurrentVersion()}</p>
+            <p><strong>最新版本：</strong>${releaseData.tag_name}</p>
+            <p><strong>发布时间：</strong>${new Date(releaseData.published_at).toLocaleDateString('zh-CN')}</p>
+          </div>
+          <div class="release-notes">
+            <h4>更新内容：</h4>
+            <div class="release-content">${this.formatReleaseNotes(releaseData.body)}</div>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="dialog-btn secondary-btn" onclick="this.closest('.update-dialog').remove()">
+            稍后提醒
+          </button>
+          <button class="dialog-btn primary-btn" onclick="window.open('${releaseData.html_url}', '_blank')">
+            前往下载
+          </button>
+        </div>
+      </div>
+    `;
+
+    // 添加样式
+    if (!document.getElementById('update-dialog-styles')) {
+      const styles = document.createElement('style');
+      styles.id = 'update-dialog-styles';
+      styles.textContent = `
+        .update-dialog {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 10000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .update-dialog .dialog-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+        }
+        
+        .update-dialog .dialog-content {
+          position: relative;
+          background: var(--bg-color);
+          border-radius: 12px;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+          max-width: 500px;
+          width: 90%;
+          max-height: 80vh;
+          overflow: hidden;
+          border: 1px solid var(--border-color);
+        }
+        
+        .update-dialog .dialog-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 20px;
+          border-bottom: 1px solid var(--border-color);
+        }
+        
+        .update-dialog .dialog-header h3 {
+          margin: 0;
+          color: var(--text-color);
+          font-size: 18px;
+        }
+        
+        .update-dialog .dialog-close-btn {
+          background: none;
+          border: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          transition: all 0.2s ease;
+        }
+        
+        .update-dialog .dialog-close-btn:hover {
+          background: var(--hover-color);
+          color: var(--text-color);
+        }
+        
+        .update-dialog .dialog-body {
+          padding: 20px;
+          max-height: 400px;
+          overflow-y: auto;
+        }
+        
+        .update-dialog .version-info {
+          margin-bottom: 20px;
+        }
+        
+        .update-dialog .version-info p {
+          margin: 8px 0;
+          color: var(--text-color);
+        }
+        
+        .update-dialog .release-notes h4 {
+          margin: 0 0 12px 0;
+          color: var(--text-color);
+          font-size: 16px;
+        }
+        
+        .update-dialog .release-content {
+          background: var(--bg-secondary);
+          padding: 12px;
+          border-radius: 6px;
+          color: var(--text-secondary);
+          font-size: 14px;
+          line-height: 1.5;
+          max-height: 200px;
+          overflow-y: auto;
+        }
+        
+        .update-dialog .dialog-footer {
+          display: flex;
+          gap: 12px;
+          padding: 20px;
+          border-top: 1px solid var(--border-color);
+          justify-content: flex-end;
+        }
+        
+        .update-dialog .dialog-btn {
+          padding: 10px 20px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s ease;
+        }
+        
+        .update-dialog .secondary-btn {
+          background: var(--bg-secondary);
+          color: var(--text-secondary);
+        }
+        
+        .update-dialog .secondary-btn:hover {
+          background: var(--hover-color);
+          color: var(--text-color);
+        }
+        
+        .update-dialog .primary-btn {
+          background: var(--primary-color);
+          color: white;
+        }
+        
+        .update-dialog .primary-btn:hover {
+          background: var(--primary-hover);
+        }
+      `;
+      document.head.appendChild(styles);
+    }
+
+    document.body.appendChild(dialog);
+
+    // 点击遮罩关闭
+    dialog.querySelector('.dialog-overlay').addEventListener('click', () => {
+      dialog.remove();
+    });
+  }
+
+  // 格式化发布说明
+  formatReleaseNotes(body) {
+    if (!body) return '暂无更新说明';
+    
+    // 简单的markdown转换
+    return body
+      .replace(/^### (.*$)/gim, '<h5>$1</h5>')
+      .replace(/^## (.*$)/gim, '<h4>$1</h4>')
+      .replace(/^# (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^\* (.*$)/gim, '<li>$1</li>')
+      .replace(/^- (.*$)/gim, '<li>$1</li>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(.*)$/gim, '<p>$1</p>')
+      .replace(/<p><li>/g, '<ul><li>')
+      .replace(/<\/li><\/p>/g, '</li></ul>')
+      .replace(/<p><h([1-6])>/g, '<h$1>')
+      .replace(/<\/h([1-6])><\/p>/g, '</h$1>')
+      .replace(/<p><\/p>/g, '');
   }
 }
 
