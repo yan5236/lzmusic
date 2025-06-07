@@ -43,10 +43,13 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background: var(--background-primary);
   color: var(--text-primary);
   overflow: hidden;
   user-select: none;
+  /* 移除固定的背景色，让背景图片能够显示 */
+  background: transparent;
+  /* 设置默认背景色，当没有背景图片时使用 */
+  background-color: var(--background-primary);
 }
 
 .app-container {
@@ -54,6 +57,8 @@ body {
   height: 100vh;
   flex-direction: column;
   padding-top: 32px; /* 为自定义标题栏留出空间 */
+  position: relative;
+  z-index: 2;
 }
 
 /* 主内容区域 */
@@ -62,8 +67,10 @@ body {
   margin-left: var(--sidebar-width);
   margin-bottom: var(--player-height);
   overflow-y: auto;
-  background: var(--background-secondary);
+  background: rgba(var(--background-primary-rgb), 0.9);
   transition: margin-left var(--transition-speed) ease;
+  position: relative;
+  z-index: 2;
 }
 
 .main-content.sidebar-collapsed {
@@ -149,7 +156,7 @@ body {
 
 /* 最近播放区域 */
 .recent-section {
-  background: var(--background-primary);
+  background: rgba(var(--background-primary-rgb), 0.9);
   border-radius: 12px;
   padding: 20px;
   border: 1px solid var(--border-color);
@@ -161,7 +168,7 @@ body {
 
 /* 推荐区域 */
 .recommendation-section {
-  background: var(--background-primary);
+  background: rgba(var(--background-primary-rgb), 0.9);
   border-radius: 12px;
   padding: 20px;
   border: 1px solid var(--border-color);
@@ -182,7 +189,7 @@ body {
 /* 音乐卡片 */
 .music-card {
   position: relative;
-  background: var(--background-primary);
+  background: rgba(var(--background-primary-rgb), 0.9);
   border-radius: 12px;
   overflow: hidden;
   transition: all var(--transition-speed) ease;
@@ -299,7 +306,7 @@ body {
   position: relative;
   display: flex;
   margin-bottom: 32px;
-  background: var(--background-primary);
+  background: rgba(var(--background-primary-rgb), 0.9);
   border-radius: 50px;
   overflow: hidden;
   box-shadow: var(--shadow-light);
@@ -506,7 +513,7 @@ body {
 /* 设置页面 */
 .settings-content {
   max-width: 600px;
-  background: var(--background-primary);
+  background: rgba(var(--background-primary-rgb), 0.9);
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-light);
@@ -548,7 +555,7 @@ body {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: var(--background-primary);
+  background: rgba(var(--background-primary-rgb), 0.9);
   color: var(--text-primary);
   font-size: 14px;
 }
@@ -558,7 +565,7 @@ body {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: var(--background-primary);
+  background: rgba(var(--background-primary-rgb), 0.9);
   color: var(--text-primary);
   font-size: 14px;
   width: 200px;
@@ -1478,7 +1485,7 @@ body {
 /* 推荐卡片增强动画 */
 .music-card {
   position: relative;
-  background: var(--background-primary);
+  background: rgba(var(--background-primary-rgb), 0.9);
   border-radius: 12px;
   overflow: hidden;
   transition: all var(--transition-speed) ease;
@@ -2984,4 +2991,14 @@ body {
     justify-content: center;
     text-align: center;
   }
+}
+
+/* 隐藏背景图片设置项 */
+.background-section {
+  display: none !important;
+}
+
+/* 隐藏快速主题面板中的背景图片按钮 */
+#quickBackgroundBtn {
+  display: none !important;
 } 

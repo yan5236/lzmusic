@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="styles/lyrics-settings.css">
   <link rel="stylesheet" href="styles/history.css">
   <link rel="stylesheet" href="styles/close-confirm-dialog.css">
+  <link rel="stylesheet" href="styles/theme-settings.css">
+  <link rel="stylesheet" href="styles/custom-dialog.css">
 </head>
 <body>
   <!-- 自定义标题栏 -->
@@ -259,6 +261,11 @@
           <h2>设置</h2>
         </div>
         <div class="settings-content">
+          <!-- 主题设置组 -->
+          <div class="setting-group theme-settings-group" id="themeSettingsContainer">
+            <!-- 主题设置内容将通过 JavaScript 动态加载 -->
+          </div>
+          
           <div class="setting-group">
             <h3>播放设置</h3>
             <div class="setting-item">
@@ -458,6 +465,7 @@
   <script src="js/utils/storage.js"></script>
   <script src="js/utils/LyricsDB.js"></script>
   <script src="js/utils/HistoryDB.js"></script>
+  <script src="js/utils/CustomDialog.js"></script>
   <script src="js/api/bilibili.js"></script>
   <script src="js/api/netease.js"></script>
   <script src="js/components/PageSelector.js"></script>
@@ -469,6 +477,8 @@
   <script src="js/components/PlaylistManager.js"></script>
   <script src="js/components/Playlist.js"></script>
   <script src="js/components/History.js"></script>
+  <script src="js/components/ThemeManager.js"></script>
+  <script src="js/components/ThemeSettings.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html> 

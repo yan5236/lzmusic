@@ -13,10 +13,15 @@ class App {
     this.historyComponent = new History(this.player);
     this.playlistManagement = null;
     
+    // 主题管理器
+    this.themeManager = new ThemeManager();
+    this.themeSettings = new ThemeSettings(this.themeManager);
+    
     // 设置全局引用
     window.app = this;
     window.player = this.player; // 添加播放器全局引用
     window.neteaseAPI = neteaseAPI; // 添加网易云API全局引用
+    window.themeManager = this.themeManager; // 添加主题管理器全局引用
     
     this.init();
   }
