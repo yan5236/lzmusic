@@ -67,7 +67,7 @@ body {
   margin-left: var(--sidebar-width);
   margin-bottom: var(--player-height);
   overflow-y: auto;
-  background: rgba(var(--background-primary-rgb), 0.9);
+  background: rgba(var(--background-primary-rgb), 0.6);
   transition: margin-left var(--transition-speed) ease;
   position: relative;
   z-index: 2;
@@ -156,7 +156,7 @@ body {
 
 /* 最近播放区域 */
 .recent-section {
-  background: rgba(var(--background-primary-rgb), 0.9);
+  background: transparent;
   border-radius: 12px;
   padding: 20px;
   border: 1px solid var(--border-color);
@@ -168,7 +168,7 @@ body {
 
 /* 推荐区域 */
 .recommendation-section {
-  background: rgba(var(--background-primary-rgb), 0.9);
+  background: transparent;
   border-radius: 12px;
   padding: 20px;
   border: 1px solid var(--border-color);
@@ -189,7 +189,7 @@ body {
 /* 音乐卡片 */
 .music-card {
   position: relative;
-  background: rgba(var(--background-primary-rgb), 0.9);
+  background: transparent;
   border-radius: 12px;
   overflow: hidden;
   transition: all var(--transition-speed) ease;
@@ -306,7 +306,7 @@ body {
   position: relative;
   display: flex;
   margin-bottom: 32px;
-  background: rgba(var(--background-primary-rgb), 0.9);
+  background: transparent;
   border-radius: 50px;
   overflow: hidden;
   box-shadow: var(--shadow-light);
@@ -513,7 +513,7 @@ body {
 /* 设置页面 */
 .settings-content {
   max-width: 600px;
-  background: rgba(var(--background-primary-rgb), 0.9);
+  background: transparent;
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-light);
@@ -2991,11 +2991,6 @@ body {
     justify-content: center;
     text-align: center;
   }
-}
-
-/* 隐藏背景图片设置项 */
-.background-section {
-  display: none !important;
 }
 
 /* 隐藏快速主题面板中的背景图片按钮 */

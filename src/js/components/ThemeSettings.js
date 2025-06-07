@@ -120,11 +120,11 @@ class ThemeSettings {
           ` : ''}
           
           <div class="background-opacity-control">
-            <label for="backgroundOpacity">背景透明度</label>
+            <label for="backgroundOpacity">背景可见度</label>
             <div class="opacity-slider-container">
               <input type="range" id="backgroundOpacity" min="0" max="1" step="0.05" 
-                     value="${currentTheme.backgroundOpacity || 0.1}">
-              <span class="opacity-value">${Math.round((currentTheme.backgroundOpacity || 0.1) * 100)}%</span>
+                     value="${currentTheme.backgroundOpacity || 0.5}">
+              <span class="opacity-value">${Math.round((currentTheme.backgroundOpacity || 0.5) * 100)}%</span>
             </div>
           </div>
 
@@ -427,7 +427,7 @@ class ThemeSettings {
     const opacitySlider = this.container.querySelector('#backgroundOpacity');
     const opacityValue = this.container.querySelector('.opacity-value');
     if (opacitySlider && opacityValue) {
-      const opacity = currentTheme.backgroundOpacity || 0.1;
+      const opacity = currentTheme.backgroundOpacity || 0.5;
       opacitySlider.value = opacity;
       opacityValue.textContent = `${Math.round(opacity * 100)}%`;
     }

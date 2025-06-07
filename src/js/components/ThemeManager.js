@@ -100,7 +100,7 @@ class ThemeManager {
 
     // 应用背景图片
     if (theme.backgroundImage) {
-      this.applyBackgroundImage(theme.backgroundImage, theme.backgroundOpacity || 0.1);
+      this.applyBackgroundImage(theme.backgroundImage, theme.backgroundOpacity || 0.5);
     } else {
       this.removeBackgroundImage();
     }
@@ -114,7 +114,7 @@ class ThemeManager {
   }
 
   // 应用背景图片
-  applyBackgroundImage(imageUrl, opacity = 0.1) {
+  applyBackgroundImage(imageUrl, opacity = 0.5) {
     const body = document.body;
     const overlay = document.querySelector('.background-overlay') || this.createBackgroundOverlay();
     
@@ -124,7 +124,10 @@ class ThemeManager {
     body.style.backgroundAttachment = 'fixed';
     body.style.backgroundRepeat = 'no-repeat';
     
-    overlay.style.opacity = opacity;
+    // 修正透明度逻辑：opacity值越高，背景图片越清晰
+    // 直接设置叠加层的rgba背景色
+    const overlayOpacity = 1 - opacity;
+    overlay.style.background = `rgba(0, 0, 0, ${overlayOpacity})`;
   }
 
   // 移除背景图片
@@ -139,7 +142,7 @@ class ThemeManager {
     body.style.backgroundRepeat = '';
     
     if (overlay) {
-      overlay.style.opacity = '0';
+      overlay.style.background = 'rgba(0, 0, 0, 0)';
     }
   }
 
@@ -153,11 +156,10 @@ class ThemeManager {
       left: 0;
       width: 100%;
       height: 100%;
-      background: var(--background-primary);
-      opacity: 0.1;
+      background: rgba(0, 0, 0, 0.5);
       pointer-events: none;
       z-index: 1;
-      transition: opacity 0.3s ease;
+      transition: background 0.3s ease;
     `;
     document.body.appendChild(overlay);
     return overlay;
@@ -214,7 +216,7 @@ class ThemeManager {
   }
 
   // 设置背景图片
-  setBackgroundImage(imageUrl, opacity = 0.1) {
+  setBackgroundImage(imageUrl, opacity = 0.5) {
     const newTheme = {
       ...this.currentTheme,
       backgroundImage: imageUrl,
@@ -258,7 +260,7 @@ class ThemeManager {
       ...this.defaultThemes['sky-blue'],
       id: 'sky-blue',
       backgroundImage: null,
-      backgroundOpacity: 0.1,
+      backgroundOpacity: 0.5,
       playerTheme: 'default'
     };
   }
