@@ -25,12 +25,12 @@
   "devDependencies": {
     "@electron/rebuild": "^4.0.1",
     "cross-env": "^10.0.0",
-    "electron": "^36.0.0",
+    "electron": "^36.9.0",
     "electron-builder": "^26.0.12"
   },
   "dependencies": {
-    "axios": "^1.4.0",
-    "NeteaseCloudMusicApi": "^4.27.0",
+    "axios": "^1.12.2",
+    "NeteaseCloudMusicApi": "^4.28.0",
     "smart-buffer": "^4.2.0",
     "sqlite3": "5.1.6"
   },
