@@ -24,7 +24,7 @@
   "license": "GPL-3.0-only",
   "devDependencies": {
     "@electron/rebuild": "^4.0.1",
-    "cross-env": "^7.0.3",
+    "cross-env": "^10.0.0",
     "electron": "^36.9.0",
     "electron-builder": "^26.0.12"
   },
