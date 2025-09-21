@@ -1,6 +1,6 @@
 {
   "name": "lzmusic",
-  "version": "1.0.8-bata",
+  "version": "1.0.8-beta",
   "description": "基于 Bilibili API 的音乐播放器",
   "main": "main.js",
   "scripts": {

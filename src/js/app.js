@@ -684,7 +684,7 @@ class App {
 
   // 获取当前版本
   getCurrentVersion() {
-    return '1.0.8-bata'; // 从package.json获取
+    return '1.0.8-beta'; // 从package.json获取
   }
 
   // 检查更新
