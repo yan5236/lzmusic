@@ -108,7 +108,8 @@ npm run build-all
 
 - Electron
 - Vanilla JavaScript
-- Bilibili API
+- [Bilibili API](https://github.com/SocialSisterYi/bilibili-API-collect)
+- [NeteaseCloudMusicApi - 已删库](https://github.com/Binaryify/NeteaseCloudMusicApi)
 - HTML5 Audio
 - SQLite3 (数据存储)
 
