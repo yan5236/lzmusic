@@ -32,10 +32,10 @@ class PageSelector {
     style.textContent = `
       .page-selector-modal {
         position: fixed;
-        top: 0;
+        top: 32px;
         left: 0;
         width: 100%;
-        height: 100%;
+        height: calc(100% - 32px);
         z-index: 10000;
       }
 
@@ -59,6 +59,9 @@ class PageSelector {
         max-height: 70vh;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        position: relative;
       }
 
       .page-selector-modal .modal-header {
@@ -67,12 +70,19 @@ class PageSelector {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        position: relative;
+        z-index: 1;
+        background: #fff;
+        border-radius: 12px 12px 0 0;
       }
 
       .page-selector-modal .modal-header h3 {
         margin: 0;
         color: #333;
         font-size: 18px;
+        font-weight: 600;
+        position: relative;
+        z-index: 2;
       }
 
       .page-selector-modal .close-btn {
@@ -87,16 +97,22 @@ class PageSelector {
         display: flex;
         align-items: center;
         justify-content: center;
+        position: relative;
+        z-index: 2;
+        border-radius: 4px;
+        transition: all 0.2s ease;
       }
 
       .page-selector-modal .close-btn:hover {
         color: #666;
+        background: rgba(0, 0, 0, 0.05);
       }
 
       .page-selector-modal .modal-body {
         padding: 20px;
         max-height: 50vh;
         overflow-y: auto;
+        flex: 1;
       }
 
       .page-selector-modal .pages-list {
@@ -134,6 +150,7 @@ class PageSelector {
         padding: 20px;
         border-top: 1px solid #eee;
         text-align: right;
+        flex-shrink: 0;
       }
 
       .page-selector-modal .cancel-btn {

@@ -322,13 +322,6 @@ class Search {
         ${isMultiPart ? `<div class="search-item-parts">共${video.pages.length}个分P</div>` : ''}
       </div>
       <div class="search-item-actions">
-        ${isMultiPart ? `
-          <button class="expand-parts-btn" title="展开分P">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/>
-            </svg>
-          </button>
-        ` : ''}
         <button class="play-single-btn" title="播放">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8 5v14l11-7z"/>
@@ -342,14 +335,6 @@ class Search {
       </div>
     `;
 
-    // 如果是分P视频，添加分P列表容器
-    if (isMultiPart) {
-      const partsContainer = document.createElement('div');
-      partsContainer.className = 'search-item-parts-list';
-      partsContainer.style.display = 'none';
-      partsContainer.innerHTML = this.createPartsListHTML(video);
-      item.appendChild(partsContainer);
-    }
 
     // 绑定事件
     this.bindSearchItemEvents(item, video);
@@ -357,29 +342,6 @@ class Search {
     return item;
   }
 
-  // 创建分P列表HTML
-  createPartsListHTML(video) {
-    return video.pages.map((page, index) => `
-      <div class="part-item" data-index="${index}" data-cid="${page.cid}">
-        <div class="part-info">
-          <div class="part-title">P${index + 1}: ${page.part}</div>
-          <div class="part-duration">${this.formatDuration(page.duration)}</div>
-        </div>
-        <div class="part-actions">
-          <button class="play-part-btn" title="播放这一P">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          </button>
-          <button class="add-part-btn" title="添加这一P到歌单">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    `).join('');
-  }
 
   // 格式化时长
   formatDuration(duration) {
@@ -403,7 +365,6 @@ class Search {
   bindSearchItemEvents(item, video) {
     const playBtn = item.querySelector('.play-single-btn');
     const addBtn = item.querySelector('.add-to-playlist-btn');
-    const expandBtn = item.querySelector('.expand-parts-btn');
     
     // 懒加载图片
     const img = item.querySelector('img[data-src]');
@@ -430,19 +391,6 @@ class Search {
       this.addToPlaylist(video);
     });
 
-    // 展开分P列表
-    if (expandBtn) {
-      expandBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.togglePartsExpansion(item);
-      });
-    }
-
-    // 绑定分P列表事件
-    const partsContainer = item.querySelector('.search-item-parts-list');
-    if (partsContainer) {
-      this.bindPartsListEvents(partsContainer, video);
-    }
     
     // 悬停效果
     item.addEventListener('mouseenter', () => {
@@ -460,59 +408,7 @@ class Search {
     });
   }
 
-  // 切换分P展开状态
-  togglePartsExpansion(item) {
-    const partsContainer = item.querySelector('.search-item-parts-list');
-    const expandBtn = item.querySelector('.expand-parts-btn');
-    
-    if (partsContainer.style.display === 'none') {
-      // 展开
-      partsContainer.style.display = 'block';
-      expandBtn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
-        </svg>
-      `;
-      expandBtn.title = '收起分P';
-    } else {
-      // 收起
-      partsContainer.style.display = 'none';
-      expandBtn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/>
-        </svg>
-      `;
-      expandBtn.title = '展开分P';
-    }
-  }
 
-  // 绑定分P列表事件
-  bindPartsListEvents(partsContainer, video) {
-    const partItems = partsContainer.querySelectorAll('.part-item');
-    
-    partItems.forEach((partItem, index) => {
-      const playPartBtn = partItem.querySelector('.play-part-btn');
-      const addPartBtn = partItem.querySelector('.add-part-btn');
-      
-      // 播放特定分P
-      playPartBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.playSpecificPart(video, index);
-      });
-      
-      // 添加特定分P到歌单
-      addPartBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.addSpecificPartToPlaylist(video, index);
-      });
-      
-      // 双击播放分P
-      partItem.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        this.playSpecificPart(video, index);
-      });
-    });
-  }
 
   // 播放特定分P
   async playSpecificPart(video, partIndex) {
