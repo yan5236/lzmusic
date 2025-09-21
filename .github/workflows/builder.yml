@@ -130,7 +130,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 步骤7：构建 macOS 应用
+      # 步骤7：安装 macOS 构建依赖
+      - name: 安装 macOS 构建依赖
+        if: matrix.platform == 'darwin'
+        run: |
+          echo "安装 dmg-license 依赖..."
+          npm install dmg-license
+
+      # 步骤8：构建 macOS 应用
       # 生成 DMG 安装包
       - name: 构建应用 (macOS)
         if: matrix.platform == 'darwin'
@@ -144,7 +151,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 步骤8：上传 Windows 构建产物
+      # 步骤9：上传 Windows 构建产物
       # 包含安装版和解压版
       - name: 上传构建产物 (Windows)
         if: matrix.platform == 'win32'
@@ -157,7 +164,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # 步骤9：上传 Linux 构建产物
+      # 步骤10：上传 Linux 构建产物
       # 包含多种 Linux 发行版格式
       - name: 上传构建产物 (Linux)
         if: matrix.platform == 'linux'
@@ -172,7 +179,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # 步骤10：上传 macOS 构建产物
+      # 步骤11：上传 macOS 构建产物
       - name: 上传构建产物 (macOS)
         if: matrix.platform == 'darwin'
         uses: actions/upload-artifact@v4
