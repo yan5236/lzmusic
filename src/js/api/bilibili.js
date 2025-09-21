@@ -176,10 +176,21 @@ class BilibiliAPI {
   // 获取音频流 URL
   async getAudioUrl(bvid, cid) {
     try {
+      // 验证参数
+      if (!bvid || !cid) {
+        throw new Error('缺少必要参数: bvid或cid为空');
+      }
+
+      // 确保CID是有效的数字
+      const numericCid = Number(cid);
+      if (isNaN(numericCid) || numericCid <= 0) {
+        throw new Error(`无效的CID: ${cid}`);
+      }
+
       const url = `${this.baseURL}/x/player/playurl`;
       const params = new URLSearchParams({
-        bvid,
-        cid: Math.floor(Number(cid)).toString(),
+        bvid: bvid.toString(),
+        cid: Math.floor(numericCid).toString(),
         qn: '0',
         fnval: '16',
         fourk: '1'

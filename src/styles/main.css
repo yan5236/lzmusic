@@ -313,6 +313,18 @@ body {
   z-index: 2; /* 搜索框层级 */
 }
 
+.search-box.loading {
+  position: relative;
+  display: flex;
+  margin-bottom: 32px;
+  background: transparent;
+  border-radius: 50px;
+  overflow: hidden;
+  box-shadow: var(--shadow-light);
+  z-index: 2;
+  transition: all var(--transition-speed) ease;
+}
+
 .search-box.loading::after {
   content: '';
   position: absolute;
@@ -334,6 +346,7 @@ body {
   font-size: 16px;
   background: transparent;
   outline: none;
+  border-radius: 50px 0 0 50px;
 }
 
 .search-box input::placeholder {
@@ -347,6 +360,7 @@ body {
   color: white;
   cursor: pointer;
   transition: background-color var(--transition-speed) ease;
+  border-radius: 0 50px 50px 0;
 }
 
 .search-box button:hover {
