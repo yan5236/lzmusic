@@ -91,27 +91,31 @@ jobs:
           node-version: '18'  # 使用 Node.js 18
           cache: 'npm'           # 启用 npm 缓存
 
-      # 步骤3：添加 macOS 构建依赖到 package.json
-      - name: 添加 macOS 构建依赖
-        if: matrix.platform == 'darwin'
-        run: |
-          echo "为 macOS 构建添加 dmg-license 依赖..."
-          npm pkg set optionalDependencies.dmg-license="^1.0.11"
-          cat package.json | grep -A 3 '"optionalDependencies"'
-
-      # 步骤4：配置 npm 缓存以加速构建
+      # 步骤3：配置 npm 缓存以加速构建（非macOS平台）
       - name: 配置 npm 缓存
+        if: matrix.platform != 'darwin'
         uses: actions/cache@v4
         with:
           path: ${{ matrix.npm_config_cache }}
-          key: ${{ runner.os }}-node-${{ matrix.platform }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/package.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-${{ matrix.platform }}-
             ${{ runner.os }}-node-
 
-      # 步骤5：安装项目依赖
+      # 步骤4：安装项目依赖（非macOS平台使用npm ci）
       - name: 安装依赖
+        if: matrix.platform != 'darwin'
         run: npm ci
+
+      # 步骤5：macOS特殊处理 - 安装依赖并添加dmg-license
+      - name: 安装依赖 (macOS)
+        if: matrix.platform == 'darwin'
+        run: |
+          echo "macOS构建：使用npm install安装依赖..."
+          npm install
+          echo "添加dmg-license依赖..."
+          npm install dmg-license
+          echo "验证dmg-license是否安装成功..."
+          npm list dmg-license || echo "dmg-license未在package.json中，但已手动安装"
 
       # 步骤6：构建 Windows 应用
       # 生成安装版(.exe)和解压版(.zip)
