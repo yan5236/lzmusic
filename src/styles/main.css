@@ -527,6 +527,14 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 20px;
+  min-height: 500px;
+}
+
+/* 当playlist-grid只包含empty-state时，改为flex布局以实现居中 */
+.playlist-grid:has(.empty-state:only-child) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 设置页面 */
@@ -759,9 +767,14 @@ body {
 
 /* 空状态 */
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   padding: 60px 20px;
   color: var(--text-secondary);
+  min-height: 400px;
 }
 
 .empty-state svg {
@@ -777,6 +790,24 @@ body {
 
 .empty-state p {
   font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.create-first-playlist-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.create-first-playlist-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
 }
 
 /* 响应式设计 */
@@ -1682,6 +1713,9 @@ body {
   cursor: pointer;
   border: 1px solid var(--border-color);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
 }
 
 .playlist-card:hover {
@@ -1819,10 +1853,10 @@ body {
 }
 
 .edit-playlist-text-btn {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.6) !important;
   border: none;
-  border-radius: 16px;
-  padding: 6px 12px;
+  border-radius: 16px !important;
+  padding: 6px 12px !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1832,9 +1866,9 @@ body {
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
-  min-width: auto;
-  width: auto;
-  height: auto;
+  min-width: auto !important;
+  width: auto !important;
+  height: auto !important;
 }
 
 .edit-playlist-text-btn:hover {

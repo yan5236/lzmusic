@@ -7,7 +7,12 @@ class Sidebar {
     this.navItems = document.querySelectorAll('.nav-item');
     this.pages = document.querySelectorAll('.page');
     this.settings = new Settings();
-    
+
+    // 导入歌单相关状态
+    this.isImporting = false;
+    this.lastImportFile = null;
+    this.playlistEventsbound = false;
+
     this.init();
   }
 
@@ -273,6 +278,11 @@ class Sidebar {
       this.playlistManager = new PlaylistManager();
     }
 
+    // 防止重复绑定事件
+    if (this.playlistEventsbound) {
+      return;
+    }
+
     // 绑定导出歌单事件
     const exportBtn = document.getElementById('exportPlaylistBtn');
     if (exportBtn) {
@@ -290,6 +300,9 @@ class Sidebar {
 
       importFile.addEventListener('change', (e) => this.handleImportPlaylist(e));
     }
+
+    // 标记事件已绑定
+    this.playlistEventsbound = true;
   }
 
   // 显示导出歌单对话框
@@ -450,6 +463,14 @@ class Sidebar {
     const file = event.target.files[0];
     if (!file) return;
 
+    // 防止重复处理相同的文件
+    if (this.isImporting || (this.lastImportFile && this.lastImportFile.name === file.name && this.lastImportFile.lastModified === file.lastModified)) {
+      return;
+    }
+
+    this.isImporting = true;
+    this.lastImportFile = file;
+
     const importStatus = document.getElementById('importFileStatus');
 
     try {
@@ -524,6 +545,9 @@ class Sidebar {
 
       this.showToast(errorMessage, 'error');
     } finally {
+      // 重置导入状态
+      this.isImporting = false;
+
       // 清空文件选择（延迟清空，避免用户困惑）
       setTimeout(() => {
         event.target.value = '';
