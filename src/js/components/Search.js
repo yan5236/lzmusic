@@ -61,11 +61,10 @@ class Search {
     this.suggestionsContainer = document.createElement('div');
     this.suggestionsContainer.className = 'search-suggestions';
     this.suggestionsContainer.style.display = 'none';
-    
-    // 插入到搜索容器中，在搜索结果之前
-    const searchContainer = document.querySelector('.search-container');
-    const searchResults = document.getElementById('searchResults');
-    searchContainer.insertBefore(this.suggestionsContainer, searchResults);
+
+    // 插入到搜索框包装容器中
+    const searchBoxWrapper = document.querySelector('.search-box-wrapper');
+    searchBoxWrapper.appendChild(this.suggestionsContainer);
   }
 
   bindEvents() {

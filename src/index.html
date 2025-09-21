@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="styles/history.css">
   <link rel="stylesheet" href="styles/close-confirm-dialog.css">
   <link rel="stylesheet" href="styles/theme-settings.css">
+  <link rel="stylesheet" href="styles/playlist-settings.css">
   <link rel="stylesheet" href="styles/custom-dialog.css">
 </head>
 <body>
@@ -127,13 +128,15 @@
       <!-- 搜索页 -->
       <div class="page" id="searchPage">
         <div class="search-container">
-          <div class="search-box">
-            <input type="text" id="searchInput" placeholder="搜索音乐或输入BV号..." />
-            <button id="searchBtn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-              </svg>
-            </button>
+          <div class="search-box-wrapper">
+            <div class="search-box">
+              <input type="text" id="searchInput" placeholder="搜索音乐或输入BV号..." />
+              <button id="searchBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="search-results" id="searchResults">
             <!-- 搜索结果将在这里显示 -->
@@ -291,6 +294,22 @@
                 <option value="close">直接关闭程序</option>
                 <option value="minimize">最小化到系统托盘</option>
               </select>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <h3>歌单管理</h3>
+            <div class="setting-item">
+              <label>导出歌单</label>
+              <button id="exportPlaylistBtn" class="export-playlist-btn">导出歌单</button>
+            </div>
+            <div class="setting-item">
+              <label>导入歌单</label>
+              <div class="playlist-import-controls">
+                <input type="file" id="importPlaylistFile" accept=".json" style="display: none;">
+                <button id="importPlaylistBtn">选择文件导入</button>
+                <span id="importFileStatus" class="import-status"></span>
+              </div>
             </div>
           </div>
 

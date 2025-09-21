@@ -199,6 +199,155 @@ class PlaylistManager {
     }
     return playlist;
   }
+
+  // 导出歌单
+  exportPlaylist(playlistId = null) {
+    try {
+      let exportData;
+
+      if (playlistId === null || playlistId === 'all') {
+        // 导出所有歌单
+        const allPlaylists = this.getAll();
+        exportData = {
+          type: 'playlists',
+          exportTime: Date.now(),
+          count: allPlaylists.length,
+          playlists: allPlaylists.map(playlist => ({
+            name: playlist.name,
+            createTime: playlist.createTime,
+            updateTime: playlist.updateTime,
+            songs: playlist.songs.map(song => ({
+              title: song.title,
+              author: song.author,
+              bvid: song.bvid,
+              duration: song.duration,
+              cover: song.cover,
+              cid: song.cid,
+              pages: song.pages,
+              play: song.play
+            }))
+          }))
+        };
+      } else {
+        // 导出单个歌单
+        const playlist = this.get(playlistId);
+        if (!playlist) {
+          throw new Error('歌单不存在');
+        }
+
+        exportData = {
+          type: 'playlist',
+          exportTime: Date.now(),
+          count: 1,
+          playlist: {
+            name: playlist.name,
+            createTime: playlist.createTime,
+            updateTime: playlist.updateTime,
+            songs: playlist.songs.map(song => ({
+              title: song.title,
+              author: song.author,
+              bvid: song.bvid,
+              duration: song.duration,
+              cover: song.cover,
+              cid: song.cid,
+              pages: song.pages,
+              play: song.play
+            }))
+          }
+        };
+      }
+
+      return exportData;
+    } catch (error) {
+      console.error('导出歌单失败:', error);
+      return null;
+    }
+  }
+
+  // 导入歌单
+  importPlaylist(jsonData) {
+    try {
+      const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+      const results = {
+        success: 0,
+        failed: 0,
+        skipped: 0,
+        messages: []
+      };
+
+      // 验证数据格式
+      if (!data.type || (data.type !== 'playlist' && data.type !== 'playlists')) {
+        throw new Error('不是有效的歌单导出文件');
+      }
+
+      const playlistsToImport = data.type === 'playlist' ? [data.playlist] : data.playlists;
+
+      if (!Array.isArray(playlistsToImport)) {
+        throw new Error('歌单数据格式错误');
+      }
+
+      // 导入每个歌单
+      playlistsToImport.forEach(playlistData => {
+        try {
+          if (!playlistData.name || !Array.isArray(playlistData.songs)) {
+            results.failed++;
+            results.messages.push(`歌单 "${playlistData.name || '未知'}" 数据格式错误`);
+            return;
+          }
+
+          // 检查歌单名称冲突
+          const existingPlaylists = this.getAll();
+          let finalName = playlistData.name;
+          let nameCounter = 1;
+
+          while (existingPlaylists.some(p => p.name === finalName)) {
+            finalName = `${playlistData.name} (${nameCounter})`;
+            nameCounter++;
+          }
+
+          // 验证歌曲数据
+          const validSongs = playlistData.songs.filter(song => {
+            return song.title && song.author && song.bvid;
+          });
+
+          if (validSongs.length === 0) {
+            results.skipped++;
+            results.messages.push(`歌单 "${playlistData.name}" 没有有效的歌曲，已跳过`);
+            return;
+          }
+
+          // 创建新歌单
+          const newPlaylist = this.create(finalName, validSongs);
+
+          if (newPlaylist) {
+            results.success++;
+            if (finalName !== playlistData.name) {
+              results.messages.push(`歌单 "${playlistData.name}" 已导入为 "${finalName}" (重名自动重命名)`);
+            } else {
+              results.messages.push(`歌单 "${finalName}" 导入成功，包含 ${validSongs.length} 首歌曲`);
+            }
+          } else {
+            results.failed++;
+            results.messages.push(`歌单 "${playlistData.name}" 导入失败`);
+          }
+
+        } catch (error) {
+          results.failed++;
+          results.messages.push(`歌单 "${playlistData.name || '未知'}" 导入失败: ${error.message}`);
+        }
+      });
+
+      return results;
+    } catch (error) {
+      console.error('导入歌单失败:', error);
+      return {
+        success: 0,
+        failed: 1,
+        skipped: 0,
+        messages: [`导入失败: ${error.message}`]
+      };
+    }
+  }
 }
 
 // 用户设置管理

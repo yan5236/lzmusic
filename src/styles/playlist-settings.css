@@ -1,0 +1,479 @@
+/* 歌单管理设置样式 */
+
+/* 导出歌单按钮 */
+.export-playlist-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--primary-color);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  white-space: nowrap;
+  outline: none;
+}
+
+.export-playlist-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.export-playlist-btn:active {
+  background: var(--primary-dark);
+  transform: translateY(0);
+}
+
+/* 歌单导入控件样式 */
+.playlist-import-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.playlist-import-controls button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--primary-color);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  white-space: nowrap;
+  outline: none;
+}
+
+.playlist-import-controls button:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.playlist-import-controls button:active {
+  background: var(--primary-dark);
+  transform: translateY(0);
+}
+
+.playlist-import-controls button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 导入状态指示器 */
+.import-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.import-status.importing {
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+  animation: pulse 1.5s infinite;
+}
+
+.import-status.success {
+  background: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.import-status.error {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+/* 导入状态动画 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* 导入结果对话框样式 */
+.import-result-dialog {
+  max-width: 500px;
+}
+
+.result-summary {
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+
+.result-summary p {
+  margin: 4px 0;
+  color: var(--text-primary);
+}
+
+.result-summary p:first-child {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--primary-color);
+}
+
+.result-details h4 {
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.result-messages {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.result-messages li {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.result-messages li:last-child {
+  border-bottom: none;
+}
+
+.result-messages li:hover {
+  background: var(--background-hover, rgba(0, 191, 255, 0.05));
+}
+
+/* 滚动条样式 */
+.result-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.result-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.result-messages::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.result-messages::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Toast样式增强 */
+.toast {
+  font-family: inherit;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  max-width: 300px;
+  word-wrap: break-word;
+  backdrop-filter: blur(10px);
+}
+
+.toast-error {
+  background: var(--danger-color) !important;
+}
+
+.toast-success {
+  background: var(--success-color) !important;
+}
+
+.toast-info {
+  background: var(--primary-color) !important;
+}
+
+/* 文件选择隐藏输入框 */
+#importPlaylistFile {
+  display: none !important;
+}
+
+/* 歌单管理响应式设计 */
+@media (max-width: 768px) {
+  .export-dialog-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .export-actions {
+    justify-content: center;
+  }
+
+  .export-playlist-list {
+    max-height: 300px;
+  }
+
+  .export-playlist-item {
+    padding: 10px;
+  }
+
+  .playlist-import-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .playlist-import-controls button {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 16px;
+  }
+
+  .import-status {
+    text-align: center;
+    min-width: auto;
+    width: 100%;
+  }
+
+  .result-summary {
+    padding: 12px;
+  }
+
+  .result-messages {
+    max-height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .export-playlist-btn,
+  .playlist-import-controls button {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  .import-status {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .result-summary p:first-child {
+    font-size: 15px;
+  }
+
+  .result-messages li {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .export-dialog-header h3 {
+    font-size: 14px;
+  }
+
+  .playlist-name {
+    font-size: 14px;
+  }
+
+  .playlist-count {
+    font-size: 11px;
+  }
+
+  .select-all-btn,
+  .select-none-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+/* 导出对话框特定样式 */
+.export-playlist-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+}
+
+.export-dialog-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.export-dialog-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.export-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.select-all-btn,
+.select-none-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-all-btn:hover,
+.select-none-btn:hover {
+  background: var(--background-hover, rgba(0, 191, 255, 0.05));
+  border-color: var(--primary-color);
+}
+
+.export-playlist-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  max-height: 400px;
+}
+
+.export-playlist-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.export-playlist-item:hover {
+  background: var(--background-hover, rgba(0, 191, 255, 0.05));
+}
+
+.playlist-checkbox {
+  margin-right: 12px;
+}
+
+.playlist-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.playlist-checkbox label {
+  display: none;
+}
+
+.playlist-info {
+  flex: 1;
+}
+
+.playlist-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.playlist-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.export-dialog-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selected-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+
+/* 导出对话框按钮样式 */
+.dialog-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.dialog-btn-secondary {
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.dialog-btn-secondary:hover {
+  background: var(--background-hover, rgba(0, 0, 0, 0.05));
+}
+
+.dialog-btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.dialog-btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.dialog-btn-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* 滚动条样式 */
+.export-playlist-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.export-playlist-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.export-playlist-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.export-playlist-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* 深色主题支持 */
+@media (prefers-color-scheme: dark) {
+  .import-status.importing {
+    background: rgba(25, 118, 210, 0.2);
+    color: #64b5f6;
+    border-color: rgba(25, 118, 210, 0.3);
+  }
+
+  .import-status.success {
+    background: rgba(46, 125, 50, 0.2);
+    color: #81c784;
+    border-color: rgba(46, 125, 50, 0.3);
+  }
+
+  .import-status.error {
+    background: rgba(198, 40, 40, 0.2);
+    color: #ef5350;
+    border-color: rgba(198, 40, 40, 0.3);
+  }
+}
