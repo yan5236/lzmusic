@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import type { BilibiliPage } from '../shared/types';
 
 /**
  * 歌曲信息接口
@@ -7,10 +8,16 @@ export interface Song {
   id: string;
   title: string;
   artist: string;
-  album: string;
+  album?: string; // 改为可选,Bilibili 视频没有专辑概念
   coverUrl: string;
   duration: number; // in seconds
-  lyrics: string[];
+  lyrics?: string[]; // 改为可选,Bilibili 视频可能没有歌词
+
+  // Bilibili 特有字段
+  bvid?: string; // Bilibili 视频 ID
+  cid?: number; // 视频分P的 CID
+  pages?: BilibiliPage[]; // 分P信息列表
+  source?: 'local' | 'bilibili'; // 来源标识
 }
 
 /**

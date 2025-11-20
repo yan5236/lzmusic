@@ -3,10 +3,10 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "scripts": {
     "build:react": "vite build",
-    "build:electron": "tsc -p tsconfig.electron.json",
+    "build:electron": "tsc -p tsconfig.electron.json && tsc -p tsconfig.preload.json",
     "dev:dist": "npm run build:react && npm run build:electron && electron .",
     "dev:react": "vite dev",
     "dev:electron": "npm run build:electron && cross-env NODE_ENV=development electron .",

@@ -23,7 +23,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
 
   // Auto-scroll lyrics
   useEffect(() => {
-    if (isOpen && currentSong && lyricsContainerRef.current) {
+    if (isOpen && currentSong && currentSong.lyrics && lyricsContainerRef.current) {
       const totalLines = currentSong.lyrics.length;
       const progress = currentTime / currentSong.duration;
       const activeLineIndex = Math.floor(progress * totalLines);
@@ -39,7 +39,9 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   if (!isOpen || !currentSong) return null;
 
   // Calculate active lyric line based on time
-  const activeLineIndex = Math.floor((currentTime / currentSong.duration) * currentSong.lyrics.length);
+  const activeLineIndex = currentSong.lyrics
+    ? Math.floor((currentTime / currentSong.duration) * currentSong.lyrics.length)
+    : 0;
 
   return (
     <div className="fixed inset-0 z-[50] bg-white text-slate-900 flex flex-col animate-slide-up pb-24">
@@ -133,7 +135,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             ref={lyricsContainerRef}
             className="h-[60vh] overflow-y-auto hide-scrollbar text-center md:text-left px-4 space-y-6 md:space-y-8 py-[30vh]"
           >
-            {currentSong.lyrics.length > 0 ? (
+            {currentSong.lyrics && currentSong.lyrics.length > 0 ? (
               currentSong.lyrics.map((line, index) => {
                 const isActive = index === activeLineIndex;
                 return (
