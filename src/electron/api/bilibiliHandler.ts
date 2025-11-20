@@ -10,11 +10,15 @@ import type {
   BilibiliResponse,
   SearchResponseData,
   VideoInfoResponseData,
+  AudioUrlResponse,
+  AudioUrlCacheItem,
 } from '../../shared/types.js';
 
 class BilibiliAPI {
   private baseURL = 'https://api.bilibili.com';
   private buvid3: string;
+  private audioUrlCache: Map<string, AudioUrlCacheItem> = new Map();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
 
   constructor() {
     this.buvid3 = this.generateBuvid3();
@@ -161,6 +165,98 @@ class BilibiliAPI {
   }
 
   /**
+   * 获取音频流URL
+   * @param bvid Bilibili 视频 ID
+   * @param cid 分P的 CID
+   * @returns 音频流URL信息(包含主URL和备用URLs)
+   */
+  public async getAudioUrl(bvid: string, cid: number): Promise<AudioUrlResponse> {
+    try {
+      // 验证参数
+      if (!bvid || !cid) {
+        throw new Error('缺少必要参数: bvid或cid为空');
+      }
+
+      // 确保CID是有效的数字
+      const numericCid = Number(cid);
+      if (isNaN(numericCid) || numericCid <= 0) {
+        throw new Error(`无效的CID: ${cid}`);
+      }
+
+      // 生成缓存键
+      const cacheKey = `${bvid}_${numericCid}`;
+
+      // 检查缓存
+      const cached = this.audioUrlCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+        console.log(`使用缓存的音频流URL: ${cacheKey}`);
+        return cached.data;
+      }
+
+      // 调用Bilibili API获取音频流
+      const url = `${this.baseURL}/x/player/playurl`;
+      const params = new URLSearchParams({
+        bvid: bvid.toString(),
+        cid: Math.floor(numericCid).toString(),
+        qn: '0',      // 清晰度: 0=自动
+        fnval: '16',  // 流格式: 16=DASH格式(包含音频流)
+        fourk: '1',   // 4K支持
+      });
+
+      const response = await fetch(`${url}?${params}`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+
+      // 处理 412 错误(请求被限制)
+      if (response.status === 412) {
+        throw new Error('请求被服务器限制，请稍后重试');
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json() as BilibiliResponse<{
+        dash: {
+          audio: Array<{
+            base_url: string;
+            backup_url?: string[];
+          }>;
+        };
+      }>;
+
+      if (data.code !== 0) {
+        throw new Error(data.message || '获取音频流失败');
+      }
+
+      // 提取音频流URL
+      const audioData = data.data.dash.audio[0];
+      if (!audioData) {
+        throw new Error('未找到音频流数据');
+      }
+
+      const result: AudioUrlResponse = {
+        url: audioData.base_url,
+        backup_urls: audioData.backup_url || [],
+        all_urls: [audioData.base_url, ...(audioData.backup_url || [])],
+      };
+
+      // 缓存结果
+      this.audioUrlCache.set(cacheKey, {
+        data: result,
+        timestamp: Date.now(),
+      });
+
+      console.log(`成功获取音频流URL: ${cacheKey}`);
+      return result;
+    } catch (error) {
+      console.error('获取音频流失败:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 获取视频详细信息(包含 cid 和分P信息)
    * @param bvid Bilibili 视频 ID
    * @returns 视频详细信息
@@ -238,5 +334,14 @@ export function registerBilibiliHandlers(): void {
   // 检查是否为 BV 号
   ipcMain.handle('is-bvid', (_event, input: string) => {
     return bilibiliAPI.isBVID(input);
+  });
+
+  // 获取音频流URL
+  ipcMain.handle('get-audio-url', async (_event, bvid: string, cid: number) => {
+    try {
+      return await bilibiliAPI.getAudioUrl(bvid, cid);
+    } catch (error) {
+      throw error instanceof Error ? error : new Error(String(error));
+    }
   });
 }

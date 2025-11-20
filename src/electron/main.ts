@@ -12,23 +12,25 @@ app.on('ready', () => {
   // 注册 Bilibili API IPC 处理器
   registerBilibiliHandlers();
 
-  // 配置 B站图片请求的 Referer 头,解决防盗链问题
+  // 配置 B站图片和音频流请求的 Referer 头,解决防盗链问题
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-    if (details.url.includes('hdslb.com')) {
+    // 处理 B站图片和音频流的请求头
+    if (details.url.includes('hdslb.com') || details.url.includes('bilivideo.com')) {
       details.requestHeaders['Referer'] = 'https://www.bilibili.com/';
+      details.requestHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
     }
     callback({ requestHeaders: details.requestHeaders });
   });
 
-  // 配置内容安全策略（CSP）
+  // 配置内容安全策略（CSP）- 允许加载Bilibili音频和图片
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           isDev()
-            ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* ws://localhost:* data:; img-src 'self' data: https:;"
-            : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;"
+            ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* ws://localhost:* data:; img-src 'self' data: https: http:; media-src 'self' https://*.bilivideo.com https://*.hdslb.com data: blob:;"
+            : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' https://*.bilivideo.com https://*.hdslb.com data: blob:;"
         ]
       }
     });

@@ -24,11 +24,21 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) => {
     <div
       className={`${isCollapsed ? 'w-20' : 'w-64'} h-full bg-white border-r border-slate-200 flex flex-col flex-shrink-0 shadow-sm z-10 transition-all duration-300 ease-in-out relative`}
     >
-      <div className={`p-6 flex items-center gap-3 text-primary ${isCollapsed ? 'justify-center px-0' : ''}`}>
-        <Disc3 size={32} className="animate-spin-slow flex-shrink-0" />
-        <h1 className={`text-2xl font-bold tracking-wider text-slate-800 whitespace-nowrap overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
-          lzmusic
-        </h1>
+      <div className={`p-6 flex items-center text-primary ${isCollapsed ? 'justify-center px-2 flex-col gap-3' : 'justify-between'}`}>
+        <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
+          <Disc3 size={32} className="animate-spin-slow flex-shrink-0" />
+          <h1 className={`text-2xl font-bold tracking-wider text-slate-800 whitespace-nowrap overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
+            lzmusic
+          </h1>
+        </div>
+        {/* 折叠按钮移到标题右边 */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-primary transition-colors flex-shrink-0"
+          title={isCollapsed ? '展开侧边栏' : '折叠侧边栏'}
+        >
+          {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+        </button>
       </div>
 
       <div className="flex-1 px-3 py-2 overflow-hidden">
@@ -54,16 +64,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) => {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Collapse Toggle Button */}
-      <div className="p-4 border-t border-slate-100 flex justify-center">
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-primary transition-colors"
-        >
-          {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
-        </button>
       </div>
     </div>
   );

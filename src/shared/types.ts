@@ -70,3 +70,21 @@ export interface VideoInfoResponseData {
     duration: number;
   }>;
 }
+
+// 音频流URL响应
+export interface AudioUrlResponse {
+  /** 主音频流URL */
+  url: string;
+  /** 备用音频流URL列表 */
+  backup_urls: string[];
+  /** 所有可用的音频流URL (主URL + 备用URLs) */
+  all_urls: string[];
+}
+
+// 音频流缓存项
+export interface AudioUrlCacheItem {
+  /** 音频流数据 */
+  data: AudioUrlResponse;
+  /** 缓存时间戳 (毫秒) */
+  timestamp: number;
+}

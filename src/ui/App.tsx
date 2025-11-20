@@ -9,7 +9,7 @@ import HistoryView from './views/HistoryView';
 import DefaultView from './views/DefaultView';
 import type { Song, PlayerState } from './types';
 import { ViewState, PlaybackMode } from './types';
-import { MOCK_SONGS } from './constants';
+import { useAudioPlayer } from './hooks/useAudioPlayer';
 
 function App() {
   // Application State
@@ -19,66 +19,119 @@ function App() {
   // Player State
   const [playerState, setPlayerState] = useState<PlayerState>({
     isPlaying: false,
-    currentSong: MOCK_SONGS[0],
+    currentSong: null, // 初始为空,避免自动播放模拟数据
     currentTime: 0,
     volume: 0.8,
     isFullPlayerOpen: false,
-    queue: MOCK_SONGS,
+    queue: [], // 初始队列为空
     showPlaylist: false,
     mode: PlaybackMode.LOOP,
     history: [],
   });
 
-  // Simulating Audio Context
-  const intervalRef = useRef<number | null>(null);
+  // 上一首歌曲引用,用于检测歌曲变化
+  const prevSongRef = useRef<Song | null>(null);
 
-  useEffect(() => {
-    if (playerState.isPlaying) {
-      intervalRef.current = window.setInterval(() => {
-        setPlayerState((prev) => {
-          if (!prev.currentSong) return prev;
-
-          // Auto-switch song logic when song ends
-          if (prev.currentTime >= prev.currentSong.duration) {
-             let nextIndex = 0;
-             const currentIndex = prev.queue.findIndex(s => s.id === prev.currentSong?.id);
-
-             if (prev.mode === PlaybackMode.SINGLE) {
-                 return { ...prev, currentTime: 0 }; // Replay
-             } else if (prev.mode === PlaybackMode.SHUFFLE) {
-                 nextIndex = Math.floor(Math.random() * prev.queue.length);
-             } else {
-                 // LOOP
-                 nextIndex = (currentIndex + 1) % prev.queue.length;
-             }
-
-             const nextSong = prev.queue[nextIndex];
-             const newHistory = [prev.currentSong, ...prev.history].filter((s, i) => s.id !== prev.currentSong?.id || i === 0).slice(0, 50);
-
-             return {
-                 ...prev,
-                 currentSong: nextSong,
-                 currentTime: 0,
-                 history: newHistory
-             };
-          }
-          return { ...prev, currentTime: prev.currentTime + 1 };
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+  /**
+   * 处理自动播放下一首歌曲的辅助函数
+   */
+  const handleAutoNextSong = () => {
+    setPlayerState((prev) => {
+      // 如果没有当前歌曲或队列为空,停止播放
+      if (!prev.currentSong || prev.queue.length === 0) {
+        return { ...prev, isPlaying: false };
       }
-    }
 
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [playerState.isPlaying]);
+      let nextIndex = 0;
+      const currentIndex = prev.queue.findIndex(s => s.id === prev.currentSong?.id);
+
+      if (prev.mode === PlaybackMode.SINGLE) {
+        // 单曲循环 - 重新播放当前歌曲
+        return prev;
+      } else if (prev.mode === PlaybackMode.SHUFFLE) {
+        // 随机播放
+        nextIndex = Math.floor(Math.random() * prev.queue.length);
+      } else {
+        // 列表循环
+        nextIndex = (currentIndex + 1) % prev.queue.length;
+      }
+
+      const nextSong = prev.queue[nextIndex];
+
+      // 如果队列只有一首歌且不是单曲循环模式,播放完后停止
+      // 注意: 单曲循环模式已在上面return,这里只处理列表循环和随机模式
+      if (prev.queue.length === 1 && nextSong && nextSong.id === prev.currentSong.id) {
+        return { ...prev, isPlaying: false };
+      }
+
+      const newHistory = [prev.currentSong, ...prev.history]
+        .filter((s, i) => s.id !== prev.currentSong?.id || i === 0)
+        .slice(0, 50);
+
+      return {
+        ...prev,
+        currentSong: nextSong,
+        currentTime: 0,
+        history: newHistory,
+      };
+    });
+  };
+
+  // 初始化音频播放器
+  const audioPlayer = useAudioPlayer({
+    // 播放状态改变回调
+    onPlayStateChange: (isPlaying) => {
+      setPlayerState((prev) => ({ ...prev, isPlaying }));
+    },
+
+    // 播放进度更新回调
+    onTimeUpdate: (currentTime) => {
+      setPlayerState((prev) => ({ ...prev, currentTime }));
+    },
+
+    // 歌曲播放结束回调
+    onEnded: () => {
+      // 根据播放模式处理
+      if (playerState.mode === PlaybackMode.SINGLE) {
+        // 单曲循环 - 重新播放
+        if (playerState.currentSong) {
+          audioPlayer.loadAndPlay(playerState.currentSong);
+        }
+      } else {
+        // 列表循环或随机播放 - 播放下一首
+        handleAutoNextSong();
+      }
+    },
+
+    // 音频错误回调
+    onError: (error) => {
+      console.error('音频播放错误:', error);
+      // 自动跳到下一首
+      handleAutoNextSong();
+    },
+
+    // 音量改变回调
+    onVolumeChange: (volume) => {
+      setPlayerState((prev) => ({ ...prev, volume }));
+    },
+  });
+
+  // 监听当前歌曲变化,自动加载和播放
+  useEffect(() => {
+    const currentSong = playerState.currentSong;
+
+    // 检查歌曲是否发生变化
+    if (currentSong && currentSong !== prevSongRef.current) {
+      prevSongRef.current = currentSong;
+
+      // 加载并播放新歌曲
+      audioPlayer.loadAndPlay(currentSong);
+    }
+  }, [playerState.currentSong, audioPlayer]);
 
   // Actions
   const togglePlay = () => {
-    setPlayerState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
+    audioPlayer.togglePlay();
   };
 
   const toggleMode = () => {
@@ -136,10 +189,12 @@ function App() {
   };
 
   const seek = (time: number) => {
+    audioPlayer.seek(time);
     setPlayerState(prev => ({ ...prev, currentTime: time }));
   };
 
   const changeVolume = (val: number) => {
+    audioPlayer.setVolume(val);
     setPlayerState(prev => ({ ...prev, volume: val }));
   };
 
@@ -150,12 +205,17 @@ function App() {
             index === self.findIndex((t) => (t.id === s.id))
         ).slice(0, 50);
 
+        // 如果队列中不存在该歌曲,添加到队列
+        const isInQueue = prev.queue.some(s => s.id === song.id);
+        const newQueue = isInQueue ? prev.queue : [...prev.queue, song];
+
         return {
             ...prev,
             currentSong: song,
             currentTime: 0,
             isPlaying: true,
-            history: newHistory
+            history: newHistory,
+            queue: newQueue,
         };
     });
   };
