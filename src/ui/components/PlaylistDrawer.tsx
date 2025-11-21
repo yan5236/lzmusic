@@ -13,7 +13,7 @@ interface PlaylistDrawerProps {
 
 export default function PlaylistDrawer({ playerState, togglePlaylist, playSong }: PlaylistDrawerProps) {
   return (
-    <div className={`fixed top-0 right-0 h-[calc(100vh-6rem)] w-80 bg-white border-l border-slate-200 transform transition-transform duration-300 z-[60] shadow-2xl ${playerState.showPlaylist ? 'translate-x-0' : 'translate-x-full'}`}>
+    <div className={`fixed top-0 right-0 bottom-24 w-80 bg-white border-l border-slate-200 transform transition-transform duration-300 z-[60] shadow-2xl ${playerState.showPlaylist ? 'translate-x-0' : 'translate-x-full'}`}>
       {/* 头部 */}
       <div className="p-4 border-b border-slate-200 font-bold text-lg flex justify-between items-center text-slate-800">
         <span>播放列表</span>
@@ -21,7 +21,7 @@ export default function PlaylistDrawer({ playerState, togglePlaylist, playSong }
       </div>
 
       {/* 播放队列列表 */}
-      <div className="p-2 overflow-y-auto h-full pb-20">
+      <div className="p-2 overflow-y-auto h-[calc(100%-4rem)]">
         {playerState.queue.map((song, idx) => (
           <div
             key={`queue-${idx}`}

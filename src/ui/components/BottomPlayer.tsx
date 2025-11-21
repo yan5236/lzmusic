@@ -52,9 +52,9 @@ const BottomPlayer: React.FC<BottomPlayerProps> = ({
           </div>
 
           {/* Center: 播放控制和进度条 */}
-          <div className="flex-1 flex flex-col items-center gap-2 mx-4">
+          <div className="flex-1 flex items-center gap-6 px-4 max-w-3xl">
             {/* 控制按钮 */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-shrink-0">
               <button className="p-1.5 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50" disabled>
                 <SkipBack size={20} className="text-slate-300" />
               </button>
@@ -67,7 +67,7 @@ const BottomPlayer: React.FC<BottomPlayerProps> = ({
             </div>
 
             {/* 进度条 */}
-            <div className="w-full flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-1">
               <span className="text-xs text-slate-400 tabular-nums w-10 text-right">0:00</span>
               <div className="flex-1 h-1 bg-slate-200 rounded-full overflow-hidden">
                 <div className="h-full bg-slate-300 transition-all duration-300" style={{ width: '0%' }} />
