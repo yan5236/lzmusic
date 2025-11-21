@@ -44,6 +44,8 @@ export interface PlayerState {
   showPlaylist: boolean;
   mode: PlaybackMode;
   history: Song[];
+  lyricsFontSize: number; // 歌词字体大小(px)
+  lyricsOffset: number; // 歌词时间偏移(ms)
 }
 
 /**
@@ -67,4 +69,14 @@ export interface SidebarItem {
   id: ViewState;
   label: string;
   icon: ReactElement;
+}
+
+/**
+ * 网易云音乐搜索结果接口
+ */
+export interface NeteaseSearchResult {
+  id: number;
+  name: string;
+  artist: string;
+  album: string;
 }

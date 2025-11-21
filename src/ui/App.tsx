@@ -7,6 +7,8 @@ import HomeView from './views/HomeView';
 import SearchView from './views/SearchView';
 import HistoryView from './views/HistoryView';
 import DefaultView from './views/DefaultView';
+import Toast from './components/Toast';
+import type { ToastMessage } from './components/Toast';
 import type { Song, PlayerState } from './types';
 import { ViewState, PlaybackMode } from './types';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
@@ -15,6 +17,9 @@ function App() {
   // Application State
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.HOME);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Toast 消息管理
+  const [toastMessages, setToastMessages] = useState<ToastMessage[]>([]);
 
   // Player State
   const [playerState, setPlayerState] = useState<PlayerState>({
@@ -27,6 +32,8 @@ function App() {
     showPlaylist: false,
     mode: PlaybackMode.LOOP,
     history: [],
+    lyricsFontSize: 18, // 歌词字体大小默认18px
+    lyricsOffset: 0, // 歌词偏移默认0ms
   });
 
   // 上一首歌曲引用,用于检测歌曲变化
@@ -228,6 +235,45 @@ function App() {
       setPlayerState(prev => ({ ...prev, showPlaylist: !prev.showPlaylist }));
   };
 
+  // 歌词设置相关函数
+  const updateLyricsFontSize = (size: number) => {
+    setPlayerState(prev => ({ ...prev, lyricsFontSize: size }));
+  };
+
+  const updateLyricsOffset = (offset: number) => {
+    setPlayerState(prev => ({ ...prev, lyricsOffset: offset }));
+  };
+
+  const updateCurrentSongLyrics = (lyrics: string[]) => {
+    setPlayerState(prev => {
+      if (!prev.currentSong) return prev;
+      return {
+        ...prev,
+        currentSong: {
+          ...prev.currentSong,
+          lyrics,
+        },
+      };
+    });
+  };
+
+  /**
+   * Toast 消息管理函数
+   * 添加新的 Toast 消息
+   */
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info', duration?: number) => {
+    const id = `toast-${Date.now()}-${Math.random()}`;
+    const newToast: ToastMessage = { id, message, type, duration };
+    setToastMessages(prev => [...prev, newToast]);
+  };
+
+  /**
+   * 移除指定的 Toast 消息
+   */
+  const removeToast = (id: string) => {
+    setToastMessages(prev => prev.filter(msg => msg.id !== id));
+  };
+
   /**
    * 视图渲染辅助函数
    * 根据当前视图状态渲染对应的页面组件
@@ -273,6 +319,10 @@ function App() {
             togglePlay={togglePlay}
             nextSong={nextSong}
             prevSong={prevSong}
+            onFontSizeChange={updateLyricsFontSize}
+            onOffsetChange={updateLyricsOffset}
+            onLyricsApply={updateCurrentSongLyrics}
+            showToast={showToast}
         />
 
         {/* Bottom Player */}
@@ -291,6 +341,9 @@ function App() {
 
       {/* Playlist Drawer */}
       <PlaylistDrawer playerState={playerState} togglePlaylist={togglePlaylist} playSong={playSong} />
+
+      {/* Toast 通知容器 */}
+      <Toast messages={toastMessages} onRemove={removeToast} />
     </div>
   );
 }

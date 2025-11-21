@@ -14,7 +14,14 @@ contextBridge.exposeInMainWorld('electron', {
    */
   invoke: async (channel: string, ...args: unknown[]): Promise<unknown> => {
     // 只允许指定的频道
-    const validChannels = ['search-videos', 'get-video-info', 'is-bvid', 'get-audio-url'];
+    const validChannels = [
+      'search-videos',
+      'get-video-info',
+      'is-bvid',
+      'get-audio-url',
+      'netease-search-song', // 网易云搜索歌曲
+      'netease-get-lyrics',  // 网易云获取歌词
+    ];
 
     if (!validChannels.includes(channel)) {
       throw new Error(`Invalid IPC channel: ${channel}`);

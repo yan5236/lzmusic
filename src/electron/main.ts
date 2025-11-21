@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { isDev } from './util.js';
 import { registerBilibiliHandlers } from './api/bilibiliHandler.js';
+import { registerNeteaseHandlers } from './api/neteaseHandler.js';
 
 // 在 ES 模块中获取 __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -11,6 +12,9 @@ const __dirname = path.dirname(__filename);
 app.on('ready', () => {
   // 注册 Bilibili API IPC 处理器
   registerBilibiliHandlers();
+
+  // 注册网易云音乐 API IPC 处理器
+  registerNeteaseHandlers();
 
   // 配置 B站图片和音频流请求的 Referer 头,解决防盗链问题
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {

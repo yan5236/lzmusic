@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Settings, MoreHorizontal, Type, Languages, MessageSquare } from 'lucide-react';
+import { ChevronDown, Settings, MoreHorizontal } from 'lucide-react';
 import type { PlayerState } from '../types';
+import { LyricsSettingsDialog } from './LyricsSettingsDialog';
 
 interface FullPlayerProps {
   isOpen: boolean;
@@ -10,38 +11,67 @@ interface FullPlayerProps {
   togglePlay: () => void;
   prevSong: () => void;
   nextSong: () => void;
+  onFontSizeChange: (size: number) => void;
+  onOffsetChange: (offset: number) => void;
+  onLyricsApply: (lyrics: string[]) => void;
+  showToast: (message: string, type?: 'success' | 'error' | 'info', duration?: number) => void;
 }
 
 const FullPlayer: React.FC<FullPlayerProps> = ({
   isOpen,
   onClose,
   playerState,
+  onFontSizeChange,
+  onOffsetChange,
+  onLyricsApply,
+  showToast,
 }) => {
-  const { currentSong, currentTime } = playerState;
-  const [showSettings, setShowSettings] = useState(false);
+  const { currentSong, currentTime, lyricsFontSize, lyricsOffset } = playerState;
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
+
+  // 根据歌词时间戳计算当前应该显示的歌词行
+  const getActiveLineIndex = (): number => {
+    if (!currentSong?.lyrics || currentSong.lyrics.length === 0) return 0;
+
+    // 应用歌词偏移(毫秒转秒)
+    const adjustedTime = currentTime + (lyricsOffset / 1000);
+
+    let activeIndex = 0;
+    for (let i = 0; i < currentSong.lyrics.length; i++) {
+      const line = currentSong.lyrics[i];
+      const lrcMatch = line.match(/^\[(\d+):(\d+)\.(\d+)\]/);
+
+      if (lrcMatch) {
+        const minutes = parseInt(lrcMatch[1]);
+        const seconds = parseInt(lrcMatch[2]);
+        const milliseconds = parseInt(lrcMatch[3]);
+        const lineTime = minutes * 60 + seconds + milliseconds / 100;
+
+        if (adjustedTime >= lineTime) {
+          activeIndex = i;
+        } else {
+          break;
+        }
+      }
+    }
+    return activeIndex;
+  };
+
+  const activeLineIndex = getActiveLineIndex();
 
   // Auto-scroll lyrics
   useEffect(() => {
     if (isOpen && currentSong && currentSong.lyrics && lyricsContainerRef.current) {
-      const totalLines = currentSong.lyrics.length;
-      const progress = currentTime / currentSong.duration;
-      const activeLineIndex = Math.floor(progress * totalLines);
-
       const container = lyricsContainerRef.current;
       if (container.children[activeLineIndex]) {
         const lineElement = container.children[activeLineIndex] as HTMLElement;
         lineElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
-  }, [currentTime, isOpen, currentSong]);
+  }, [currentTime, isOpen, currentSong, activeLineIndex]);
 
   if (!isOpen || !currentSong) return null;
-
-  // Calculate active lyric line based on time
-  const activeLineIndex = currentSong.lyrics
-    ? Math.floor((currentTime / currentSong.duration) * currentSong.lyrics.length)
-    : 0;
 
   return (
     <div className="fixed inset-0 z-[50] bg-white text-slate-900 flex flex-col animate-slide-up pb-24">
@@ -85,47 +115,15 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             <p className="text-sm text-slate-400 font-medium">{currentSong.album}</p>
           </div>
 
-          {/* Bottom Left: Lyrics Settings (Requirement) */}
+          {/* Bottom Left: Lyrics Settings Button */}
           <div className="pt-4">
              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all ${showSettings ? 'bg-primary text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-200'}`}
+                onClick={() => setShowSettingsDialog(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all bg-white text-slate-500 hover:bg-slate-50 border border-slate-200 hover:border-primary hover:text-primary"
              >
                 <Settings size={16} />
                 <span>歌词设置</span>
              </button>
-
-             {showSettings && (
-               <div className="mt-4 p-4 bg-white rounded-2xl shadow-xl border border-slate-100 w-64 animate-slide-up absolute md:relative z-30">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-slate-600 hover:text-primary cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <Type size={18} />
-                        <span className="text-sm font-medium">字体大小</span>
-                      </div>
-                      <div className="flex gap-1">
-                        <span className="text-xs bg-slate-100 px-2 py-1 rounded">A-</span>
-                        <span className="text-xs bg-slate-100 px-2 py-1 rounded">A+</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-600 hover:text-primary cursor-pointer">
-                      <div className="flex items-center gap-3">
-                         <Languages size={18} />
-                         <span className="text-sm font-medium">翻译</span>
-                      </div>
-                      <div className="w-8 h-4 bg-slate-200 rounded-full relative">
-                         <div className="w-4 h-4 bg-white rounded-full shadow-sm absolute left-0"></div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-600 hover:text-primary cursor-pointer">
-                      <div className="flex items-center gap-3">
-                         <MessageSquare size={18} />
-                         <span className="text-sm font-medium">罗马拼音</span>
-                      </div>
-                    </div>
-                  </div>
-               </div>
-             )}
           </div>
         </div>
 
@@ -138,17 +136,24 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             {currentSong.lyrics && currentSong.lyrics.length > 0 ? (
               currentSong.lyrics.map((line, index) => {
                 const isActive = index === activeLineIndex;
+                // 解析LRC格式歌词,提取时间戳和文本
+                const lrcMatch = line.match(/^\[(\d+):(\d+)\.(\d+)\](.*)$/);
+                const lyricsText = lrcMatch ? lrcMatch[4] : line;
+
                 return (
                   <p
                     key={index}
                     className={`transition-all duration-500 transform origin-left cursor-pointer hover:text-slate-700
                       ${isActive
-                        ? 'text-3xl md:text-4xl font-bold text-primary scale-105'
-                        : 'text-lg md:text-xl text-slate-300 font-medium'
+                        ? 'font-bold text-primary scale-105'
+                        : 'text-slate-300 font-medium'
                       }
                     `}
+                    style={{
+                      fontSize: isActive ? `${lyricsFontSize * 1.5}px` : `${lyricsFontSize}px`,
+                    }}
                   >
-                    {line}
+                    {lyricsText}
                   </p>
                 );
               })
@@ -158,6 +163,19 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 歌词设置对话框 */}
+      <LyricsSettingsDialog
+        isOpen={showSettingsDialog}
+        onClose={() => setShowSettingsDialog(false)}
+        currentSong={currentSong}
+        fontSize={lyricsFontSize}
+        offset={lyricsOffset}
+        onFontSizeChange={onFontSizeChange}
+        onOffsetChange={onOffsetChange}
+        onLyricsApply={onLyricsApply}
+        showToast={showToast}
+      />
     </div>
   );
 };
