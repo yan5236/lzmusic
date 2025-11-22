@@ -21,6 +21,8 @@ export interface AudioPlayerCallbacks {
   onError?: (error: Error) => void;
   /** 音量改变 */
   onVolumeChange?: (volume: number) => void;
+  /** 音频元数据加载完成，获取到实际时长 */
+  onDurationChange?: (duration: number) => void;
 }
 
 /**
@@ -112,6 +114,13 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
       callbacksRef.current.onVolumeChange?.(audio.volume);
     };
 
+    // 元数据加载完成事件（获取实际时长）
+    const handleLoadedMetadata = () => {
+      if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+        callbacksRef.current.onDurationChange?.(audio.duration);
+      }
+    };
+
     // 错误事件
     const handleError = () => {
       const error = audio.error;
@@ -149,6 +158,7 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('volumechange', handleVolumeChange);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('error', handleError);
 
     // 清理事件监听
@@ -158,6 +168,7 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('volumechange', handleVolumeChange);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('error', handleError);
     };
   }, []); // 空依赖数组，只在组件挂载时绑定一次

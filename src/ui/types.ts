@@ -46,6 +46,7 @@ export interface PlayerState {
   history: Song[];
   lyricsFontSize: number; // 歌词字体大小(px)
   lyricsOffset: number; // 歌词时间偏移(ms)
+  coverStyle: 'normal' | 'vinyl'; // 播放界面封面样式
 }
 
 /**

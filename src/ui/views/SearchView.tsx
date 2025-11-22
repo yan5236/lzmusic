@@ -241,13 +241,14 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
       { threshold: 0.1 }
     );
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
     }
 
     return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
       }
     };
   }, [hasMore, loading, loadingMore, searchQuery, page, performSearch]);
@@ -361,7 +362,7 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
                 </div>
                 {searchResults.map((video, i) => (
                   <div
-                    key={video.bvid}
+                    key={`${video.bvid}-${i}`}
                     className="grid grid-cols-[auto_1fr_1fr_auto] gap-4 p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 items-center group cursor-pointer transition-colors"
                     onClick={() => handlePlay(video)}
                   >

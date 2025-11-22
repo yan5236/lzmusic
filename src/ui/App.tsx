@@ -6,6 +6,7 @@ import PlaylistDrawer from './components/PlaylistDrawer';
 import HomeView from './views/HomeView';
 import SearchView from './views/SearchView';
 import HistoryView from './views/HistoryView';
+import SettingsView from './views/SettingsView';
 import DefaultView from './views/DefaultView';
 import Toast from './components/Toast';
 import type { ToastMessage } from './components/Toast';
@@ -21,6 +22,9 @@ function App() {
   // Toast 消息管理
   const [toastMessages, setToastMessages] = useState<ToastMessage[]>([]);
 
+  // 从 localStorage 读取保存的封面样式设置
+  const savedCoverStyle = localStorage.getItem('coverStyle') as 'normal' | 'vinyl' | null;
+
   // Player State
   const [playerState, setPlayerState] = useState<PlayerState>({
     isPlaying: false,
@@ -33,8 +37,39 @@ function App() {
     mode: PlaybackMode.LOOP,
     history: [],
     lyricsFontSize: 18, // 歌词字体大小默认18px
-    lyricsOffset: 0, // 歌词偏移默认0ms
+    lyricsOffset: 0, // 当前歌曲的歌词偏移(ms)，从数据库加载
+    coverStyle: savedCoverStyle || 'normal', // 播放界面封面样式
   });
+
+  // 应用启动时从数据库加载历史记录
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const result = await window.electron.invoke('app-db-history-get');
+        if (result.success && result.data && result.data.length > 0) {
+          // 将数据库记录转换为 Song 格式
+          const historySongs: Song[] = result.data.map((record) => ({
+            id: record.id,
+            title: record.title,
+            artist: record.artist,
+            album: record.album,
+            coverUrl: record.coverUrl,
+            duration: record.duration,
+            bvid: record.bvid,
+            cid: record.cid,
+            pages: record.pages,
+            source: record.source,
+          }));
+          setPlayerState(prev => ({ ...prev, history: historySongs }));
+          console.log(`已从数据库加载 ${historySongs.length} 条历史记录`);
+        }
+      } catch (error) {
+        console.error('加载历史记录失败:', error);
+      }
+    };
+
+    loadHistory();
+  }, []);
 
   // 上一首歌曲ID引用,用于检测歌曲变化（使用ID而非对象引用，避免歌词更新时触发重新播放）
   const prevSongIdRef = useRef<string | null>(null);
@@ -160,6 +195,24 @@ function App() {
     setPlayerState((prev) => ({ ...prev, volume }));
   }, []);
 
+  // 处理音频实际时长更新（解决B站API返回的duration不准确问题）
+  const handleDurationChange = useCallback((duration: number) => {
+    setPlayerState((prev) => {
+      if (!prev.currentSong) return prev;
+      // 只有当差异超过0.5秒时才更新，避免不必要的渲染
+      if (Math.abs(prev.currentSong.duration - duration) > 0.5) {
+        return {
+          ...prev,
+          currentSong: {
+            ...prev.currentSong,
+            duration: duration
+          }
+        };
+      }
+      return prev;
+    });
+  }, []);
+
   // 初始化音频播放器
   const audioPlayer = useAudioPlayer({
     onPlayStateChange: handlePlayStateChange,
@@ -167,6 +220,7 @@ function App() {
     onEnded: handleEnded,
     onError: handleError,
     onVolumeChange: handleVolumeChange,
+    onDurationChange: handleDurationChange,
   });
 
   // 更新audioPlayerRef
@@ -218,7 +272,56 @@ function App() {
         }
       };
 
+      // 从数据库加载该歌曲的歌词偏移设置
+      const loadLyricsOffset = async () => {
+        try {
+          const songId = currentSong.bvid || currentSong.id;
+          const result = await window.electron.invoke('app-db-offset-get', songId);
+
+          if (result.success) {
+            setPlayerState(prev => {
+              // 确保当前歌曲未改变
+              if (!prev.currentSong || prev.currentSong.id !== currentSong.id) {
+                return prev;
+              }
+              return {
+                ...prev,
+                lyricsOffset: result.offset || 0,
+              };
+            });
+            if (result.offset !== 0) {
+              console.log(`已加载歌词偏移 [ID: ${songId}, 偏移: ${result.offset}ms]`);
+            }
+          }
+        } catch (error) {
+          console.error('加载歌词偏移失败:', error);
+        }
+      };
+
+      // 保存歌曲到历史记录数据库
+      const saveToHistory = async () => {
+        try {
+          await window.electron.invoke('app-db-history-add', {
+            id: currentSong.id,
+            title: currentSong.title,
+            artist: currentSong.artist,
+            album: currentSong.album,
+            coverUrl: currentSong.coverUrl,
+            duration: currentSong.duration,
+            bvid: currentSong.bvid,
+            cid: currentSong.cid,
+            pages: currentSong.pages,
+            source: currentSong.source,
+          });
+          console.log(`已保存到历史记录 [ID: ${currentSong.id}]`);
+        } catch (error) {
+          console.error('保存历史记录失败:', error);
+        }
+      };
+
       loadLyricsFromDb();
+      loadLyricsOffset();
+      saveToHistory();
     }
   }, [playerState.currentSong]); // 移除audioPlayer依赖，使用audioPlayerRef
 
@@ -321,13 +424,58 @@ function App() {
       setPlayerState(prev => ({ ...prev, showPlaylist: !prev.showPlaylist }));
   };
 
+  // 从播放队列中移除歌曲
+  const removeFromQueue = (songId: string) => {
+    setPlayerState(prev => {
+      const newQueue = prev.queue.filter(s => s.id !== songId);
+
+      // 如果删除的是当前播放的歌曲，切换到下一首或停止播放
+      if (prev.currentSong?.id === songId) {
+        if (newQueue.length === 0) {
+          // 队列为空，停止播放
+          return {
+            ...prev,
+            queue: newQueue,
+            currentSong: null,
+            isPlaying: false,
+            currentTime: 0
+          };
+        } else {
+          // 播放队列中的下一首
+          const currentIndex = prev.queue.findIndex(s => s.id === songId);
+          const nextIndex = currentIndex >= newQueue.length ? 0 : currentIndex;
+          return {
+            ...prev,
+            queue: newQueue,
+            currentSong: newQueue[nextIndex],
+            currentTime: 0
+          };
+        }
+      }
+
+      return { ...prev, queue: newQueue };
+    });
+  };
+
   // 歌词设置相关函数
   const updateLyricsFontSize = (size: number) => {
     setPlayerState(prev => ({ ...prev, lyricsFontSize: size }));
   };
 
-  const updateLyricsOffset = (offset: number) => {
+  const updateLyricsOffset = async (offset: number) => {
     setPlayerState(prev => ({ ...prev, lyricsOffset: offset }));
+
+    // 保存到数据库（每首歌独立的偏移设置）
+    const currentSong = playerState.currentSong;
+    if (currentSong) {
+      try {
+        const songId = currentSong.bvid || currentSong.id;
+        await window.electron.invoke('app-db-offset-save', songId, offset);
+        console.log(`歌词偏移已保存 [ID: ${songId}, 偏移: ${offset}ms]`);
+      } catch (error) {
+        console.error('保存歌词偏移失败:', error);
+      }
+    }
   };
 
   const updateCurrentSongLyrics = (lyrics: string[]) => {
@@ -341,6 +489,12 @@ function App() {
         },
       };
     });
+  };
+
+  // 更新封面样式并保存到 localStorage
+  const updateCoverStyle = (style: 'normal' | 'vinyl') => {
+    localStorage.setItem('coverStyle', style);
+    setPlayerState(prev => ({ ...prev, coverStyle: style }));
   };
 
   /**
@@ -374,6 +528,14 @@ function App() {
 
       case ViewState.HISTORY:
         return <HistoryView playerState={playerState} playSong={playSong} />;
+
+      case ViewState.SETTINGS:
+        return (
+          <SettingsView
+            coverStyle={playerState.coverStyle}
+            onCoverStyleChange={updateCoverStyle}
+          />
+        );
 
       default:
         return <DefaultView currentView={currentView} />;
@@ -427,7 +589,7 @@ function App() {
       </div>
 
       {/* Playlist Drawer */}
-      <PlaylistDrawer playerState={playerState} togglePlaylist={togglePlaylist} playSong={playSong} />
+      <PlaylistDrawer playerState={playerState} togglePlaylist={togglePlaylist} playSong={playSong} removeFromQueue={removeFromQueue} />
 
       {/* Toast 通知容器 */}
       <Toast messages={toastMessages} onRemove={removeToast} />

@@ -9,9 +9,10 @@ interface PlaylistDrawerProps {
   playerState: PlayerState;
   togglePlaylist: () => void;
   playSong: (song: Song) => void;
+  removeFromQueue: (songId: string) => void;
 }
 
-export default function PlaylistDrawer({ playerState, togglePlaylist, playSong }: PlaylistDrawerProps) {
+export default function PlaylistDrawer({ playerState, togglePlaylist, playSong, removeFromQueue }: PlaylistDrawerProps) {
   return (
     <div className={`fixed top-0 right-0 bottom-24 w-80 bg-white border-l border-slate-200 transform transition-transform duration-300 z-[60] shadow-2xl ${playerState.showPlaylist ? 'translate-x-0' : 'translate-x-full'}`}>
       {/* 头部 */}
@@ -47,6 +48,20 @@ export default function PlaylistDrawer({ playerState, togglePlaylist, playSong }
               <div className={`text-sm font-medium truncate ${playerState.currentSong?.id === song.id ? 'text-primary' : 'text-slate-800'}`}>{song.title}</div>
               <div className="text-xs text-slate-500 truncate">{song.artist}</div>
             </div>
+
+            {/* 删除按钮 */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // 阻止事件冒泡，避免触发播放
+                removeFromQueue(song.id);
+              }}
+              className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
+              title="从列表中移除"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         ))}
       </div>

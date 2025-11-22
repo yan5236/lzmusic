@@ -42,3 +42,39 @@
   font-weight: bold;
   text-shadow: 0 0 1px rgba(37, 99, 235, 0.1);
 }
+
+/* 黑胶唱片纹理效果(同心圆唱片槽) */
+.vinyl-grooves {
+  background:
+    radial-gradient(circle, transparent 30%, rgba(0,0,0,0.3) 30%, transparent 31%),
+    radial-gradient(circle, transparent 35%, rgba(0,0,0,0.3) 35%, transparent 36%),
+    radial-gradient(circle, transparent 40%, rgba(0,0,0,0.3) 40%, transparent 41%),
+    radial-gradient(circle, transparent 45%, rgba(0,0,0,0.3) 45%, transparent 46%),
+    radial-gradient(circle, transparent 50%, rgba(0,0,0,0.3) 50%, transparent 51%),
+    radial-gradient(circle, transparent 55%, rgba(0,0,0,0.3) 55%, transparent 56%),
+    radial-gradient(circle, transparent 60%, rgba(0,0,0,0.3) 60%, transparent 61%),
+    radial-gradient(circle, transparent 65%, rgba(0,0,0,0.3) 65%, transparent 66%),
+    radial-gradient(circle, transparent 70%, rgba(0,0,0,0.3) 70%, transparent 71%),
+    radial-gradient(circle, transparent 75%, rgba(0,0,0,0.3) 75%, transparent 76%),
+    radial-gradient(circle, transparent 80%, rgba(0,0,0,0.3) 80%, transparent 81%),
+    radial-gradient(circle, transparent 85%, rgba(0,0,0,0.3) 85%, transparent 86%),
+    radial-gradient(circle, transparent 90%, rgba(0,0,0,0.3) 90%, transparent 91%),
+    radial-gradient(circle, transparent 95%, rgba(0,0,0,0.3) 95%, transparent 96%);
+  background-color: #1a1a1a;
+}
+
+/* 黑胶唱片光泽反射效果 */
+.vinyl-sheen {
+  background: linear-gradient(
+    135deg,
+    transparent 40%,
+    rgba(255,255,255,0.3) 50%,
+    transparent 60%
+  );
+}
+
+/* 唱片旋转动画 */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

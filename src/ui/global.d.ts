@@ -46,6 +46,67 @@ interface LyricsDbDeleteResponse {
   error?: string;
 }
 
+// 应用数据库 API 响应类型
+interface AppDbHistoryRecord {
+  id: string;
+  title: string;
+  artist: string;
+  album?: string;
+  coverUrl: string;
+  duration: number;
+  bvid?: string;
+  cid?: number;
+  pages?: Array<{ page: number; part: string; cid: number; duration: number }>;
+  source?: 'local' | 'bilibili';
+  playedAt: number;
+}
+
+interface AppDbHistoryAddResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface AppDbHistoryGetResponse {
+  success: boolean;
+  data: AppDbHistoryRecord[];
+  error?: string;
+}
+
+interface AppDbHistoryClearResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface AppDbHistoryDeleteResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface AppDbOffsetSaveResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface AppDbOffsetGetResponse {
+  success: boolean;
+  offset: number;
+  error?: string;
+}
+
+interface AppDbOffsetDeleteResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface AppDbOffsetGetAllResponse {
+  success: boolean;
+  data: Array<{ songId: string; offset: number }>;
+  error?: string;
+}
+
+// 搜索建议响应类型
+type SearchSuggestionsResponse = string[];
+
 declare global {
   interface Window {
     electron: {
@@ -59,6 +120,29 @@ declare global {
       invoke(channel: 'lyrics-db-get', id: string): Promise<LyricsDbGetResponse>;
       invoke(channel: 'lyrics-db-has', id: string): Promise<LyricsDbHasResponse>;
       invoke(channel: 'lyrics-db-delete', id: string): Promise<LyricsDbDeleteResponse>;
+      // 搜索建议
+      invoke(channel: 'get-search-suggestions', keyword: string): Promise<SearchSuggestionsResponse>;
+      // 应用数据库 - 历史记录
+      invoke(channel: 'app-db-history-add', song: {
+        id: string;
+        title: string;
+        artist: string;
+        album?: string;
+        coverUrl: string;
+        duration: number;
+        bvid?: string;
+        cid?: number;
+        pages?: Array<{ page: number; part: string; cid: number; duration: number }>;
+        source?: 'local' | 'bilibili';
+      }): Promise<AppDbHistoryAddResponse>;
+      invoke(channel: 'app-db-history-get'): Promise<AppDbHistoryGetResponse>;
+      invoke(channel: 'app-db-history-clear'): Promise<AppDbHistoryClearResponse>;
+      invoke(channel: 'app-db-history-delete', id: string): Promise<AppDbHistoryDeleteResponse>;
+      // 应用数据库 - 歌词偏移
+      invoke(channel: 'app-db-offset-save', songId: string, offset: number): Promise<AppDbOffsetSaveResponse>;
+      invoke(channel: 'app-db-offset-get', songId: string): Promise<AppDbOffsetGetResponse>;
+      invoke(channel: 'app-db-offset-delete', songId: string): Promise<AppDbOffsetDeleteResponse>;
+      invoke(channel: 'app-db-offset-get-all'): Promise<AppDbOffsetGetAllResponse>;
     };
   }
 }

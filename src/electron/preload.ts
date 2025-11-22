@@ -26,6 +26,16 @@ contextBridge.exposeInMainWorld('electron', {
       'lyrics-db-get',        // 从数据库获取歌词
       'lyrics-db-has',        // 检查歌词是否存在
       'lyrics-db-delete',     // 删除歌词
+      // 应用数据库 - 历史记录
+      'app-db-history-add',   // 添加历史记录
+      'app-db-history-get',   // 获取历史记录
+      'app-db-history-clear', // 清空历史记录
+      'app-db-history-delete', // 删除单条历史记录
+      // 应用数据库 - 歌词偏移
+      'app-db-offset-save',   // 保存歌词偏移
+      'app-db-offset-get',    // 获取歌词偏移
+      'app-db-offset-delete', // 删除歌词偏移
+      'app-db-offset-get-all', // 获取所有歌词偏移
     ];
 
     if (!validChannels.includes(channel)) {

@@ -320,11 +320,35 @@ class BilibiliAPI {
     const url = `${this.baseURL}/x/web-interface/view`;
     const params = new URLSearchParams({ bvid });
 
+    // 定义重试逻辑
+    const fetchWithRetry = async (retries: number = 2): Promise<Response> => {
+      try {
+        const response = await fetch(`${url}?${params}`, {
+          method: 'GET',
+          headers: this.getHeaders(),
+        });
+
+        // 处理 412 错误(请求被限制)，延迟后重试
+        if (response.status === 412 && retries > 0) {
+          console.log(`视频 ${bvid} 请求被限制，${retries} 次重试剩余...`);
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          return fetchWithRetry(retries - 1);
+        }
+
+        return response;
+      } catch (error) {
+        // 网络错误时重试
+        if (retries > 0) {
+          console.log(`视频 ${bvid} 网络错误，${retries} 次重试剩余...`);
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          return fetchWithRetry(retries - 1);
+        }
+        throw error;
+      }
+    };
+
     try {
-      const response = await fetch(`${url}?${params}`, {
-        method: 'GET',
-        headers: this.getHeaders(),
-      });
+      const response = await fetchWithRetry();
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -355,8 +379,8 @@ class BilibiliAPI {
         })),
       };
     } catch (error) {
-      console.error('获取视频信息失败:', error);
-      throw error;
+      console.error(`获取视频 ${bvid} 信息失败:`, error);
+      throw new Error(`请求错误: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

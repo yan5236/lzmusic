@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Settings, MoreHorizontal } from 'lucide-react';
 import type { PlayerState } from '../types';
 import { LyricsSettingsDialog } from './LyricsSettingsDialog';
+import { Turntable } from './Turntable';
 
 interface FullPlayerProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   onLyricsApply,
   showToast,
 }) => {
-  const { currentSong, currentTime, duration, volume, lyricsFontSize, lyricsOffset } = playerState;
+  const { currentSong, currentTime, volume, lyricsFontSize, lyricsOffset, coverStyle, isPlaying } = playerState;
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
   const volumeToastTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -177,14 +178,21 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
         {/* Left Column: Cover, Info, Lyric Settings */}
         <div className="flex flex-col items-center justify-center h-full space-y-8 relative z-10 md:items-start md:pl-10">
 
-          {/* Album Art */}
-          <div className="relative aspect-square w-full max-w-[350px] md:max-w-[400px] shadow-2xl shadow-blue-900/10 rounded-3xl overflow-hidden border-4 border-white">
-            <img
-              src={currentSong.coverUrl}
-              alt={currentSong.title}
-              className="w-full h-full object-cover"
+          {/* Album Art - 根据 coverStyle 条件渲染 */}
+          {coverStyle === 'vinyl' ? (
+            <Turntable
+              isPlaying={isPlaying}
+              coverUrl={currentSong.coverUrl}
             />
-          </div>
+          ) : (
+            <div className="relative aspect-square w-full max-w-[350px] md:max-w-[400px] shadow-2xl shadow-blue-900/10 rounded-3xl overflow-hidden border-4 border-white">
+              <img
+                src={currentSong.coverUrl}
+                alt={currentSong.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
 
           {/* Song Info */}
           <div className="text-center md:text-left space-y-2 w-full max-w-[400px]">
