@@ -4,17 +4,25 @@ import { fileURLToPath } from 'url';
 import { isDev } from './util.js';
 import { registerBilibiliHandlers } from './api/bilibiliHandler.js';
 import { registerNeteaseHandlers } from './api/neteaseHandler.js';
+import { lyricsDatabase } from './database/lyricsDatabase.js';
+import { registerLyricsDbHandlers } from './api/lyricsDbHandler.js';
 
 // 在 ES 模块中获取 __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.on('ready', () => {
+  // 初始化歌词数据库
+  lyricsDatabase.initialize();
+
   // 注册 Bilibili API IPC 处理器
   registerBilibiliHandlers();
 
   // 注册网易云音乐 API IPC 处理器
   registerNeteaseHandlers();
+
+  // 注册歌词数据库 IPC 处理器
+  registerLyricsDbHandlers();
 
   // 配置 B站图片和音频流请求的 Referer 头,解决防盗链问题
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
@@ -54,4 +62,9 @@ app.on('ready', () => {
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), '/dist-react/index.html'));
   }
+});
+
+// 应用退出时关闭数据库连接
+app.on('before-quit', () => {
+  lyricsDatabase.close();
 });

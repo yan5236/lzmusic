@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import BottomPlayer from './components/BottomPlayer';
 import FullPlayer from './components/FullPlayer';
@@ -36,13 +36,16 @@ function App() {
     lyricsOffset: 0, // 歌词偏移默认0ms
   });
 
-  // 上一首歌曲引用,用于检测歌曲变化
-  const prevSongRef = useRef<Song | null>(null);
+  // 上一首歌曲ID引用,用于检测歌曲变化（使用ID而非对象引用，避免歌词更新时触发重新播放）
+  const prevSongIdRef = useRef<string | null>(null);
+
+  // 使用ref存储audioPlayer，避免循环依赖
+  const audioPlayerRef = useRef<ReturnType<typeof useAudioPlayer> | null>(null);
 
   /**
    * 处理自动播放下一首歌曲的辅助函数
    */
-  const handleAutoNextSong = () => {
+  const handleAutoNextSong = useCallback(() => {
     setPlayerState((prev) => {
       // 如果没有当前歌曲或队列为空,停止播放
       if (!prev.currentSong || prev.queue.length === 0) {
@@ -82,59 +85,142 @@ function App() {
         history: newHistory,
       };
     });
-  };
+  }, []);
+
+  // 使用useCallback稳定化回调函数，避免audioPlayer引用变化
+  const handlePlayStateChange = useCallback((isPlaying: boolean) => {
+    setPlayerState((prev) => ({ ...prev, isPlaying }));
+  }, []);
+
+  const handleTimeUpdate = useCallback((currentTime: number) => {
+    setPlayerState((prev) => ({ ...prev, currentTime }));
+  }, []);
+
+  const handleEnded = useCallback(() => {
+    // 使用函数式更新来获取最新的state
+    setPlayerState((prev) => {
+      // 根据播放模式处理
+      if (prev.mode === PlaybackMode.SINGLE) {
+        // 单曲循环 - 重新播放
+        if (prev.currentSong && audioPlayerRef.current) {
+          // 使用setTimeout确保在state更新后执行
+          setTimeout(() => {
+            if (prev.currentSong && audioPlayerRef.current) {
+              audioPlayerRef.current.loadAndPlay(prev.currentSong);
+            }
+          }, 0);
+        }
+        return prev;
+      }
+
+      // 列表循环或随机播放 - 播放下一首
+      // 如果没有当前歌曲或队列为空,停止播放
+      if (!prev.currentSong || prev.queue.length === 0) {
+        return { ...prev, isPlaying: false };
+      }
+
+      let nextIndex = 0;
+      const currentIndex = prev.queue.findIndex(s => s.id === prev.currentSong?.id);
+
+      if (prev.mode === PlaybackMode.SHUFFLE) {
+        // 随机播放
+        nextIndex = Math.floor(Math.random() * prev.queue.length);
+      } else {
+        // 列表循环
+        nextIndex = (currentIndex + 1) % prev.queue.length;
+      }
+
+      const nextSong = prev.queue[nextIndex];
+
+      // 如果队列只有一首歌,播放完后停止
+      if (prev.queue.length === 1 && nextSong && nextSong.id === prev.currentSong.id) {
+        return { ...prev, isPlaying: false };
+      }
+
+      const newHistory = [prev.currentSong, ...prev.history]
+        .filter((s, i) => s.id !== prev.currentSong?.id || i === 0)
+        .slice(0, 50);
+
+      return {
+        ...prev,
+        currentSong: nextSong,
+        currentTime: 0,
+        history: newHistory,
+      };
+    });
+  }, []);
+
+  const handleError = useCallback((error: Error) => {
+    console.error('音频播放错误:', error);
+    // 自动跳到下一首
+    handleAutoNextSong();
+  }, [handleAutoNextSong]);
+
+  const handleVolumeChange = useCallback((volume: number) => {
+    setPlayerState((prev) => ({ ...prev, volume }));
+  }, []);
 
   // 初始化音频播放器
   const audioPlayer = useAudioPlayer({
-    // 播放状态改变回调
-    onPlayStateChange: (isPlaying) => {
-      setPlayerState((prev) => ({ ...prev, isPlaying }));
-    },
+    onPlayStateChange: handlePlayStateChange,
+    onTimeUpdate: handleTimeUpdate,
+    onEnded: handleEnded,
+    onError: handleError,
+    onVolumeChange: handleVolumeChange,
+  });
 
-    // 播放进度更新回调
-    onTimeUpdate: (currentTime) => {
-      setPlayerState((prev) => ({ ...prev, currentTime }));
-    },
-
-    // 歌曲播放结束回调
-    onEnded: () => {
-      // 根据播放模式处理
-      if (playerState.mode === PlaybackMode.SINGLE) {
-        // 单曲循环 - 重新播放
-        if (playerState.currentSong) {
-          audioPlayer.loadAndPlay(playerState.currentSong);
-        }
-      } else {
-        // 列表循环或随机播放 - 播放下一首
-        handleAutoNextSong();
-      }
-    },
-
-    // 音频错误回调
-    onError: (error) => {
-      console.error('音频播放错误:', error);
-      // 自动跳到下一首
-      handleAutoNextSong();
-    },
-
-    // 音量改变回调
-    onVolumeChange: (volume) => {
-      setPlayerState((prev) => ({ ...prev, volume }));
-    },
+  // 更新audioPlayerRef
+  useEffect(() => {
+    audioPlayerRef.current = audioPlayer;
   });
 
   // 监听当前歌曲变化,自动加载和播放
   useEffect(() => {
     const currentSong = playerState.currentSong;
+    const currentSongId = currentSong?.id || null;
 
-    // 检查歌曲是否发生变化
-    if (currentSong && currentSong !== prevSongRef.current) {
-      prevSongRef.current = currentSong;
+    // 检查歌曲ID是否发生变化（使用ID比较而非对象引用，避免歌词更新时触发重新播放）
+    if (currentSong && currentSongId !== prevSongIdRef.current) {
+      prevSongIdRef.current = currentSongId;
 
-      // 加载并播放新歌曲
-      audioPlayer.loadAndPlay(currentSong);
+      // 加载并播放新歌曲（使用ref获取最新的audioPlayer）
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.loadAndPlay(currentSong);
+      }
+
+      // 从数据库加载歌词（后台异步加载，不会影响播放）
+      const loadLyricsFromDb = async () => {
+        try {
+          const songId = currentSong.bvid || currentSong.id;
+          const result = await window.electron.invoke('lyrics-db-get', songId);
+
+          if (result.success && result.data) {
+            // 如果数据库中有歌词，更新当前歌曲的歌词
+            setPlayerState(prev => {
+              // 确保当前歌曲未改变，才更新歌词
+              if (!prev.currentSong || prev.currentSong.id !== currentSong.id) {
+                return prev;
+              }
+              return {
+                ...prev,
+                currentSong: {
+                  ...prev.currentSong,
+                  lyrics: result.data || undefined, // 将 null 转换为 undefined
+                },
+              };
+            });
+            console.log(`已从数据库加载歌词 [ID: ${songId}]`);
+          } else {
+            console.log(`数据库中没有该歌曲的歌词 [ID: ${songId}]`);
+          }
+        } catch (error) {
+          console.error('从数据库加载歌词失败:', error);
+        }
+      };
+
+      loadLyricsFromDb();
     }
-  }, [playerState.currentSong, audioPlayer]);
+  }, [playerState.currentSong]); // 移除audioPlayer依赖，使用audioPlayerRef
 
   // Actions
   const togglePlay = () => {

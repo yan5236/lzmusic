@@ -96,7 +96,7 @@ export function LyricsSettingsDialog({
   };
 
   // 应用歌词
-  const handleApplyLyrics = () => {
+  const handleApplyLyrics = async () => {
     if (!previewLyrics || previewLyrics === '加载中...' || previewLyrics === '该歌曲暂无歌词') {
       return;
     }
@@ -113,8 +113,37 @@ export function LyricsSettingsDialog({
       }
     }
 
+    // 应用到当前播放器
     onLyricsApply(lyricsArray);
-    showToast('歌词已应用', 'success');
+
+    // 保存到数据库
+    if (currentSong) {
+      try {
+        // 使用 bvid 作为唯一标识（B站歌曲）
+        // 本地歌曲可以使用 currentSong.id
+        const songId = currentSong.bvid || currentSong.id;
+        const source = currentSong.bvid ? 'bilibili' : 'local';
+
+        const result = await window.electron.invoke(
+          'lyrics-db-save',
+          songId,
+          lyricsArray,
+          source
+        );
+
+        if (result.success) {
+          showToast('歌词已应用并保存', 'success');
+        } else {
+          showToast('歌词已应用，但保存失败', 'error');
+          console.error('保存歌词失败:', result.error);
+        }
+      } catch (error) {
+        console.error('保存歌词到数据库出错:', error);
+        showToast('歌词已应用，但保存失败', 'error');
+      }
+    } else {
+      showToast('歌词已应用', 'success');
+    }
   };
 
   // 应用设置

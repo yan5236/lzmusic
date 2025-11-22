@@ -39,6 +39,17 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
   // 当前尝试的URL索引
   const currentUrlIndexRef = useRef<number>(0);
 
+  // AbortController用于取消正在进行的播放请求
+  const playAbortControllerRef = useRef<AbortController | null>(null);
+
+  // 使用useRef存储callbacks，避免依赖变化导致函数重新创建
+  const callbacksRef = useRef<AudioPlayerCallbacks>(callbacks);
+
+  // 每次渲染时更新callbacksRef
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  });
+
   /**
    * 初始化音频元素
    */
@@ -54,6 +65,12 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
 
     // 清理函数
     return () => {
+      // 取消进行中的播放请求
+      if (playAbortControllerRef.current) {
+        playAbortControllerRef.current.abort();
+        playAbortControllerRef.current = null;
+      }
+
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = '';
@@ -64,6 +81,7 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
 
   /**
    * 绑定音频事件监听器
+   * 使用callbacksRef避免依赖变化导致事件监听器重新绑定
    */
   useEffect(() => {
     const audio = audioRef.current;
@@ -71,27 +89,27 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
 
     // 播放事件
     const handlePlay = () => {
-      callbacks.onPlayStateChange?.(true);
+      callbacksRef.current.onPlayStateChange?.(true);
     };
 
     // 暂停事件
     const handlePause = () => {
-      callbacks.onPlayStateChange?.(false);
+      callbacksRef.current.onPlayStateChange?.(false);
     };
 
     // 时间更新事件
     const handleTimeUpdate = () => {
-      callbacks.onTimeUpdate?.(audio.currentTime);
+      callbacksRef.current.onTimeUpdate?.(audio.currentTime);
     };
 
     // 播放结束事件
     const handleEnded = () => {
-      callbacks.onEnded?.();
+      callbacksRef.current.onEnded?.();
     };
 
     // 音量改变事件
     const handleVolumeChange = () => {
-      callbacks.onVolumeChange?.(audio.volume);
+      callbacksRef.current.onVolumeChange?.(audio.volume);
     };
 
     // 错误事件
@@ -113,7 +131,7 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
           // 如果所有URL都失败了,调用错误回调
           if (currentUrlIndexRef.current >= backupUrlsRef.current.length) {
             const finalError = new Error('所有音频流URL都无法播放');
-            callbacks.onError?.(finalError);
+            callbacksRef.current.onError?.(finalError);
           }
         });
       } else {
@@ -121,7 +139,7 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
         const finalError = new Error(
           error?.message || '音频加载失败,将自动跳到下一首'
         );
-        callbacks.onError?.(finalError);
+        callbacksRef.current.onError?.(finalError);
       }
     };
 
@@ -142,7 +160,7 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
       audio.removeEventListener('volumechange', handleVolumeChange);
       audio.removeEventListener('error', handleError);
     };
-  }, [callbacks]);
+  }, []); // 空依赖数组，只在组件挂载时绑定一次
 
   /**
    * 加载并播放歌曲
@@ -160,6 +178,18 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
         throw new Error('歌曲缺少必要的bvid或cid信息');
       }
 
+      // 取消前一个播放请求，防止播放冲突
+      if (playAbortControllerRef.current) {
+        playAbortControllerRef.current.abort();
+      }
+
+      // 创建新的AbortController用于此次播放请求
+      playAbortControllerRef.current = new AbortController();
+      const currentAbortController = playAbortControllerRef.current;
+
+      // 暂停当前播放
+      audio.pause();
+
       // 保存当前歌曲信息
       currentSongRef.current = song;
 
@@ -171,6 +201,12 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
         song.cid
       );
 
+      // 检查是否被中止
+      if (currentAbortController.signal.aborted) {
+        console.log('播放请求已被取消');
+        return;
+      }
+
       console.log('成功获取音频流URL:', audioUrlData.url);
 
       // 保存备用URLs
@@ -180,14 +216,27 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
       // 设置音频源
       audio.src = audioUrlData.url;
 
-      // 播放音频
-      await audio.play();
+      // 重置播放进度
+      audio.currentTime = 0;
+
+      // 播放音频（异步操作，需要等待）
+      try {
+        await audio.play();
+        console.log('音频播放开始');
+      } catch (playError) {
+        // 如果是因为请求被中止导致的错误，不需要处理
+        if ((playError as DOMException).name === 'AbortError') {
+          console.log('播放被中止');
+          return;
+        }
+        throw playError;
+      }
     } catch (error) {
       console.error('加载音频失败:', error);
       const errorMsg = error instanceof Error ? error : new Error(String(error));
-      callbacks.onError?.(errorMsg);
+      callbacksRef.current.onError?.(errorMsg);
     }
-  }, [callbacks]);
+  }, []); // 空依赖数组，使用callbacksRef避免重新创建
 
   /**
    * 播放
@@ -203,9 +252,9 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
       await audio.play();
     } catch (error) {
       console.error('播放失败:', error);
-      callbacks.onError?.(error instanceof Error ? error : new Error(String(error)));
+      callbacksRef.current.onError?.(error instanceof Error ? error : new Error(String(error)));
     }
-  }, [callbacks]);
+  }, []); // 空依赖数组
 
   /**
    * 暂停

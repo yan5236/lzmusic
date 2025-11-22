@@ -19,8 +19,12 @@ contextBridge.exposeInMainWorld('electron', {
       'get-video-info',
       'is-bvid',
       'get-audio-url',
-      'netease-search-song', // 网易云搜索歌曲
-      'netease-get-lyrics',  // 网易云获取歌词
+      'netease-search-song',  // 网易云搜索歌曲
+      'netease-get-lyrics',   // 网易云获取歌词
+      'lyrics-db-save',       // 保存歌词到数据库
+      'lyrics-db-get',        // 从数据库获取歌词
+      'lyrics-db-has',        // 检查歌词是否存在
+      'lyrics-db-delete',     // 删除歌词
     ];
 
     if (!validChannels.includes(channel)) {
