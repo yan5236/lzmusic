@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('electron', {
       'get-video-info',
       'is-bvid',
       'get-audio-url',
+      'get-search-suggestions', // 获取搜索建议
       'netease-search-song',  // 网易云搜索歌曲
       'netease-get-lyrics',   // 网易云获取歌词
       'lyrics-db-save',       // 保存歌词到数据库

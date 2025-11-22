@@ -102,6 +102,61 @@ class BilibiliAPI {
   }
 
   /**
+   * 获取搜索建议关键词
+   * @param term 输入的搜索内容
+   * @returns 搜索建议列表
+   */
+  public async getSearchSuggestions(term: string): Promise<string[]> {
+    if (!term.trim()) {
+      return [];
+    }
+
+    const url = 'https://s.search.bilibili.com/main/suggest';
+    const params = new URLSearchParams({
+      term: term.trim(),
+      main_ver: 'v1',
+      highlight: '',
+      func: 'suggest',
+      suggest_type: 'accurate',
+      sub_type: 'tag',
+      tag_num: '10',
+    });
+
+    try {
+      const response = await fetch(`${url}?${params}`, {
+        method: 'GET',
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json() as {
+        code: number;
+        result?: {
+          tag?: Array<{
+            value: string;
+            name: string;
+          }>;
+        };
+      };
+
+      if (data.code !== 0) {
+        throw new Error('获取搜索建议失败');
+      }
+
+      // 提取建议关键词的 value 字段
+      const suggestions = data.result?.tag?.map(item => item.value) || [];
+      return suggestions;
+    } catch (error) {
+      console.error('获取搜索建议失败:', error);
+      // 失败时返回空数组,不影响搜索功能
+      return [];
+    }
+  }
+
+  /**
    * 搜索视频
    * @param keyword 搜索关键词
    * @param page 页码(从1开始)
@@ -340,6 +395,15 @@ export function registerBilibiliHandlers(): void {
   ipcMain.handle('get-audio-url', async (_event, bvid: string, cid: number) => {
     try {
       return await bilibiliAPI.getAudioUrl(bvid, cid);
+    } catch (error) {
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+  });
+
+  // 获取搜索建议
+  ipcMain.handle('get-search-suggestions', async (_event, term: string) => {
+    try {
+      return await bilibiliAPI.getSearchSuggestions(term);
     } catch (error) {
       throw error instanceof Error ? error : new Error(String(error));
     }

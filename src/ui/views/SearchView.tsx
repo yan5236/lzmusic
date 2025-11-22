@@ -86,6 +86,11 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  // 搜索建议相关状态
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+
   // 分P选择对话框状态
   const [pageDialogOpen, setPageDialogOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<BilibiliVideo | null>(null);
@@ -171,6 +176,41 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
   );
 
   /**
+   * 获取搜索建议
+   */
+  const fetchSuggestions = useCallback(async (term: string) => {
+    if (!term.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const results: string[] = await window.electron.invoke('get-search-suggestions', term.trim());
+      setSuggestions(results);
+    } catch (error) {
+      console.error('获取搜索建议失败:', error);
+      setSuggestions([]);
+    }
+  }, []);
+
+  /**
+   * 防抖获取搜索建议 - 输入变化时触发
+   */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.trim() && inputFocused) {
+        fetchSuggestions(searchQuery);
+        setShowSuggestions(true);
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, inputFocused, fetchSuggestions]);
+
+  /**
    * 防抖搜索 - 输入变化时触发
    */
   useEffect(() => {
@@ -237,10 +277,19 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
     }
   };
 
+  /**
+   * 处理搜索建议点击
+   */
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+    setSuggestions([]);
+  };
+
   return (
     <div className="p-8 flex flex-col h-full text-slate-500">
       {/* 搜索输入框 */}
-      <div className="w-full max-w-4xl mx-auto mb-10 pt-4">
+      <div className="w-full max-w-4xl mx-auto mb-10 pt-4 relative">
         <input
           type="text"
           placeholder="搜索B站音乐视频..."
@@ -248,7 +297,30 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
           autoFocus
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => {
+            // 延迟隐藏,以便点击建议时能够响应
+            setTimeout(() => {
+              setInputFocused(false);
+              setShowSuggestions(false);
+            }, 200);
+          }}
         />
+
+        {/* 搜索建议列表 */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-10">
+            {suggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                className="px-6 py-3 hover:bg-slate-50 cursor-pointer transition-colors text-slate-700 border-b border-slate-100 last:border-0"
+                onClick={() => handleSuggestionClick(suggestion)}
+              >
+                {suggestion}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 搜索结果显示区域 */}

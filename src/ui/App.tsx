@@ -405,6 +405,7 @@ function App() {
             togglePlay={togglePlay}
             nextSong={nextSong}
             prevSong={prevSong}
+            setVolume={changeVolume}
             onFontSizeChange={updateLyricsFontSize}
             onOffsetChange={updateLyricsOffset}
             onLyricsApply={updateCurrentSongLyrics}

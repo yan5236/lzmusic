@@ -1,14 +1,18 @@
 {
   "appId": "com.lztoolspc.app",
   "files": ["dist-electron", "dist-react"],
+  "icon": "assets/icon.png",
   "mac": {
-    "target": "dmg"
+    "target": "dmg",
+    "icon": "assets/icon.png"
   },
   "linux": {
     "target": "AppImage",
-    "category": "Utility"
+    "category": "Utility",
+    "icon": "assets/icon.png"
   },
   "win": {
-    "target": ["portable", "msi"]
+    "target": ["portable", "msi"],
+    "icon": "assets/icon.ico"
   }
 }

@@ -11,6 +11,7 @@ interface FullPlayerProps {
   togglePlay: () => void;
   prevSong: () => void;
   nextSong: () => void;
+  setVolume: (volume: number) => void;
   onFontSizeChange: (size: number) => void;
   onOffsetChange: (offset: number) => void;
   onLyricsApply: (lyrics: string[]) => void;
@@ -21,14 +22,18 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   isOpen,
   onClose,
   playerState,
+  seek,
+  togglePlay,
+  setVolume,
   onFontSizeChange,
   onOffsetChange,
   onLyricsApply,
   showToast,
 }) => {
-  const { currentSong, currentTime, lyricsFontSize, lyricsOffset } = playerState;
+  const { currentSong, currentTime, duration, volume, lyricsFontSize, lyricsOffset } = playerState;
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
+  const volumeToastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 根据歌词时间戳计算当前应该显示的歌词行
   const getActiveLineIndex = (): number => {
@@ -46,7 +51,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
         const minutes = parseInt(lrcMatch[1]);
         const seconds = parseInt(lrcMatch[2]);
         const milliseconds = parseInt(lrcMatch[3]);
-        const lineTime = minutes * 60 + seconds + milliseconds / 100;
+        const lineTime = minutes * 60 + seconds + milliseconds / 1000;
 
         if (adjustedTime >= lineTime) {
           activeIndex = i;
@@ -70,6 +75,79 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
       }
     }
   }, [currentTime, isOpen, currentSong, activeLineIndex]);
+
+  // 键盘快捷键控制
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // 显示音量提示的防抖函数
+    const showVolumeToast = (newVolume: number) => {
+      // 清除之前的定时器
+      if (volumeToastTimerRef.current) {
+        clearTimeout(volumeToastTimerRef.current);
+      }
+
+      // 设置新的定时器,延迟200ms显示提示
+      volumeToastTimerRef.current = setTimeout(() => {
+        showToast(`音量: ${Math.round(newVolume * 100)}%`, 'info', 1000);
+      }, 200);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 如果焦点在输入框中,不处理快捷键
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      switch (e.key) {
+        case ' ': // 空格键:播放/暂停
+          e.preventDefault();
+          togglePlay();
+          break;
+
+        case 'ArrowUp': { // 上方向键:增加音量
+          e.preventDefault();
+          const newVolume = Math.min(1, volume + 0.05);
+          setVolume(newVolume);
+          showVolumeToast(newVolume);
+          break;
+        }
+
+        case 'ArrowDown': { // 下方向键:减少音量
+          e.preventDefault();
+          const newVolume = Math.max(0, volume - 0.05);
+          setVolume(newVolume);
+          showVolumeToast(newVolume);
+          break;
+        }
+
+        case 'ArrowLeft': // 左方向键:后退5秒
+          e.preventDefault();
+          seek(Math.max(0, currentTime - 5));
+          break;
+
+        case 'ArrowRight': // 右方向键:前进5秒
+          e.preventDefault();
+          if (currentSong?.duration) {
+            seek(Math.min(currentSong.duration, currentTime + 5));
+          }
+          break;
+
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      // 清理定时器
+      if (volumeToastTimerRef.current) {
+        clearTimeout(volumeToastTimerRef.current);
+      }
+    };
+  }, [isOpen, togglePlay, setVolume, volume, seek, currentTime, currentSong, showToast]);
 
   if (!isOpen || !currentSong) return null;
 
