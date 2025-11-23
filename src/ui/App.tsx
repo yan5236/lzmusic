@@ -3,16 +3,20 @@ import Sidebar from './components/Sidebar';
 import BottomPlayer from './components/BottomPlayer';
 import FullPlayer from './components/FullPlayer';
 import PlaylistDrawer from './components/PlaylistDrawer';
+import AddToPlaylistDialog from './components/AddToPlaylistDialog';
 import HomeView from './views/HomeView';
 import SearchView from './views/SearchView';
 import HistoryView from './views/HistoryView';
 import SettingsView from './views/SettingsView';
 import DefaultView from './views/DefaultView';
+import PlaylistsView from './views/PlaylistsView';
+import PlaylistDetailView from './views/PlaylistDetailView';
 import Toast from './components/Toast';
 import type { ToastMessage } from './components/Toast';
 import type { Song, PlayerState } from './types';
 import { ViewState, PlaybackMode } from './types';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
+import { notifyPlaylistUpdated } from './utils/playlistEvents';
 
 function App() {
   // Application State
@@ -21,6 +25,12 @@ function App() {
 
   // Toast 消息管理
   const [toastMessages, setToastMessages] = useState<ToastMessage[]>([]);
+
+  // 歌单详情视图状态
+  const [currentPlaylistId, setCurrentPlaylistId] = useState<string | null>(null);
+
+  // 添加到歌单对话框状态
+  const [showAddToPlaylistDialog, setShowAddToPlaylistDialog] = useState(false);
 
   // 从 localStorage 读取保存的封面样式设置
   const savedCoverStyle = localStorage.getItem('coverStyle') as 'normal' | 'vinyl' | null;
@@ -395,6 +405,24 @@ function App() {
   };
 
   const playSong = (song: Song) => {
+    // 检查是否点击了当前正在播放的同一首歌
+    const isSameSong = playerState.currentSong?.id === song.id;
+
+    if (isSameSong) {
+      // 如果是同一首歌，重新从头播放
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.seek(0);
+        audioPlayerRef.current.play();
+      }
+      setPlayerState(prev => ({
+        ...prev,
+        currentTime: 0,
+        isPlaying: true,
+      }));
+      return;
+    }
+
+    // 不同的歌曲，正常切换
     setPlayerState(prev => {
         // Add to history if it's a new song
         const newHistory = [song, ...prev.history].filter((s, index, self) =>
@@ -498,6 +526,77 @@ function App() {
   };
 
   /**
+   * 歌单相关操作函数
+   */
+  const navigateToPlaylistDetail = (playlistId: string) => {
+    setCurrentPlaylistId(playlistId);
+    setCurrentView('PLAYLIST_DETAIL' as ViewState);
+  };
+
+  const navigateBackFromPlaylistDetail = () => {
+    setCurrentPlaylistId(null);
+    setCurrentView(ViewState.PLAYLISTS);
+  };
+
+  const handleAddCurrentSongToPlaylist = () => {
+    if (playerState.currentSong) {
+      setShowAddToPlaylistDialog(true);
+    } else {
+      showToast('当前没有播放歌曲');
+    }
+  };
+
+  const handleAddSongToPlaylist = async (playlistId: string) => {
+    if (!playerState.currentSong) return;
+
+    try {
+      const result = await window.electron.invoke(
+        'app-db-playlist-add-song',
+        playlistId,
+        playerState.currentSong
+      );
+
+      if (result.success) {
+        showToast('已添加到歌单', 'success');
+        // 触发歌单更新事件，通知相关视图刷新数据
+        notifyPlaylistUpdated();
+      } else {
+        showToast('添加失败', 'error');
+      }
+    } catch (error) {
+      console.error('添加到歌单失败:', error);
+      showToast('添加失败', 'error');
+    }
+  };
+
+  const handleCreatePlaylist = async (
+    name: string,
+    description?: string
+  ): Promise<string> => {
+    const result = await window.electron.invoke(
+      'app-db-playlist-create',
+      name,
+      description
+    );
+
+    if (result.success && result.id) {
+      return result.id;
+    } else {
+      throw new Error('创建歌单失败');
+    }
+  };
+
+  const handlePlayAllFromPlaylist = (songs: Song[]) => {
+    if (songs.length > 0) {
+      setPlayerState(prev => ({
+        ...prev,
+        queue: songs,
+      }));
+      playSong(songs[0]);
+    }
+  };
+
+  /**
    * Toast 消息管理函数
    * 添加新的 Toast 消息
    */
@@ -524,7 +623,33 @@ function App() {
         return <HomeView playerState={playerState} playSong={playSong} />;
 
       case ViewState.SEARCH:
-        return <SearchView searchQuery={searchQuery} setSearchQuery={setSearchQuery} playSong={playSong} />;
+        return (
+          <SearchView
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            playSong={playSong}
+            onShowToast={showToast}
+          />
+        );
+
+      case ViewState.PLAYLISTS:
+        return (
+          <PlaylistsView
+            onNavigateToDetail={navigateToPlaylistDetail}
+            onShowToast={showToast}
+          />
+        );
+
+      case 'PLAYLIST_DETAIL' as ViewState:
+        return currentPlaylistId ? (
+          <PlaylistDetailView
+            playlistId={currentPlaylistId}
+            onNavigateBack={navigateBackFromPlaylistDetail}
+            onPlaySong={playSong}
+            onPlayAll={handlePlayAllFromPlaylist}
+            onShowToast={showToast}
+          />
+        ) : null;
 
       case ViewState.HISTORY:
         return <HistoryView playerState={playerState} playSong={playSong} />;
@@ -585,11 +710,21 @@ function App() {
             toggleFullPlayer={toggleFullPlayer}
             togglePlaylist={togglePlaylist}
             toggleMode={toggleMode}
+            onAddToPlaylist={handleAddCurrentSongToPlaylist}
         />
       </div>
 
       {/* Playlist Drawer */}
       <PlaylistDrawer playerState={playerState} togglePlaylist={togglePlaylist} playSong={playSong} removeFromQueue={removeFromQueue} />
+
+      {/* 添加到歌单对话框 */}
+      <AddToPlaylistDialog
+        isOpen={showAddToPlaylistDialog}
+        onClose={() => setShowAddToPlaylistDialog(false)}
+        song={playerState.currentSong}
+        onAddToPlaylist={handleAddSongToPlaylist}
+        onCreatePlaylist={handleCreatePlaylist}
+      />
 
       {/* Toast 通知容器 */}
       <Toast messages={toastMessages} onRemove={removeToast} />

@@ -4,15 +4,17 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Loader2 } from 'lucide-react';
+import { Play, Loader2, ListPlus } from 'lucide-react';
 import type { Song } from '../types';
 import type { BilibiliVideo, SearchResult, BilibiliPage } from '../../shared/types';
 import PageSelectDialog from '../components/PageSelectDialog';
+import AddToPlaylistDialog from '../components/AddToPlaylistDialog';
 
 interface SearchViewProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   playSong: (song: Song) => void;
+  onShowToast: (message: string) => void;
 }
 
 // 搜索图标占位符组件
@@ -77,7 +79,12 @@ function convertToSong(video: BilibiliVideo, selectedCid?: number): Song {
   };
 }
 
-export default function SearchView({ searchQuery, setSearchQuery, playSong }: SearchViewProps) {
+export default function SearchView({
+  searchQuery,
+  setSearchQuery,
+  playSong,
+  onShowToast,
+}: SearchViewProps) {
   const [searchResults, setSearchResults] = useState<BilibiliVideo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +101,10 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
   // 分P选择对话框状态
   const [pageDialogOpen, setPageDialogOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<BilibiliVideo | null>(null);
+
+  // 添加到歌单对话框状态
+  const [showAddToPlaylistDialog, setShowAddToPlaylistDialog] = useState(false);
+  const [songToAdd, setSongToAdd] = useState<Song | null>(null);
 
   // 无限滚动监听
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -287,6 +298,59 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
     setSuggestions([]);
   };
 
+  /**
+   * 处理添加到歌单按钮点击
+   */
+  const handleAddToPlaylist = (video: BilibiliVideo, e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止冒泡，避免触发播放
+    setSongToAdd(convertToSong(video));
+    setShowAddToPlaylistDialog(true);
+  };
+
+  /**
+   * 添加歌曲到歌单
+   */
+  const handleAddSongToPlaylist = async (playlistId: string) => {
+    if (!songToAdd) return;
+
+    try {
+      const result = await window.electron.invoke(
+        'app-db-playlist-add-song',
+        playlistId,
+        songToAdd
+      );
+
+      if (result.success) {
+        onShowToast('已添加到歌单');
+      } else {
+        onShowToast('添加失败');
+      }
+    } catch (error) {
+      console.error('添加到歌单失败:', error);
+      onShowToast('添加失败');
+    }
+  };
+
+  /**
+   * 创建歌单并返回ID
+   */
+  const handleCreatePlaylist = async (
+    name: string,
+    description?: string
+  ): Promise<string> => {
+    const result = await window.electron.invoke(
+      'app-db-playlist-create',
+      name,
+      description
+    );
+
+    if (result.success && result.id) {
+      return result.id;
+    } else {
+      throw new Error('创建歌单失败');
+    }
+  };
+
   return (
     <div className="p-8 flex flex-col h-full text-slate-500">
       {/* 搜索输入框 */}
@@ -354,16 +418,17 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
 
               {/* 视频列表 */}
               <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
-                <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-4 p-4 border-b border-slate-100 font-semibold text-slate-500 text-sm">
+                <div className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 p-4 border-b border-slate-100 font-semibold text-slate-500 text-sm">
                   <div className="w-10 text-center">#</div>
                   <div>标题</div>
                   <div>UP主</div>
                   <div className="w-16 text-center">时长</div>
+                  <div className="w-16 text-center">操作</div>
                 </div>
                 {searchResults.map((video, i) => (
                   <div
                     key={`${video.bvid}-${i}`}
-                    className="grid grid-cols-[auto_1fr_1fr_auto] gap-4 p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 items-center group cursor-pointer transition-colors"
+                    className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 items-center group cursor-pointer transition-colors"
                     onClick={() => handlePlay(video)}
                   >
                     <div className="w-10 text-center text-slate-400 group-hover:text-primary font-mono text-sm">
@@ -390,6 +455,15 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
                     <div className="text-slate-500 text-sm">{video.author}</div>
                     <div className="w-16 text-center text-slate-400 text-sm font-mono">
                       {formatDuration(parseDuration(video.duration))}
+                    </div>
+                    <div className="w-16 text-center">
+                      <button
+                        onClick={(e) => handleAddToPlaylist(video, e)}
+                        className="p-2 hover:bg-slate-200 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                        title="添加到歌单"
+                      >
+                        <ListPlus size={18} className="text-slate-600" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -441,6 +515,18 @@ export default function SearchView({ searchQuery, setSearchQuery, playSong }: Se
           videoTitle={selectedVideo.title}
         />
       )}
+
+      {/* 添加到歌单对话框 */}
+      <AddToPlaylistDialog
+        isOpen={showAddToPlaylistDialog}
+        onClose={() => {
+          setShowAddToPlaylistDialog(false);
+          setSongToAdd(null);
+        }}
+        song={songToAdd}
+        onAddToPlaylist={handleAddSongToPlaylist}
+        onCreatePlaylist={handleCreatePlaylist}
+      />
     </div>
   );
 }

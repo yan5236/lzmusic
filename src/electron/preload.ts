@@ -36,6 +36,15 @@ contextBridge.exposeInMainWorld('electron', {
       'app-db-offset-get',    // 获取歌词偏移
       'app-db-offset-delete', // 删除歌词偏移
       'app-db-offset-get-all', // 获取所有歌词偏移
+      // 应用数据库 - 歌单
+      'app-db-playlist-create',      // 创建歌单
+      'app-db-playlist-get-all',     // 获取所有歌单
+      'app-db-playlist-get-detail',  // 获取歌单详情
+      'app-db-playlist-update',      // 更新歌单
+      'app-db-playlist-delete',      // 删除歌单
+      'app-db-playlist-add-song',    // 添加歌曲到歌单
+      'app-db-playlist-remove-songs', // 批量删除歌曲
+      'app-db-playlist-reorder-songs', // 重排序歌曲
     ];
 
     if (!validChannels.includes(channel)) {

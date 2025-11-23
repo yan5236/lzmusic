@@ -4,7 +4,7 @@
  */
 
 import type { SearchResult, BilibiliVideo, AudioUrlResponse } from '../shared/types';
-import type { NeteaseSearchResult } from './types';
+import type { NeteaseSearchResult, Playlist, PlaylistDetail } from './types';
 
 // 网易云音乐 API 响应类型
 interface NeteaseSearchResponse {
@@ -104,6 +104,50 @@ interface AppDbOffsetGetAllResponse {
   error?: string;
 }
 
+// 歌单 API 响应类型
+interface AppDbPlaylistCreateResponse {
+  success: boolean;
+  id?: string;
+  error?: string;
+}
+
+interface AppDbPlaylistGetAllResponse {
+  success: boolean;
+  data: Playlist[];
+  error?: string;
+}
+
+interface AppDbPlaylistGetDetailResponse {
+  success: boolean;
+  data?: PlaylistDetail;
+  error?: string;
+}
+
+interface AppDbPlaylistUpdateResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface AppDbPlaylistDeleteResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface AppDbPlaylistAddSongResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface AppDbPlaylistRemoveSongsResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface AppDbPlaylistReorderSongsResponse {
+  success: boolean;
+  error?: string;
+}
+
 // 搜索建议响应类型
 type SearchSuggestionsResponse = string[];
 
@@ -143,6 +187,30 @@ declare global {
       invoke(channel: 'app-db-offset-get', songId: string): Promise<AppDbOffsetGetResponse>;
       invoke(channel: 'app-db-offset-delete', songId: string): Promise<AppDbOffsetDeleteResponse>;
       invoke(channel: 'app-db-offset-get-all'): Promise<AppDbOffsetGetAllResponse>;
+      // 应用数据库 - 歌单
+      invoke(channel: 'app-db-playlist-create', name: string, description?: string): Promise<AppDbPlaylistCreateResponse>;
+      invoke(channel: 'app-db-playlist-get-all'): Promise<AppDbPlaylistGetAllResponse>;
+      invoke(channel: 'app-db-playlist-get-detail', playlistId: string): Promise<AppDbPlaylistGetDetailResponse>;
+      invoke(channel: 'app-db-playlist-update', playlistId: string, updates: {
+        name?: string;
+        description?: string;
+        coverUrl?: string;
+      }): Promise<AppDbPlaylistUpdateResponse>;
+      invoke(channel: 'app-db-playlist-delete', playlistId: string): Promise<AppDbPlaylistDeleteResponse>;
+      invoke(channel: 'app-db-playlist-add-song', playlistId: string, song: {
+        id: string;
+        title: string;
+        artist: string;
+        album?: string;
+        coverUrl: string;
+        duration: number;
+        bvid?: string;
+        cid?: number;
+        pages?: Array<{ page: number; part: string; cid: number; duration: number }>;
+        source?: 'local' | 'bilibili';
+      }): Promise<AppDbPlaylistAddSongResponse>;
+      invoke(channel: 'app-db-playlist-remove-songs', playlistId: string, songIds: string[]): Promise<AppDbPlaylistRemoveSongsResponse>;
+      invoke(channel: 'app-db-playlist-reorder-songs', playlistId: string, songIds: string[]): Promise<AppDbPlaylistReorderSongsResponse>;
     };
   }
 }

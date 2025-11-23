@@ -41,7 +41,7 @@ export default function HistoryView({ playerState, playSong }: HistoryViewProps)
               <span className="text-slate-900 font-medium">{song.title}</span>
             </div>
             <div className="text-slate-500 text-sm">{song.artist}</div>
-            <div className="w-16 text-center text-slate-400 text-sm font-mono">{Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, '0')}</div>
+            <div className="w-16 text-center text-slate-400 text-sm font-mono">{Math.floor(Math.round(song.duration) / 60)}:{(Math.round(song.duration) % 60).toString().padStart(2, '0')}</div>
           </div>
         )) : (
           <div className="py-12 flex flex-col items-center justify-center text-slate-400">

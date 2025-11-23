@@ -8,6 +8,7 @@ import { lyricsDatabase } from './database/lyricsDatabase.js';
 import { registerLyricsDbHandlers } from './api/lyricsDbHandler.js';
 import { appDatabase } from './database/appDatabase.js';
 import { registerAppDbHandlers } from './api/appDbHandler.js';
+import { registerPlaylistHandlers } from './api/playlistHandler.js';
 
 // 在 ES 模块中获取 __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -31,6 +32,9 @@ app.on('ready', () => {
 
   // 注册应用数据库 IPC 处理器
   registerAppDbHandlers();
+
+  // 注册歌单 IPC 处理器
+  registerPlaylistHandlers();
 
   // 配置 B站图片和音频流请求的 Referer 头,解决防盗链问题
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
@@ -65,6 +69,7 @@ app.on('ready', () => {
     height: 768,
     minWidth: 800,
     minHeight: 600,
+    show: false,
     icon: path.join(app.getAppPath(), 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: {
       nodeIntegration: false,
@@ -73,6 +78,18 @@ app.on('ready', () => {
       preload: path.join(__dirname, '..', 'preload.js'),
     }
   });
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    // 可选：让窗口获得焦点
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (!mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  });
+
 
   if (isDev()) {
     mainWindow.loadURL('http://localhost:5238');

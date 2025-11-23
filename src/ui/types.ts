@@ -81,3 +81,32 @@ export interface NeteaseSearchResult {
   artist: string;
   album: string;
 }
+
+/**
+ * 歌单基本信息接口
+ */
+export interface Playlist {
+  id: string;
+  name: string;
+  description?: string;
+  coverUrl?: string;
+  createdAt: number;
+  updatedAt: number;
+  songCount: number; // 歌曲数量
+}
+
+/**
+ * 歌单中的歌曲接口（包含排序和添加时间信息）
+ */
+export interface PlaylistSong extends Song {
+  sortOrder: number; // 在歌单中的排序
+  addedAt: number; // 添加到歌单的时间戳
+}
+
+/**
+ * 歌单详情接口（含歌曲列表）
+ */
+export interface PlaylistDetail {
+  playlist: Playlist;
+  songs: PlaylistSong[];
+}

@@ -29,6 +29,25 @@ export interface LyricsOffsetRecord {
   updatedAt: number; // 更新时间戳
 }
 
+// 歌单数据结构
+export interface PlaylistRecord {
+  id: string;
+  name: string;
+  description?: string;
+  coverUrl?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// 歌单歌曲关联数据结构
+export interface PlaylistSongRecord {
+  playlistId: string;
+  songId: string;
+  songData: string; // JSON 序列化的歌曲完整信息
+  sortOrder: number;
+  addedAt: number;
+}
+
 class AppDatabase {
   private db: Database.Database | null = null;
   private readonly dbPath: string;
@@ -70,6 +89,36 @@ class AppDatabase {
           offset INTEGER NOT NULL DEFAULT 0,
           updatedAt INTEGER NOT NULL
         )
+      `);
+
+      // 创建歌单表
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS playlists (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          description TEXT,
+          coverUrl TEXT,
+          createdAt INTEGER NOT NULL,
+          updatedAt INTEGER NOT NULL
+        )
+      `);
+
+      // 创建歌单歌曲关联表
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS playlist_songs (
+          playlistId TEXT NOT NULL,
+          songId TEXT NOT NULL,
+          songData TEXT NOT NULL,
+          sortOrder INTEGER NOT NULL,
+          addedAt INTEGER NOT NULL,
+          PRIMARY KEY (playlistId, songId)
+        )
+      `);
+
+      // 为歌单歌曲表创建索引以优化查询
+      this.db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_playlist_songs_playlistId
+        ON playlist_songs(playlistId, sortOrder)
       `);
 
       console.log('应用数据库初始化成功:', this.dbPath);
@@ -263,6 +312,356 @@ class AppDatabase {
       return stmt.all() as LyricsOffsetRecord[];
     } catch (error) {
       console.error('获取所有歌词偏移失败:', error);
+      throw error;
+    }
+  }
+
+  // ========== 歌单操作 ==========
+
+  /**
+   * 创建歌单
+   * @param playlist - 歌单信息（不含id）
+   * @returns 创建的歌单ID
+   */
+  public createPlaylist(playlist: Omit<PlaylistRecord, 'id' | 'createdAt' | 'updatedAt'>): string {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const id = `playlist_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const now = Date.now();
+
+      const stmt = this.db.prepare(`
+        INSERT INTO playlists (id, name, description, coverUrl, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+
+      stmt.run(
+        id,
+        playlist.name,
+        playlist.description || null,
+        playlist.coverUrl || null,
+        now,
+        now
+      );
+
+      console.log(`歌单已创建 [ID: ${id}, 名称: ${playlist.name}]`);
+      return id;
+    } catch (error) {
+      console.error('创建歌单失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取所有歌单（包含歌曲数量）
+   * 当歌单没有自定义封面时，使用第一首歌曲的封面
+   * @returns 歌单数组
+   */
+  public getAllPlaylists(): (PlaylistRecord & { songCount: number })[] {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      // 使用子查询获取每个歌单的第一首歌曲封面
+      const stmt = this.db.prepare(`
+        SELECT
+          p.*,
+          COUNT(ps.songId) as songCount,
+          (
+            SELECT JSON_EXTRACT(ps2.songData, '$.coverUrl')
+            FROM playlist_songs ps2
+            WHERE ps2.playlistId = p.id
+            ORDER BY ps2.sortOrder ASC
+            LIMIT 1
+          ) as firstSongCover
+        FROM playlists p
+        LEFT JOIN playlist_songs ps ON p.id = ps.playlistId
+        GROUP BY p.id
+        ORDER BY p.updatedAt DESC
+      `);
+
+      const playlists = stmt.all() as (PlaylistRecord & { songCount: number; firstSongCover?: string })[];
+
+      // 如果歌单没有自定义封面，使用第一首歌曲的封面
+      return playlists.map(playlist => ({
+        ...playlist,
+        coverUrl: playlist.coverUrl || playlist.firstSongCover || undefined,
+      }));
+    } catch (error) {
+      console.error('获取歌单列表失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取歌单详情（包含歌曲列表）
+   * @param playlistId - 歌单ID
+   * @returns 歌单详情及歌曲列表
+   */
+  public getPlaylistDetail(playlistId: string): {
+    playlist: PlaylistRecord & { songCount: number };
+    songs: (HistoryRecord & { sortOrder: number; addedAt: number })[];
+  } | null {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      // 获取歌单基本信息
+      const playlistStmt = this.db.prepare(`
+        SELECT
+          p.*,
+          COUNT(ps.songId) as songCount
+        FROM playlists p
+        LEFT JOIN playlist_songs ps ON p.id = ps.playlistId
+        WHERE p.id = ?
+        GROUP BY p.id
+      `);
+
+      const playlist = playlistStmt.get(playlistId) as (PlaylistRecord & { songCount: number }) | undefined;
+
+      if (!playlist) {
+        return null;
+      }
+
+      // 获取歌单中的歌曲列表
+      const songsStmt = this.db.prepare(`
+        SELECT songData, sortOrder, addedAt
+        FROM playlist_songs
+        WHERE playlistId = ?
+        ORDER BY sortOrder ASC
+      `);
+
+      const songRecords = songsStmt.all(playlistId) as {
+        songData: string;
+        sortOrder: number;
+        addedAt: number;
+      }[];
+
+      const songs = songRecords.map(record => ({
+        ...JSON.parse(record.songData),
+        sortOrder: record.sortOrder,
+        addedAt: record.addedAt
+      }));
+
+      return { playlist, songs };
+    } catch (error) {
+      console.error('获取歌单详情失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新歌单信息
+   * @param playlistId - 歌单ID
+   * @param updates - 要更新的字段
+   */
+  public updatePlaylist(
+    playlistId: string,
+    updates: Partial<Pick<PlaylistRecord, 'name' | 'description' | 'coverUrl'>>
+  ): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const updatedAt = Date.now();
+      const fields: string[] = [];
+      const values: (string | number)[] = [];
+
+      if (updates.name !== undefined) {
+        fields.push('name = ?');
+        values.push(updates.name);
+      }
+      if (updates.description !== undefined) {
+        fields.push('description = ?');
+        values.push(updates.description || '');
+      }
+      if (updates.coverUrl !== undefined) {
+        fields.push('coverUrl = ?');
+        values.push(updates.coverUrl || '');
+      }
+
+      if (fields.length === 0) {
+        return; // 没有需要更新的字段
+      }
+
+      fields.push('updatedAt = ?');
+      values.push(updatedAt, playlistId);
+
+      const stmt = this.db.prepare(`
+        UPDATE playlists
+        SET ${fields.join(', ')}
+        WHERE id = ?
+      `);
+
+      stmt.run(...values);
+      console.log(`歌单已更新 [ID: ${playlistId}]`);
+    } catch (error) {
+      console.error('更新歌单失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 删除歌单（及其所有歌曲）
+   * @param playlistId - 歌单ID
+   */
+  public deletePlaylist(playlistId: string): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      // 先删除歌单中的所有歌曲
+      const deleteSongsStmt = this.db.prepare('DELETE FROM playlist_songs WHERE playlistId = ?');
+      deleteSongsStmt.run(playlistId);
+
+      // 再删除歌单
+      const deletePlaylistStmt = this.db.prepare('DELETE FROM playlists WHERE id = ?');
+      deletePlaylistStmt.run(playlistId);
+
+      console.log(`歌单已删除 [ID: ${playlistId}]`);
+    } catch (error) {
+      console.error('删除歌单失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 添加歌曲到歌单
+   * @param playlistId - 歌单ID
+   * @param song - 歌曲信息
+   */
+  public addSongToPlaylist(playlistId: string, song: HistoryRecord): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      // 检查歌曲是否已存在
+      const checkStmt = this.db.prepare(`
+        SELECT songId FROM playlist_songs
+        WHERE playlistId = ? AND songId = ?
+      `);
+      const exists = checkStmt.get(playlistId, song.id);
+
+      if (exists) {
+        console.log(`歌曲已存在于歌单中 [歌单: ${playlistId}, 歌曲: ${song.id}]`);
+        return; // 歌曲已存在，不重复添加
+      }
+
+      // 获取当前最大的 sortOrder
+      const maxOrderStmt = this.db.prepare(`
+        SELECT MAX(sortOrder) as maxOrder
+        FROM playlist_songs
+        WHERE playlistId = ?
+      `);
+      const result = maxOrderStmt.get(playlistId) as { maxOrder: number | null };
+      const sortOrder = (result.maxOrder ?? -1) + 1;
+
+      const addedAt = Date.now();
+      const songData = JSON.stringify(song);
+
+      const stmt = this.db.prepare(`
+        INSERT INTO playlist_songs (playlistId, songId, songData, sortOrder, addedAt)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+      stmt.run(playlistId, song.id, songData, sortOrder, addedAt);
+
+      // 更新歌单的 updatedAt
+      this.db.prepare('UPDATE playlists SET updatedAt = ? WHERE id = ?').run(Date.now(), playlistId);
+
+      console.log(`歌曲已添加到歌单 [歌单: ${playlistId}, 歌曲: ${song.id}]`);
+    } catch (error) {
+      console.error('添加歌曲到歌单失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 从歌单中批量删除歌曲
+   * @param playlistId - 歌单ID
+   * @param songIds - 歌曲ID数组
+   */
+  public removeSongsFromPlaylist(playlistId: string, songIds: string[]): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const placeholders = songIds.map(() => '?').join(',');
+      const stmt = this.db.prepare(`
+        DELETE FROM playlist_songs
+        WHERE playlistId = ? AND songId IN (${placeholders})
+      `);
+
+      stmt.run(playlistId, ...songIds);
+
+      // 重新排序剩余歌曲
+      this.reorderPlaylistSongs(playlistId);
+
+      // 更新歌单的 updatedAt
+      this.db.prepare('UPDATE playlists SET updatedAt = ? WHERE id = ?').run(Date.now(), playlistId);
+
+      console.log(`已从歌单删除 ${songIds.length} 首歌曲 [歌单: ${playlistId}]`);
+    } catch (error) {
+      console.error('从歌单删除歌曲失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 重新排序歌单中的歌曲
+   * @param playlistId - 歌单ID
+   * @param songIds - 按新顺序排列的歌曲ID数组
+   */
+  public reorderPlaylistSongs(playlistId: string, songIds?: string[]): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      if (songIds) {
+        // 如果提供了新顺序，按照新顺序更新
+        const updateStmt = this.db.prepare(`
+          UPDATE playlist_songs
+          SET sortOrder = ?
+          WHERE playlistId = ? AND songId = ?
+        `);
+
+        songIds.forEach((songId, index) => {
+          updateStmt.run(index, playlistId, songId);
+        });
+      } else {
+        // 如果没有提供新顺序，重新整理现有顺序（用于删除后）
+        const songs = this.db.prepare(`
+          SELECT songId FROM playlist_songs
+          WHERE playlistId = ?
+          ORDER BY sortOrder ASC
+        `).all(playlistId) as { songId: string }[];
+
+        const updateStmt = this.db.prepare(`
+          UPDATE playlist_songs
+          SET sortOrder = ?
+          WHERE playlistId = ? AND songId = ?
+        `);
+
+        songs.forEach((song, index) => {
+          updateStmt.run(index, playlistId, song.songId);
+        });
+      }
+
+      // 更新歌单的 updatedAt
+      this.db.prepare('UPDATE playlists SET updatedAt = ? WHERE id = ?').run(Date.now(), playlistId);
+
+      console.log(`歌单歌曲顺序已更新 [歌单: ${playlistId}]`);
+    } catch (error) {
+      console.error('重新排序歌单歌曲失败:', error);
       throw error;
     }
   }

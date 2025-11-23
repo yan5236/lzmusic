@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, ListMusic, Maximize2, VolumeX, Minimize2, Repeat, Repeat1, Shuffle } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, ListMusic, Maximize2, VolumeX, Minimize2, Repeat, Repeat1, Shuffle, ListPlus } from 'lucide-react';
 import { PlaybackMode } from '../types';
 import type { PlayerState } from '../types';
 import ProgressBar from './ProgressBar';
@@ -14,6 +14,7 @@ interface BottomPlayerProps {
   toggleFullPlayer: () => void;
   togglePlaylist: () => void;
   toggleMode: () => void;
+  onAddToPlaylist?: () => void; // 添加到歌单的回调
 }
 
 const BottomPlayer: React.FC<BottomPlayerProps> = ({
@@ -25,13 +26,16 @@ const BottomPlayer: React.FC<BottomPlayerProps> = ({
   changeVolume,
   toggleFullPlayer,
   togglePlaylist,
-  toggleMode
+  toggleMode,
+  onAddToPlaylist
 }) => {
   const { currentSong, isPlaying, currentTime, volume, isFullPlayerOpen, mode } = playerState;
 
+  // 格式化时长（先四舍五入总秒数，避免浮点数精度问题）
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
+    const totalSeconds = Math.round(seconds);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
@@ -164,6 +168,17 @@ const BottomPlayer: React.FC<BottomPlayerProps> = ({
           {mode === PlaybackMode.SINGLE && <Repeat1 size={20} />}
           {mode === PlaybackMode.SHUFFLE && <Shuffle size={20} />}
         </button>
+
+        {/* Add to Playlist Button */}
+        {onAddToPlaylist && (
+          <button
+            onClick={onAddToPlaylist}
+            className="p-2 text-slate-400 hover:text-primary transition-colors rounded-full hover:bg-slate-50"
+            title="添加到歌单"
+          >
+            <ListPlus size={20} />
+          </button>
+        )}
 
         <button onClick={togglePlaylist} className={`p-2 rounded-full transition-colors ${playerState.showPlaylist ? 'text-primary bg-blue-50' : 'text-slate-400 hover:text-primary hover:bg-slate-50'}`}>
           <ListMusic size={20} />
