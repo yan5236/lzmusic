@@ -148,6 +148,74 @@ interface AppDbPlaylistReorderSongsResponse {
   error?: string;
 }
 
+// 歌单导出响应类型
+interface AppDbPlaylistExportResponse {
+  success: boolean;
+  data?: {
+    type: 'playlist';
+    exportTime: number;
+    count: number;
+    playlist: {
+      name: string;
+      createTime: number;
+      updateTime: number;
+      songs: Array<{
+        title: string;
+        author: string;
+        bvid: string;
+        duration: string;
+        cover: string;
+        cid: number;
+        pages: unknown[];
+        play?: number;
+      }>;
+    };
+  };
+  error?: string;
+}
+
+// 歌单批量导出响应类型
+interface AppDbPlaylistExportMultipleResponse {
+  success: boolean;
+  data?: {
+    type: 'playlists';
+    exportTime: number;
+    count: number;
+    playlists: Array<{
+      name: string;
+      createTime: number;
+      updateTime: number;
+      songs: Array<{
+        title: string;
+        author: string;
+        bvid: string;
+        duration: string;
+        cover: string;
+        cid: number;
+        pages: unknown[];
+        play?: number;
+      }>;
+    }>;
+  };
+  error?: string;
+}
+
+// 歌单预览导入响应类型
+interface AppDbPlaylistPreviewImportResponse {
+  success: boolean;
+  playlists: Array<{ id: string; name: string; songCount: number }>;
+  isMultiple: boolean;
+  error?: string;
+}
+
+// 歌单导入响应类型
+interface AppDbPlaylistImportResponse {
+  success: boolean;
+  imported: number;
+  failed: number;
+  errors: string[];
+}
+
 // 搜索建议响应类型
 type SearchSuggestionsResponse = string[];
 
@@ -211,6 +279,10 @@ declare global {
       }): Promise<AppDbPlaylistAddSongResponse>;
       invoke(channel: 'app-db-playlist-remove-songs', playlistId: string, songIds: string[]): Promise<AppDbPlaylistRemoveSongsResponse>;
       invoke(channel: 'app-db-playlist-reorder-songs', playlistId: string, songIds: string[]): Promise<AppDbPlaylistReorderSongsResponse>;
+      invoke(channel: 'app-db-playlist-export', playlistId: string): Promise<AppDbPlaylistExportResponse>;
+      invoke(channel: 'app-db-playlist-export-multiple', playlistIds: string[]): Promise<AppDbPlaylistExportMultipleResponse>;
+      invoke(channel: 'app-db-playlist-preview-import', jsonData: string): Promise<AppDbPlaylistPreviewImportResponse>;
+      invoke(channel: 'app-db-playlist-import', jsonData: string, selectedIds?: string[]): Promise<AppDbPlaylistImportResponse>;
     };
   }
 }

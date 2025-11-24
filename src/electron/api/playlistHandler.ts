@@ -192,5 +192,114 @@ export function registerPlaylistHandlers(): void {
     }
   );
 
+  // ========== 歌单导出导入操作 ==========
+
+  // 导出单个歌单
+  ipcMain.handle(
+    'app-db-playlist-export',
+    async (_event, playlistId: string) => {
+      try {
+        const data = appDatabase.exportPlaylistData(playlistId);
+        if (!data) {
+          return {
+            success: false,
+            error: '歌单不存在',
+          };
+        }
+        return { success: true, data };
+      } catch (error) {
+        console.error('导出歌单失败:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : '未知错误',
+        };
+      }
+    }
+  );
+
+  // 批量导出多个歌单
+  ipcMain.handle(
+    'app-db-playlist-export-multiple',
+    async (_event, playlistIds: string[]) => {
+      try {
+        const data = appDatabase.exportMultiplePlaylists(playlistIds);
+        return { success: true, data };
+      } catch (error) {
+        console.error('批量导出歌单失败:', error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : '未知错误',
+        };
+      }
+    }
+  );
+
+  // 预览导入文件（解析文件获取歌单列表，不实际导入）
+  ipcMain.handle(
+    'app-db-playlist-preview-import',
+    async (_event, jsonData: string) => {
+      try {
+        const parsed = JSON.parse(jsonData);
+        const playlists: Array<{ id: string; name: string; songCount: number }> = [];
+
+        // 检查是否为多歌单格式（type: 'playlists'）
+        if (parsed.type === 'playlists' && Array.isArray(parsed.playlists)) {
+          for (let i = 0; i < parsed.playlists.length; i++) {
+            const item = parsed.playlists[i];
+            if (item && item.name) {
+              // 使用索引作为临时ID，确保预览和导入时ID一致
+              playlists.push({
+                id: `import-index-${i}`,
+                name: item.name,
+                songCount: Array.isArray(item.songs) ? item.songs.length : 0,
+              });
+            }
+          }
+        }
+        // 检查是否为单歌单格式（type: 'playlist'）
+        else if (parsed.type === 'playlist' && parsed.playlist) {
+          playlists.push({
+            id: 'import-index-0',
+            name: parsed.playlist.name,
+            songCount: Array.isArray(parsed.playlist.songs) ? parsed.playlist.songs.length : 0,
+          });
+        }
+
+        return {
+          success: true,
+          playlists,
+          isMultiple: playlists.length > 1,
+        };
+      } catch (error) {
+        console.error('预览导入文件失败:', error);
+        return {
+          success: false,
+          playlists: [],
+          isMultiple: false,
+          error: error instanceof Error ? error.message : '文件格式无效',
+        };
+      }
+    }
+  );
+
+  // 导入歌单（支持选择性导入）
+  ipcMain.handle(
+    'app-db-playlist-import',
+    async (_event, jsonData: string, selectedIds?: string[]) => {
+      try {
+        const result = appDatabase.importPlaylistData(jsonData, selectedIds);
+        return result;
+      } catch (error) {
+        console.error('导入歌单失败:', error);
+        return {
+          success: false,
+          imported: 0,
+          failed: 0,
+          errors: [error instanceof Error ? error.message : '未知错误'],
+        };
+      }
+    }
+  );
+
   console.log('歌单IPC处理器已注册');
 }

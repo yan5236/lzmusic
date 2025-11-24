@@ -45,6 +45,10 @@ contextBridge.exposeInMainWorld('electron', {
       'app-db-playlist-add-song',    // 添加歌曲到歌单
       'app-db-playlist-remove-songs', // 批量删除歌曲
       'app-db-playlist-reorder-songs', // 重排序歌曲
+      'app-db-playlist-export',        // 导出歌单
+      'app-db-playlist-export-multiple', // 批量导出歌单
+      'app-db-playlist-preview-import',  // 预览导入文件
+      'app-db-playlist-import',        // 导入歌单
     ];
 
     if (!validChannels.includes(channel)) {

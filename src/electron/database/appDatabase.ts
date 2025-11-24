@@ -48,6 +48,58 @@ export interface PlaylistSongRecord {
   addedAt: number;
 }
 
+// 导出歌曲数据结构（兼容旧版格式）
+export interface ExportSongData {
+  title: string;
+  author: string;
+  bvid: string;
+  duration: string; // "分:秒" 格式
+  cover: string;
+  cid: number;
+  pages: Array<{
+    cid: number;
+    page: number;
+    from: string;
+    part: string;
+    duration: number;
+    vid: string;
+    weblink: string;
+    dimension?: { width: number; height: number; rotate: number };
+    first_frame?: string;
+    ctime?: number;
+  }>;
+  play?: number;
+}
+
+// 导出单个歌单数据结构（兼容旧版格式）
+export interface ExportPlaylistData {
+  type: 'playlist';
+  exportTime: number;
+  count: number;
+  playlist: {
+    name: string;
+    createTime: number;
+    updateTime: number;
+    songs: ExportSongData[];
+  };
+}
+
+// 导出多个歌单数据结构
+export interface ExportMultiplePlaylistsData {
+  type: 'playlists';
+  exportTime: number;
+  count: number;
+  playlists: ExportPlaylistData['playlist'][];
+}
+
+// 导入结果
+export interface ImportResult {
+  success: boolean;
+  imported: number;
+  failed: number;
+  errors: string[];
+}
+
 class AppDatabase {
   private db: Database.Database | null = null;
   private readonly dbPath: string;
@@ -664,6 +716,232 @@ class AppDatabase {
       console.error('重新排序歌单歌曲失败:', error);
       throw error;
     }
+  }
+
+  // ========== 歌单导出导入操作 ==========
+
+  /**
+   * 导出单个歌单数据（兼容旧版格式）
+   * @param playlistId - 歌单ID
+   * @returns 导出数据，如果歌单不存在返回null
+   */
+  public exportPlaylistData(playlistId: string): ExportPlaylistData | null {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const detail = this.getPlaylistDetail(playlistId);
+      if (!detail) {
+        return null;
+      }
+
+      // 将歌曲数据转换为导出格式
+      const songs: ExportSongData[] = detail.songs.map(song => ({
+        title: song.title,
+        author: song.artist,
+        bvid: song.bvid || '',
+        duration: this.formatDuration(song.duration),
+        cover: song.coverUrl,
+        cid: song.cid || 0,
+        pages: song.pages ? JSON.parse(song.pages as unknown as string) : [],
+        play: 0,
+      }));
+
+      return {
+        type: 'playlist',
+        exportTime: Date.now(),
+        count: songs.length,
+        playlist: {
+          name: detail.playlist.name,
+          createTime: detail.playlist.createdAt,
+          updateTime: detail.playlist.updatedAt,
+          songs,
+        },
+      };
+    } catch (error) {
+      console.error('导出歌单失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 批量导出多个歌单
+   * @param playlistIds - 歌单ID数组
+   * @returns 多歌单导出数据
+   */
+  public exportMultiplePlaylists(playlistIds: string[]): ExportMultiplePlaylistsData {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const playlists: ExportPlaylistData['playlist'][] = [];
+
+      for (const id of playlistIds) {
+        const exportData = this.exportPlaylistData(id);
+        if (exportData) {
+          playlists.push(exportData.playlist);
+        }
+      }
+
+      return {
+        type: 'playlists',
+        exportTime: Date.now(),
+        count: playlists.length,
+        playlists,
+      };
+    } catch (error) {
+      console.error('批量导出歌单失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 从导出数据导入歌单
+   * 支持旧版单歌单格式和新版多歌单格式
+   * @param data - 导出的JSON数据字符串
+   * @param selectedIds - 可选，要导入的歌单ID列表（用于选择性导入）
+   * @returns 导入结果
+   */
+  public importPlaylistData(data: string, selectedIds?: string[]): ImportResult {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const parsed = JSON.parse(data);
+      const results: ImportResult = {
+        success: true,
+        imported: 0,
+        failed: 0,
+        errors: [],
+      };
+
+      // 判断是单歌单还是多歌单格式
+      if (parsed.type === 'playlist' && parsed.playlist) {
+        // 旧版单歌单格式
+        // 使用索引作为临时ID，与预览时一致
+        const playlistId = 'import-index-0';
+        if (!selectedIds || selectedIds.includes(playlistId)) {
+          this.importSinglePlaylist(parsed.playlist, results);
+        }
+      } else if (parsed.type === 'playlists' && Array.isArray(parsed.playlists)) {
+        // 新版多歌单格式
+        for (let i = 0; i < parsed.playlists.length; i++) {
+          const playlist = parsed.playlists[i];
+          // 使用索引作为临时ID，与预览时一致
+          const playlistId = `import-index-${i}`;
+          // 如果有选择列表，只导入选中的歌单
+          if (!selectedIds || selectedIds.includes(playlistId)) {
+            this.importSinglePlaylist(playlist, results);
+          }
+        }
+      } else {
+        results.success = false;
+        results.errors.push('无法识别的导入格式');
+      }
+
+      return results;
+    } catch (error) {
+      console.error('导入歌单失败:', error);
+      return {
+        success: false,
+        imported: 0,
+        failed: 0,
+        errors: [error instanceof Error ? error.message : '解析JSON失败'],
+      };
+    }
+  }
+
+  /**
+   * 导入单个歌单
+   * @param playlistData - 歌单数据
+   * @param results - 导入结果对象（用于累计）
+   */
+  private importSinglePlaylist(
+    playlistData: ExportPlaylistData['playlist'],
+    results: ImportResult
+  ): void {
+    try {
+      // 使用时间戳+随机数生成唯一ID，避免多个歌单ID冲突
+      const playlistId = `playlist_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const now = Date.now();
+
+      // 创建歌单
+      const stmt = this.db!.prepare(`
+        INSERT INTO playlists (id, name, description, coverUrl, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+
+      stmt.run(
+        playlistId,
+        playlistData.name,
+        null,
+        null,
+        playlistData.createTime || now,
+        playlistData.updateTime || now
+      );
+
+      // 导入歌曲
+      if (playlistData.songs && playlistData.songs.length > 0) {
+        const songStmt = this.db!.prepare(`
+          INSERT INTO playlist_songs (playlistId, songId, songData, sortOrder, addedAt)
+          VALUES (?, ?, ?, ?, ?)
+        `);
+
+        playlistData.songs.forEach((song, index) => {
+          // 构建歌曲数据，转换为内部格式
+          const songRecord: HistoryRecord = {
+            id: song.bvid ? `bilibili_${song.bvid}_${song.cid || 0}` : `song_${Date.now()}_${index}`,
+            title: song.title,
+            artist: song.author,
+            coverUrl: song.cover,
+            duration: this.parseDuration(song.duration),
+            bvid: song.bvid,
+            cid: song.cid,
+            pages: song.pages ? JSON.stringify(song.pages) : undefined,
+            source: 'bilibili',
+            playedAt: now,
+          };
+
+          songStmt.run(
+            playlistId,
+            songRecord.id,
+            JSON.stringify(songRecord),
+            index,
+            now
+          );
+        });
+      }
+
+      results.imported++;
+      console.log(`歌单导入成功 [名称: ${playlistData.name}, 歌曲数: ${playlistData.songs?.length || 0}]`);
+    } catch (error) {
+      results.failed++;
+      results.errors.push(`导入歌单"${playlistData.name}"失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      console.error(`导入歌单失败 [名称: ${playlistData.name}]:`, error);
+    }
+  }
+
+  /**
+   * 将秒数格式化为 "分:秒" 格式
+   */
+  private formatDuration(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs}`;
+  }
+
+  /**
+   * 将 "分:秒" 格式解析为秒数
+   */
+  private parseDuration(duration: string): number {
+    const parts = duration.split(':');
+    if (parts.length === 2) {
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    }
+    return 0;
   }
 
   /**

@@ -652,13 +652,25 @@ function App() {
         ) : null;
 
       case ViewState.HISTORY:
-        return <HistoryView playerState={playerState} playSong={playSong} />;
+        return (
+          <HistoryView
+            playerState={playerState}
+            playSong={playSong}
+            onClearHistory={() => setPlayerState(prev => ({ ...prev, history: [] }))}
+            onDeleteHistory={(songId) => setPlayerState(prev => ({
+              ...prev,
+              history: prev.history.filter(s => s.id !== songId)
+            }))}
+            onShowToast={showToast}
+          />
+        );
 
       case ViewState.SETTINGS:
         return (
           <SettingsView
             coverStyle={playerState.coverStyle}
             onCoverStyleChange={updateCoverStyle}
+            onShowToast={showToast}
           />
         );
 
