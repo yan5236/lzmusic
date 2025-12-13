@@ -44,8 +44,17 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
   // AbortController用于取消正在进行的播放请求
   const playAbortControllerRef = useRef<AbortController | null>(null);
 
+  // 主动停止标志,用于区分主动清空音频源还是播放错误
+  const isStoppingRef = useRef<boolean>(false);
+
   // 使用useRef存储callbacks，避免依赖变化导致函数重新创建
   const callbacksRef = useRef<AudioPlayerCallbacks>(callbacks);
+  
+  // loadAndPlay函数的引用，用于在事件处理函数中调用
+  const loadAndPlayRef = useRef<((song: Song, startTime?: number) => Promise<void>) | null>(null);
+  
+  // 上次尝试恢复播放的时间戳
+  const lastErrorTimeRef = useRef<number>(0);
 
   // 每次渲染时更新callbacksRef
   useEffect(() => {
@@ -61,7 +70,8 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
 
     // 设置音频属性
     audio.preload = 'auto';
-    audio.crossOrigin = 'anonymous'; // 处理跨域
+    // 注意：不设置 crossOrigin，让浏览器根据资源类型自动处理
+    // 本地文件不需要跨域，在线资源会在加载时单独设置
 
     audioRef.current = audio;
 
@@ -124,7 +134,46 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
     // 错误事件
     const handleError = () => {
       const error = audio.error;
+
+      // 如果是主动停止操作,直接忽略错误事件
+      if (isStoppingRef.current) {
+        console.log('主动停止播放,忽略错误事件');
+        return;
+      }
+
+      // 如果 src 为空，说明是主动清空的（stop操作），不应该触发错误处理
+      if (!audio.src || audio.src === '') {
+        console.log('音频源已清空，忽略错误事件');
+        return;
+      }
+
       console.error('音频播放错误:', error);
+
+      // 检查是否是 PIPELINE_ERROR_READ 错误（通常发生在暂停很久后恢复播放时）
+      const isPipelineError = error && (
+        (error.code === 2) || // MEDIA_ERR_NETWORK
+        (error.message && error.message.includes('PIPELINE_ERROR_READ'))
+      );
+
+      if (isPipelineError && currentSongRef.current) {
+        const now = Date.now();
+        // 如果距离上次错误超过2秒，或者是不同的歌曲（这里简单通过时间判断），尝试恢复
+        // 实际上如果是不同的歌曲，loadAndPlay会被调用，lastErrorTimeRef应该没什么影响，除非切歌很快且立即出错
+        if (now - lastErrorTimeRef.current > 2000) {
+          console.log('检测到管道错误，尝试恢复播放...');
+          lastErrorTimeRef.current = now;
+          
+          if (loadAndPlayRef.current) {
+            const currentTime = audio.currentTime;
+            // 重新加载并跳转到出错前的位置
+            loadAndPlayRef.current(currentSongRef.current, currentTime).catch(e => {
+              console.error('恢复播放失败:', e);
+            });
+            // 返回，暂不触发后续错误处理
+            return;
+          }
+        }
+      }
 
       // 尝试使用备用URL
       if (backupUrlsRef.current.length > 0 && currentUrlIndexRef.current < backupUrlsRef.current.length) {
@@ -176,7 +225,7 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
   /**
    * 加载并播放歌曲
    */
-  const loadAndPlay = useCallback(async (song: Song) => {
+  const loadAndPlay = useCallback(async (song: Song, startTime: number = 0) => {
     const audio = audioRef.current;
     if (!audio) {
       console.error('Audio元素未初始化');
@@ -184,25 +233,94 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
     }
 
     try {
-      // 检查必要字段
-      if (!song.bvid || !song.cid) {
-        throw new Error('歌曲缺少必要的bvid或cid信息');
-      }
-
       // 取消前一个播放请求，防止播放冲突
       if (playAbortControllerRef.current) {
         playAbortControllerRef.current.abort();
       }
 
-      // 创建新的AbortController用于此次播放请求
-      playAbortControllerRef.current = new AbortController();
-      const currentAbortController = playAbortControllerRef.current;
-
       // 暂停当前播放
       audio.pause();
 
+      // 重置停止标志,因为这是加载新歌曲
+      isStoppingRef.current = false;
+
+      // 清空旧的备用URL，防止错误处理器使用过时的URL
+      backupUrlsRef.current = [];
+      currentUrlIndexRef.current = 0;
+
       // 保存当前歌曲信息
       currentSongRef.current = song;
+
+      // 处理本地歌曲
+      if (song.source === 'local') {
+        console.log(`播放本地歌曲: ${song.title}`);
+
+        // 本地歌曲直接使用 localmusic:// 协议
+        // ID 格式为 local_{trackId}，需要获取实际的文件路径
+        const trackId = song.id.replace('local_', '');
+        console.log('trackId:', trackId);
+        const trackData = await window.electron.invoke('local-music-get-track-by-id', trackId);
+        console.log('trackData:', trackData);
+        const filePath = trackData.data?.file_path;
+
+        if (!trackData.success || !filePath) {
+          const error = new Error(`无法播放"${song.title}"：找不到文件路径`);
+          console.error('本地歌曲路径获取失败:', error);
+          callbacksRef.current.onError?.(error);
+          throw error;
+        }
+
+        // 使用 localmusic:// 协议加载本地文件
+        const localMusicUrl = `localmusic://${encodeURIComponent(filePath)}`;
+        console.log('原始文件路径:', filePath);
+        console.log('生成的音频 URL:', localMusicUrl);
+        audio.src = localMusicUrl;
+
+        // 重置播放进度
+        audio.currentTime = startTime;
+
+        // 等待音频数据加载完成再播放
+        // 创建 Promise 确保音频元数据加载完成
+        await new Promise<void>((resolve, reject) => {
+          const onCanPlay = () => {
+            audio.removeEventListener('canplay', onCanPlay);
+            audio.removeEventListener('error', onError);
+            resolve();
+          };
+          const onError = () => {
+            audio.removeEventListener('canplay', onCanPlay);
+            audio.removeEventListener('error', onError);
+            reject(new Error('音频加载失败'));
+          };
+          audio.addEventListener('canplay', onCanPlay, { once: true });
+          audio.addEventListener('error', onError, { once: true });
+          // 开始加载
+          audio.load();
+        });
+
+        // 播放音频
+        try {
+          await audio.play();
+          console.log('本地音频播放开始');
+        } catch (playError) {
+          if ((playError as DOMException).name === 'AbortError') {
+            console.log('播放被中止');
+            return;
+          }
+          throw playError;
+        }
+
+        return;
+      }
+
+      // 处理 Bilibili 歌曲
+      if (!song.bvid || !song.cid) {
+        throw new Error('歌曲缺少必要的bvid或cid信息');
+      }
+
+      // 创建新的AbortController用于此次播放请求
+      playAbortControllerRef.current = new AbortController();
+      const currentAbortController = playAbortControllerRef.current;
 
       // 调用IPC获取音频流URL
       console.log(`获取音频流URL: bvid=${song.bvid}, cid=${song.cid}`);
@@ -224,11 +342,14 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
       backupUrlsRef.current = audioUrlData.backup_urls;
       currentUrlIndexRef.current = 0;
 
+      // Bilibili 音频需要设置跨域
+      audio.crossOrigin = 'anonymous';
+
       // 设置音频源
       audio.src = audioUrlData.url;
 
       // 重置播放进度
-      audio.currentTime = 0;
+      audio.currentTime = startTime;
 
       // 播放音频（异步操作，需要等待）
       try {
@@ -249,12 +370,32 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
     }
   }, []); // 空依赖数组，使用callbacksRef避免重新创建
 
+  // 更新 loadAndPlayRef，在 loadAndPlay 定义之后
+  useEffect(() => {
+    loadAndPlayRef.current = loadAndPlay;
+  }, [loadAndPlay]);
+
   /**
    * 播放
+   * 如果是网络歌曲且URL已失效（缓存过期），会自动重新获取URL后播放
    */
   const play = useCallback(async () => {
     const audio = audioRef.current;
-    if (!audio || !audio.src) {
+    const currentSong = currentSongRef.current;
+
+    if (!audio) {
+      console.warn('Audio元素未初始化');
+      return;
+    }
+
+    // 如果没有音频源，检查是否有当前歌曲信息，尝试重新加载
+    if (!audio.src && currentSong) {
+      console.log('音频源为空但有当前歌曲信息，尝试重新加载');
+      await loadAndPlay(currentSong);
+      return;
+    }
+
+    if (!audio.src) {
       console.warn('没有可播放的音频');
       return;
     }
@@ -263,9 +404,23 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
       await audio.play();
     } catch (error) {
       console.error('播放失败:', error);
+
+      // 如果是网络歌曲（非本地歌曲）且播放失败，尝试重新获取URL
+      if (currentSong && currentSong.source !== 'local') {
+        console.log('网络歌曲播放失败，可能是URL已过期，尝试重新获取');
+        try {
+          await loadAndPlay(currentSong);
+          return;
+        } catch (reloadError) {
+          console.error('重新加载失败:', reloadError);
+          callbacksRef.current.onError?.(reloadError instanceof Error ? reloadError : new Error(String(reloadError)));
+          return;
+        }
+      }
+
       callbacksRef.current.onError?.(error instanceof Error ? error : new Error(String(error)));
     }
-  }, []); // 空依赖数组
+  }, [loadAndPlay]); // 添加 loadAndPlay 依赖
 
   /**
    * 暂停
@@ -334,6 +489,47 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
     };
   }, []);
 
+  /**
+   * 停止播放并清空音频源
+   * 注意：保留 currentSongRef 引用，以便再次点击同一首歌时能正确识别
+   */
+  const stop = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // 取消进行中的播放请求
+    if (playAbortControllerRef.current) {
+      playAbortControllerRef.current.abort();
+      playAbortControllerRef.current = null;
+    }
+
+    // 在暂停前设置停止标志,防止触发错误处理
+    isStoppingRef.current = true;
+
+    audio.pause();
+    audio.src = '';
+    audio.currentTime = 0;
+
+    // 清空备用URL，防止错误处理器在清空src后触发重试
+    backupUrlsRef.current = [];
+    currentUrlIndexRef.current = 0;
+
+    // 使用 setTimeout 确保错误事件处理完成后再重置标志
+    // 100ms 足够处理所有异步错误事件
+    setTimeout(() => {
+      isStoppingRef.current = false;
+    }, 100);
+
+    // 不清空 currentSongRef.current，保留引用用于后续判断
+  }, []);
+
+  /**
+   * 获取当前加载的歌曲（不管是否在播放）
+   */
+  const getCurrentSong = useCallback(() => {
+    return currentSongRef.current;
+  }, []);
+
   return {
     loadAndPlay,
     play,
@@ -342,5 +538,7 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
     seek,
     setVolume,
     getPlayState,
+    stop,
+    getCurrentSong,
   };
 }

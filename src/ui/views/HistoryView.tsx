@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, History, Trash2, X } from 'lucide-react';
+import { Play, History, Trash2, X, Music } from 'lucide-react';
 import type { Song, PlayerState } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -114,7 +114,13 @@ export default function HistoryView({
               <Play size={14} className="hidden group-hover:inline-block mx-auto" fill="currentColor"/>
             </div>
             <div className="flex items-center gap-3">
-              <img src={song.coverUrl} className="w-10 h-10 rounded shadow-sm object-cover" alt={song.title}/>
+              {song.coverUrl ? (
+                <img src={song.coverUrl} className="w-10 h-10 rounded shadow-sm object-cover" alt={song.title}/>
+              ) : (
+                <div className="w-10 h-10 rounded shadow-sm bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                  <Music size={16} className="text-slate-400" />
+                </div>
+              )}
               <span className="text-slate-900 font-medium">{song.title}</span>
             </div>
             <div className="text-slate-500 text-sm">{song.artist}</div>

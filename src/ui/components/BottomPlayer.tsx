@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, ListMusic, Maximize2, VolumeX, Minimize2, Repeat, Repeat1, Shuffle, ListPlus } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, ListMusic, Maximize2, VolumeX, Minimize2, Repeat, Repeat1, Shuffle, ListPlus, Music } from 'lucide-react';
 import { PlaybackMode } from '../types';
 import type { PlayerState } from '../types';
 import ProgressBar from './ProgressBar';
@@ -100,11 +100,17 @@ const BottomPlayer: React.FC<BottomPlayerProps> = ({
       {/* Left: Song Info */}
       <div className="flex items-center gap-4 w-[250px] flex-shrink-0 mr-4">
         <div className="relative group w-14 h-14 flex-shrink-0">
-          <img
-            src={currentSong.coverUrl}
-            alt={currentSong.title}
-            className={`w-full h-full rounded-lg object-cover shadow-md border border-slate-100 ${isPlaying ? 'animate-pulse' : ''}`}
-          />
+          {currentSong.coverUrl ? (
+            <img
+              src={currentSong.coverUrl}
+              alt={currentSong.title}
+              className={`w-full h-full rounded-lg object-cover shadow-md border border-slate-100 ${isPlaying ? 'animate-pulse' : ''}`}
+            />
+          ) : (
+            <div className="w-full h-full rounded-lg shadow-md border border-slate-100 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+              <Music size={28} className="text-slate-400" />
+            </div>
+          )}
           <div
             onClick={toggleFullPlayer}
             className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-lg"

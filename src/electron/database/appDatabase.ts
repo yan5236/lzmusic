@@ -100,6 +100,26 @@ export interface ImportResult {
   errors: string[];
 }
 
+// 本地歌曲虚拟文件夹数据结构
+export interface LocalFolderRecord {
+  id: string;
+  name: string;
+  created_at: number;
+}
+
+// 本地歌曲数据结构
+export interface LocalTrackRecord {
+  id: string;
+  folder_id: string;
+  file_path: string;
+  title: string;
+  artist: string;
+  album?: string;
+  duration: number;
+  cover_path?: string;
+  created_at: number;
+}
+
 class AppDatabase {
   private db: Database.Database | null = null;
   private readonly dbPath: string;
@@ -171,6 +191,37 @@ class AppDatabase {
       this.db.exec(`
         CREATE INDEX IF NOT EXISTS idx_playlist_songs_playlistId
         ON playlist_songs(playlistId, sortOrder)
+      `);
+
+      // 创建本地歌曲虚拟文件夹表
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS local_folders (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          created_at INTEGER NOT NULL
+        )
+      `);
+
+      // 创建本地歌曲表
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS local_tracks (
+          id TEXT PRIMARY KEY,
+          folder_id TEXT NOT NULL,
+          file_path TEXT NOT NULL UNIQUE,
+          title TEXT NOT NULL,
+          artist TEXT NOT NULL,
+          album TEXT,
+          duration REAL NOT NULL,
+          cover_path TEXT,
+          created_at INTEGER NOT NULL,
+          FOREIGN KEY (folder_id) REFERENCES local_folders(id) ON DELETE CASCADE
+        )
+      `);
+
+      // 为本地歌曲表创建索引以优化查询
+      this.db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_local_tracks_folder
+        ON local_tracks(folder_id, created_at)
       `);
 
       console.log('应用数据库初始化成功:', this.dbPath);
@@ -736,17 +787,19 @@ class AppDatabase {
         return null;
       }
 
-      // 将歌曲数据转换为导出格式
-      const songs: ExportSongData[] = detail.songs.map(song => ({
-        title: song.title,
-        author: song.artist,
-        bvid: song.bvid || '',
-        duration: this.formatDuration(song.duration),
-        cover: song.coverUrl,
-        cid: song.cid || 0,
-        pages: song.pages ? JSON.parse(song.pages as unknown as string) : [],
-        play: 0,
-      }));
+      // 将歌曲数据转换为导出格式，过滤掉本地歌曲（本地歌曲没有bvid，无法在其他软件使用）
+      const songs: ExportSongData[] = detail.songs
+        .filter(song => song.source !== 'local')
+        .map(song => ({
+          title: song.title,
+          author: song.artist,
+          bvid: song.bvid || '',
+          duration: this.formatDuration(song.duration),
+          cover: song.coverUrl,
+          cid: song.cid || 0,
+          pages: song.pages ? JSON.parse(song.pages as unknown as string) : [],
+          play: 0,
+        }));
 
       return {
         type: 'playlist',
@@ -942,6 +995,223 @@ class AppDatabase {
       return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
     }
     return 0;
+  }
+
+  // ========== 本地歌曲虚拟文件夹操作 ==========
+
+  /**
+   * 创建虚拟文件夹
+   * @param name - 文件夹名称
+   * @returns 创建的文件夹ID
+   */
+  public createLocalFolder(name: string): string {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const id = `folder_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const created_at = Date.now();
+
+      const stmt = this.db.prepare(`
+        INSERT INTO local_folders (id, name, created_at)
+        VALUES (?, ?, ?)
+      `);
+
+      stmt.run(id, name, created_at);
+      console.log(`虚拟文件夹已创建 [ID: ${id}, 名称: ${name}]`);
+      return id;
+    } catch (error) {
+      console.error('创建虚拟文件夹失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取所有虚拟文件夹（包含歌曲数量）
+   * @returns 文件夹数组
+   */
+  public getAllLocalFolders(): (LocalFolderRecord & { trackCount: number })[] {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const stmt = this.db.prepare(`
+        SELECT
+          f.*,
+          COUNT(t.id) as trackCount
+        FROM local_folders f
+        LEFT JOIN local_tracks t ON f.id = t.folder_id
+        GROUP BY f.id
+        ORDER BY f.created_at DESC
+      `);
+
+      return stmt.all() as (LocalFolderRecord & { trackCount: number })[];
+    } catch (error) {
+      console.error('获取虚拟文件夹列表失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取指定文件夹的所有歌曲
+   * @param folderId - 文件夹ID
+   * @returns 歌曲数组
+   */
+  public getLocalTracks(folderId: string): LocalTrackRecord[] {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const stmt = this.db.prepare(`
+        SELECT * FROM local_tracks
+        WHERE folder_id = ?
+        ORDER BY created_at ASC
+      `);
+
+      return stmt.all(folderId) as LocalTrackRecord[];
+    } catch (error) {
+      console.error('获取本地歌曲列表失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 添加本地歌曲到文件夹
+   * @param folderId - 文件夹ID
+   * @param track - 歌曲信息（不含id和created_at）
+   * @returns 创建的歌曲ID
+   */
+  public addLocalTrack(
+    folderId: string,
+    track: Omit<LocalTrackRecord, 'id' | 'folder_id' | 'created_at'>
+  ): string {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      // 检查文件路径是否已存在
+      const checkStmt = this.db.prepare('SELECT id FROM local_tracks WHERE file_path = ?');
+      const existing = checkStmt.get(track.file_path) as { id: string } | undefined;
+
+      if (existing) {
+        console.log(`歌曲已存在 [路径: ${track.file_path}]`);
+        return existing.id;
+      }
+
+      const id = `track_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const created_at = Date.now();
+
+      const stmt = this.db.prepare(`
+        INSERT INTO local_tracks (id, folder_id, file_path, title, artist, album, duration, cover_path, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      stmt.run(
+        id,
+        folderId,
+        track.file_path,
+        track.title,
+        track.artist,
+        track.album || null,
+        track.duration,
+        track.cover_path || null,
+        created_at
+      );
+
+      console.log(`本地歌曲已添加 [ID: ${id}, 标题: ${track.title}]`);
+      return id;
+    } catch (error) {
+      console.error('添加本地歌曲失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 删除虚拟文件夹（级联删除其中的歌曲）
+   * @param folderId - 文件夹ID
+   */
+  public deleteLocalFolder(folderId: string): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      // 先删除文件夹中的所有歌曲
+      const deleteTracksStmt = this.db.prepare('DELETE FROM local_tracks WHERE folder_id = ?');
+      deleteTracksStmt.run(folderId);
+
+      // 再删除文件夹
+      const deleteFolderStmt = this.db.prepare('DELETE FROM local_folders WHERE id = ?');
+      deleteFolderStmt.run(folderId);
+
+      console.log(`虚拟文件夹已删除 [ID: ${folderId}]`);
+    } catch (error) {
+      console.error('删除虚拟文件夹失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 重命名虚拟文件夹
+   * @param folderId - 文件夹ID
+   * @param newName - 新名称
+   */
+  public renameLocalFolder(folderId: string, newName: string): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const stmt = this.db.prepare('UPDATE local_folders SET name = ? WHERE id = ?');
+      stmt.run(newName, folderId);
+      console.log(`虚拟文件夹已重命名 [ID: ${folderId}, 新名称: ${newName}]`);
+    } catch (error) {
+      console.error('重命名虚拟文件夹失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 删除本地歌曲
+   * @param trackId - 歌曲ID
+   */
+  public deleteLocalTrack(trackId: string): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const stmt = this.db.prepare('DELETE FROM local_tracks WHERE id = ?');
+      stmt.run(trackId);
+      console.log(`本地歌曲已删除 [ID: ${trackId}]`);
+    } catch (error) {
+      console.error('删除本地歌曲失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 根据ID获取本地歌曲
+   * @param trackId - 歌曲ID
+   * @returns 歌曲信息，如果不存在返回null
+   */
+  public getLocalTrackById(trackId: string): LocalTrackRecord | null {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const stmt = this.db.prepare('SELECT * FROM local_tracks WHERE id = ?');
+      const track = stmt.get(trackId) as LocalTrackRecord | undefined;
+      return track || null;
+    } catch (error) {
+      console.error('获取本地歌曲失败:', error);
+      throw error;
+    }
   }
 
   /**

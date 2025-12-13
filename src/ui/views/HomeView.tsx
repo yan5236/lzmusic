@@ -1,4 +1,4 @@
-import { Play } from 'lucide-react';
+import { Play, Music } from 'lucide-react';
 import type { Song, PlayerState } from '../types';
 import { MOCK_SONGS } from '../constants';
 
@@ -26,7 +26,13 @@ export default function HomeView({ playerState, playSong }: HomeViewProps) {
               onClick={() => playSong(song)}
             >
               <div className="relative aspect-square mb-4 overflow-hidden rounded-lg shadow-md">
-                <img src={song.coverUrl} alt={song.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+                {song.coverUrl ? (
+                  <img src={song.coverUrl} alt={song.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                    <Music size={48} className="text-slate-400" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="bg-primary p-3 rounded-full shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                     <Play fill="white" size={20} className="text-white"/>
@@ -48,7 +54,13 @@ export default function HomeView({ playerState, playSong }: HomeViewProps) {
             <div key={`recent-${i}`} className="flex items-center justify-between p-4 hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors group" onClick={() => playSong(song)}>
               <div className="flex items-center gap-4">
                 <span className="text-primary font-mono w-4 text-center opacity-0 group-hover:opacity-100 transition-opacity"><Play size={12} fill="currentColor"/></span>
-                <img src={song.coverUrl} className="w-10 h-10 rounded shadow-sm" alt="cover" />
+                {song.coverUrl ? (
+                  <img src={song.coverUrl} className="w-10 h-10 rounded shadow-sm object-cover" alt="cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded shadow-sm bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                    <Music size={16} className="text-slate-400" />
+                  </div>
+                )}
                 <div>
                   <div className="text-slate-900 font-medium">{song.title}</div>
                   <div className="text-xs text-slate-500">{song.artist}</div>

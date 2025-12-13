@@ -49,6 +49,18 @@ contextBridge.exposeInMainWorld('electron', {
       'app-db-playlist-export-multiple', // 批量导出歌单
       'app-db-playlist-preview-import',  // 预览导入文件
       'app-db-playlist-import',        // 导入歌单
+      // 本地音乐
+      'local-music-select-files',      // 选择音频文件
+      'local-music-select-folder',     // 选择文件夹
+      'local-music-scan-folder',       // 扫描并导入文件夹
+      'local-music-add-files',         // 添加文件到虚拟文件夹
+      'local-music-create-folder',     // 创建虚拟文件夹
+      'local-music-get-folders',       // 获取所有虚拟文件夹
+      'local-music-get-tracks',        // 获取文件夹的歌曲列表
+      'local-music-delete-folder',     // 删除虚拟文件夹
+      'local-music-rename-folder',     // 重命名虚拟文件夹
+      'local-music-delete-track',      // 删除本地歌曲
+      'local-music-get-track-by-id',   // 根据ID获取本地歌曲
     ];
 
     if (!validChannels.includes(channel)) {

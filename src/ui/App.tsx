@@ -11,6 +11,7 @@ import SettingsView from './views/SettingsView';
 import DefaultView from './views/DefaultView';
 import PlaylistsView from './views/PlaylistsView';
 import PlaylistDetailView from './views/PlaylistDetailView';
+import LocalView from './views/LocalView';
 import Toast from './components/Toast';
 import type { ToastMessage } from './components/Toast';
 import type { Song, PlayerState } from './types';
@@ -86,6 +87,16 @@ function App() {
 
   // 使用ref存储audioPlayer，避免循环依赖
   const audioPlayerRef = useRef<ReturnType<typeof useAudioPlayer> | null>(null);
+
+  /**
+   * Toast 消息管理函数
+   * 添加新的 Toast 消息
+   */
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info', duration?: number) => {
+    const id = `toast-${Date.now()}-${Math.random()}`;
+    const newToast: ToastMessage = { id, message, type, duration };
+    setToastMessages(prev => [...prev, newToast]);
+  }, []);
 
   /**
    * 处理自动播放下一首歌曲的辅助函数
@@ -197,9 +208,11 @@ function App() {
 
   const handleError = useCallback((error: Error) => {
     console.error('音频播放错误:', error);
+    // 显示错误提示
+    showToast(error.message || '音频播放失败', 'error');
     // 自动跳到下一首
     handleAutoNextSong();
-  }, [handleAutoNextSong]);
+  }, [handleAutoNextSong, showToast]);
 
   const handleVolumeChange = useCallback((volume: number) => {
     setPlayerState((prev) => ({ ...prev, volume }));
@@ -406,19 +419,46 @@ function App() {
 
   const playSong = (song: Song) => {
     // 检查是否点击了当前正在播放的同一首歌
-    const isSameSong = playerState.currentSong?.id === song.id;
+    // 使用 audioPlayer 中保存的歌曲信息进行比较，即使从播放列表中删除了也能正确识别
+    const currentAudioSong = audioPlayerRef.current?.getCurrentSong();
+    const isSameSong = currentAudioSong?.id === song.id;
 
     if (isSameSong) {
-      // 如果是同一首歌，重新从头播放
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.seek(0);
-        audioPlayerRef.current.play();
+      // 如果是同一首歌，检查音频源是否还存在
+      const playState = audioPlayerRef.current?.getPlayState();
+      const hasAudioSrc = playState && playState.duration > 0;
+
+      if (hasAudioSrc) {
+        // 音频源存在，重新从头播放
+        if (audioPlayerRef.current) {
+          audioPlayerRef.current.seek(0);
+          audioPlayerRef.current.play();
+        }
+        setPlayerState(prev => ({
+          ...prev,
+          currentSong: song,  // 重新设置 currentSong，确保状态同步
+          currentTime: 0,
+          isPlaying: true,
+        }));
+      } else {
+        // 音频源已清空（可能被从播放列表删除），需要重新加载
+        // 重置 prevSongIdRef，强制触发 loadAndPlay
+        prevSongIdRef.current = null;
+
+        setPlayerState(prev => {
+          // 如果队列中不存在该歌曲,添加到队列
+          const isInQueue = prev.queue.some(s => s.id === song.id);
+          const newQueue = isInQueue ? prev.queue : [...prev.queue, song];
+
+          return {
+            ...prev,
+            currentSong: song,
+            currentTime: 0,
+            isPlaying: true,
+            queue: newQueue,
+          };
+        });
       }
-      setPlayerState(prev => ({
-        ...prev,
-        currentTime: 0,
-        isPlaying: true,
-      }));
       return;
     }
 
@@ -454,6 +494,14 @@ function App() {
 
   // 从播放队列中移除歌曲
   const removeFromQueue = (songId: string) => {
+    // 先检查是否要删除当前播放的歌曲，如果是，需要先停止播放
+    const isRemovingCurrentSong = playerState.currentSong?.id === songId;
+
+    if (isRemovingCurrentSong && audioPlayerRef.current) {
+      // 立即停止当前音频，避免在状态更新后触发错误
+      audioPlayerRef.current.stop();
+    }
+
     setPlayerState(prev => {
       const newQueue = prev.queue.filter(s => s.id !== songId);
 
@@ -597,16 +645,6 @@ function App() {
   };
 
   /**
-   * Toast 消息管理函数
-   * 添加新的 Toast 消息
-   */
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info', duration?: number) => {
-    const id = `toast-${Date.now()}-${Math.random()}`;
-    const newToast: ToastMessage = { id, message, type, duration };
-    setToastMessages(prev => [...prev, newToast]);
-  };
-
-  /**
    * 移除指定的 Toast 消息
    */
   const removeToast = (id: string) => {
@@ -665,6 +703,14 @@ function App() {
           />
         );
 
+      case ViewState.LOCAL:
+        return (
+          <LocalView
+            onPlaySong={playSong}
+            onShowToast={showToast}
+          />
+        );
+
       case ViewState.SETTINGS:
         return (
           <SettingsView
@@ -686,10 +732,7 @@ function App() {
       {/* Main Content Area */}
       <div className="flex-1 relative flex flex-col h-full overflow-hidden bg-secondary">
         {/* Top Navigation / Header (simplified) */}
-        <header className="h-16 flex items-center justify-between px-8 bg-transparent z-20">
-             <div className="flex gap-4"></div>
-             <div className="flex items-center gap-3"></div>
-        </header>
+        
 
         <main className="flex-1 overflow-y-auto hide-scrollbar pb-32">
           {renderView()}

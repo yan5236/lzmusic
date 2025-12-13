@@ -123,7 +123,7 @@ function SortableSongItem({
 
       {/* 编辑模式：封面单独显示 */}
       {isEditMode && (
-        <div className="w-10 h-10 rounded shadow-sm flex-shrink-0 overflow-hidden bg-slate-100">
+        <div className="w-10 h-10 rounded shadow-sm flex-shrink-0 overflow-hidden">
           {song.coverUrl ? (
             <img
               src={song.coverUrl}
@@ -131,7 +131,7 @@ function SortableSongItem({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
               <Music size={16} className="text-slate-400" />
             </div>
           )}
@@ -151,7 +151,7 @@ function SortableSongItem({
             />
           </div>
           {/* 封面 */}
-          <div className="w-10 h-10 rounded shadow-sm flex-shrink-0 overflow-hidden bg-slate-100">
+          <div className="w-10 h-10 rounded shadow-sm flex-shrink-0 overflow-hidden">
             {song.coverUrl ? (
               <img
                 src={song.coverUrl}
@@ -159,7 +159,7 @@ function SortableSongItem({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
+              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
                 <Music size={16} className="text-slate-400" />
               </div>
             )}

@@ -4,7 +4,7 @@
  */
 
 import type { SearchResult, BilibiliVideo, AudioUrlResponse } from '../shared/types';
-import type { NeteaseSearchResult, Playlist, PlaylistDetail } from './types';
+import type { NeteaseSearchResult, Playlist, PlaylistDetail, LocalFolder, LocalTrack } from './types';
 
 // 网易云音乐 API 响应类型
 interface NeteaseSearchResponse {
@@ -219,6 +219,80 @@ interface AppDbPlaylistImportResponse {
 // 搜索建议响应类型
 type SearchSuggestionsResponse = string[];
 
+// 本地音乐 IPC 响应类型
+interface LocalMusicSelectFilesResponse {
+  success: boolean;
+  filePaths?: string[];
+  canceled?: boolean;
+  error?: string;
+}
+
+interface LocalMusicSelectFolderResponse {
+  success: boolean;
+  folderPath?: string;
+  canceled?: boolean;
+  error?: string;
+}
+
+interface LocalMusicScanFolderResponse {
+  success: boolean;
+  folderId?: string;
+  folderName?: string;
+  totalFiles?: number;
+  successCount?: number;
+  failedCount?: number;
+  errors?: string[];
+  error?: string;
+}
+
+interface LocalMusicAddFilesResponse {
+  success: boolean;
+  successCount?: number;
+  failedCount?: number;
+  errors?: string[];
+  error?: string;
+}
+
+interface LocalMusicCreateFolderResponse {
+  success: boolean;
+  id?: string;
+  error?: string;
+}
+
+interface LocalMusicGetFoldersResponse {
+  success: boolean;
+  data?: LocalFolder[];
+  error?: string;
+}
+
+interface LocalMusicRenameFolderResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface LocalMusicDeleteFolderResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface LocalMusicGetTracksResponse {
+  success: boolean;
+  data?: LocalTrack[];
+  error?: string;
+}
+
+interface LocalMusicDeleteTrackResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface LocalMusicGetTrackByIdResponse {
+  success: boolean;
+  data?: LocalTrack | null;
+  error?: string;
+}
+
+
 declare global {
   interface Window {
     electron: {
@@ -283,6 +357,18 @@ declare global {
       invoke(channel: 'app-db-playlist-export-multiple', playlistIds: string[]): Promise<AppDbPlaylistExportMultipleResponse>;
       invoke(channel: 'app-db-playlist-preview-import', jsonData: string): Promise<AppDbPlaylistPreviewImportResponse>;
       invoke(channel: 'app-db-playlist-import', jsonData: string, selectedIds?: string[]): Promise<AppDbPlaylistImportResponse>;
+      //这里没有注
+      invoke(channel: 'local-music-select-files'): Promise<LocalMusicSelectFilesResponse>;
+      invoke(channel: 'local-music-select-folder'): Promise<LocalMusicSelectFolderResponse>;
+      invoke(channel: 'local-music-scan-folder', folderPath: string): Promise<LocalMusicScanFolderResponse>;
+      invoke(channel: 'local-music-add-files', folderId: string, filePaths: string[]): Promise<LocalMusicAddFilesResponse>;
+      invoke(channel: 'local-music-create-folder', name: string): Promise<LocalMusicCreateFolderResponse>;
+      invoke(channel: 'local-music-get-folders'): Promise<LocalMusicGetFoldersResponse>;
+      invoke(channel: 'local-music-rename-folder', folderId: string, newName: string): Promise<LocalMusicRenameFolderResponse>;
+      invoke(channel: 'local-music-delete-folder', folderId: string): Promise<LocalMusicDeleteFolderResponse>;
+      invoke(channel: 'local-music-get-tracks', folderId: string): Promise<LocalMusicGetTracksResponse>;
+      invoke(channel: 'local-music-delete-track', trackId: string): Promise<LocalMusicDeleteTrackResponse>;
+      invoke(channel: 'local-music-get-track-by-id', trackId: string): Promise<LocalMusicGetTrackByIdResponse>;
     };
   }
 }

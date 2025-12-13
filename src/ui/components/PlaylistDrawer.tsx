@@ -1,3 +1,4 @@
+import { Music } from 'lucide-react';
 import type { Song, PlayerState } from '../types';
 
 /**
@@ -31,7 +32,13 @@ export default function PlaylistDrawer({ playerState, togglePlaylist, playSong, 
           >
             {/* 封面和播放状态指示 */}
             <div className="relative w-10 h-10 flex-shrink-0">
-              <img src={song.coverUrl} className="w-full h-full object-cover rounded shadow-sm" alt="art"/>
+              {song.coverUrl ? (
+                <img src={song.coverUrl} className="w-full h-full object-cover rounded shadow-sm" alt="art"/>
+              ) : (
+                <div className="w-full h-full rounded shadow-sm bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                  <Music size={16} className="text-slate-400" />
+                </div>
+              )}
               {playerState.currentSong?.id === song.id && playerState.isPlaying ? (
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center rounded">
                   <div className="w-3 h-3 bg-white rounded-full animate-pulse shadow-sm"></div>

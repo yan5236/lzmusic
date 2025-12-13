@@ -186,11 +186,32 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
             />
           ) : (
             <div className="relative aspect-square w-full max-w-[350px] md:max-w-[400px] shadow-2xl shadow-blue-900/10 rounded-3xl overflow-hidden border-4 border-white">
-              <img
-                src={currentSong.coverUrl}
-                alt={currentSong.title}
-                className="w-full h-full object-cover"
-              />
+              {currentSong.coverUrl ? (
+                <img
+                  src={currentSong.coverUrl}
+                  alt={currentSong.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="120"
+                    height="120"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-slate-400"
+                  >
+                    <path d="M9 18V5l12-2v13"></path>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <circle cx="18" cy="16" r="3"></circle>
+                  </svg>
+                </div>
+              )}
             </div>
           )}
 

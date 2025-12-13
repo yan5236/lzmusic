@@ -110,3 +110,28 @@ export interface PlaylistDetail {
   playlist: Playlist;
   songs: PlaylistSong[];
 }
+
+/**
+ * 本地歌曲虚拟文件夹接口
+ */
+export interface LocalFolder {
+  id: string;
+  name: string;
+  created_at: number;
+  trackCount: number; // 文件夹内歌曲数量
+}
+
+/**
+ * 本地歌曲接口
+ */
+export interface LocalTrack {
+  id: string;
+  folder_id: string;
+  file_path: string;
+  title: string;
+  artist: string;
+  album?: string;
+  duration: number; // 秒
+  cover_path?: string;
+  created_at: number;
+}
