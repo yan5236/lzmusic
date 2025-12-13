@@ -5,7 +5,7 @@ import React from 'react';
  */
 interface TurntableProps {
   isPlaying: boolean;
-  coverUrl: string;
+  coverUrl?: string;
 }
 
 /**
@@ -74,6 +74,8 @@ const ToneArm: React.FC<ToneArmProps> = ({ isPlaying }) => {
  * 仅包含唱片和唱臂,无底座和指示灯
  */
 export const Turntable: React.FC<TurntableProps> = ({ isPlaying, coverUrl }) => {
+  const hasCover = Boolean(coverUrl && coverUrl.trim() !== '');
+
   return (
     <div className="relative w-full max-w-[350px] md:max-w-[400px] aspect-square">
       {/* 唱片底盘(唱片下方的圆形部分) */}
@@ -95,12 +97,31 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, coverUrl }) => 
 
           {/* 中心标签(显示封面) */}
           <div className="absolute inset-0 m-auto w-1/3 h-1/3 bg-amber-500 rounded-full shadow-md flex items-center justify-center border-4 border-neutral-900/20 overflow-hidden">
-             {/* 专辑封面 */}
-             <img
-               src={coverUrl}
-               alt="Album Cover"
-               className="w-full h-full object-cover opacity-90"
-             />
+             {/* 专辑封面或占位图 */}
+             {hasCover ? (
+               <img
+                 src={coverUrl}
+                 alt="Album Cover"
+                 className="w-full h-full object-cover opacity-90"
+               />
+             ) : (
+               <div className="w-full h-full bg-gradient-to-br from-amber-200 via-amber-100 to-amber-300 flex items-center justify-center text-amber-700/70">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-8 h-8"
+                  >
+                    <path d="M9 18V5l12-2v13"></path>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <circle cx="18" cy="16" r="3"></circle>
+                  </svg>
+               </div>
+             )}
              {/* 主轴孔(中心黑色圆点) */}
              <div className="absolute w-3 h-3 bg-black rounded-full border border-neutral-700 z-10" />
           </div>

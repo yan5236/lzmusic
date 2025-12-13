@@ -326,6 +326,7 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
         onShowToast(`已删除 ${selectedSongs.size} 首歌曲`);
         setSelectedSongs(new Set());
         setIsEditMode(false);
+        setIsEditingName(false);  // 同时退出名称编辑状态
         await loadPlaylistDetail();
       } else {
         onShowToast('删除歌曲失败');

@@ -274,7 +274,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
       title: track.title,
       artist: track.artist,
       album: track.album,
-      coverUrl: track.cover_path ? `localmusic://${encodeURIComponent(track.cover_path)}` : '',
+      coverUrl: track.cover_path ? `localmusic://localhost/${encodeURIComponent(track.cover_path.replace(/\\/g, '/'))}` : '',
       duration: track.duration,
       source: 'local',
     };
@@ -289,7 +289,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
       title: track.title,
       artist: track.artist,
       album: track.album,
-      coverUrl: track.cover_path ? `localmusic://${encodeURIComponent(track.cover_path)}` : '',
+      coverUrl: track.cover_path ? `localmusic://localhost/${encodeURIComponent(track.cover_path.replace(/\\/g, '/'))}` : '',
       duration: track.duration,
       source: 'local',
     };
@@ -667,7 +667,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
                     <img
                       className="w-10 h-10 rounded shadow-sm object-cover"
                       alt={track.title}
-                      src={`localmusic://${encodeURIComponent(track.cover_path)}`}
+                      src={`localmusic://localhost/${encodeURIComponent(track.cover_path.replace(/\\/g, '/'))}`}
                     />
                   ) : (
                     <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 rounded shadow-sm">

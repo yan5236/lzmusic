@@ -149,10 +149,27 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
 
       console.error('音频播放错误:', error);
 
-      // 检查是否是 PIPELINE_ERROR_READ 错误（通常发生在暂停很久后恢复播放时）
+      // 检测不可恢复的错误（404、权限错误等）
+      const isUnrecoverableError = error && (
+        error.message?.includes('File not found') ||
+        error.message?.includes('Access denied') ||
+        error.message?.includes('404') ||
+        error.message?.includes('403')
+      );
+
+      // 如果是不可恢复的错误，直接跳过当前歌曲
+      if (isUnrecoverableError) {
+        console.error('检测到不可恢复的错误，跳过当前歌曲');
+        callbacksRef.current.onError?.(new Error(error.message));
+        return;
+      }
+
+      // 检查是否是可恢复的 PIPELINE_ERROR_READ 错误（通常发生在暂停很久后恢复播放时）
       const isPipelineError = error && (
-        (error.code === 2) || // MEDIA_ERR_NETWORK
-        (error.message && error.message.includes('PIPELINE_ERROR_READ'))
+        (error.code === 2 && error.message && (
+          error.message.includes('PIPELINE_ERROR_READ') ||
+          error.message.includes('Request interrupted')
+        ))
       );
 
       if (isPipelineError && currentSongRef.current) {
@@ -271,31 +288,29 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
         }
 
         // 使用 localmusic:// 协议加载本地文件
-        const localMusicUrl = `localmusic://${encodeURIComponent(filePath)}`;
+        // 注意：需要使用标准的 URL 格式，路径部分需要以 / 开头
+        // Windows 路径如 E:\music\song.mp3 需要转换为 /E:/music/song.mp3 格式
+        const normalizedPath = filePath.replace(/\\/g, '/');
+        const localMusicUrl = `localmusic://localhost/${encodeURIComponent(normalizedPath)}`;
         console.log('原始文件路径:', filePath);
+        console.log('规范化路径:', normalizedPath);
         console.log('生成的音频 URL:', localMusicUrl);
         audio.src = localMusicUrl;
 
-        // 重置播放进度
-        audio.currentTime = startTime;
-
-        // 等待音频数据加载完成再播放
-        // 创建 Promise 确保音频元数据加载完成
-        await new Promise<void>((resolve, reject) => {
+        // 等待音频元数据加载完成（preload='auto' 会自动加载，不需要调用 load()）
+        await new Promise<void>((resolve) => {
           const onCanPlay = () => {
             audio.removeEventListener('canplay', onCanPlay);
-            audio.removeEventListener('error', onError);
+
+            // 在 canplay 后设置 currentTime，避免时机问题
+            if (startTime > 0) {
+              audio.currentTime = startTime;
+            }
+
             resolve();
           };
-          const onError = () => {
-            audio.removeEventListener('canplay', onCanPlay);
-            audio.removeEventListener('error', onError);
-            reject(new Error('音频加载失败'));
-          };
           audio.addEventListener('canplay', onCanPlay, { once: true });
-          audio.addEventListener('error', onError, { once: true });
-          // 开始加载
-          audio.load();
+          // 注意：不在这里添加 error 监听器，让全局的 handleError 处理
         });
 
         // 播放音频
@@ -400,16 +415,50 @@ export function useAudioPlayer(callbacks: AudioPlayerCallbacks = {}) {
       return;
     }
 
+    // 调试信息：打印当前 audio 状态
+    console.log('播放前状态检查:', {
+      src: audio.src,
+      networkState: audio.networkState,
+      readyState: audio.readyState,
+      paused: audio.paused,
+      currentTime: audio.currentTime,
+      duration: audio.duration,
+      hasError: !!audio.error,
+      errorCode: audio.error?.code,
+      errorMessage: audio.error?.message,
+    });
+
+    // 如果 audio 元素已经处于错误状态，清除并重新加载
+    if (audio.error && currentSong) {
+      console.log('检测到 audio 元素处于错误状态，重新加载');
+      const currentTime = audio.currentTime || 0;
+      await loadAndPlay(currentSong, currentTime);
+      return;
+    }
+
+    // 对于本地歌曲，检查 networkState 是否异常（连接断开）
+    // networkState: 0=EMPTY, 1=IDLE, 2=LOADING, 3=NO_SOURCE
+    if (currentSong && currentSong.source === 'local' && audio.networkState === 3) {
+      console.log('检测到本地歌曲连接断开 (networkState=3)，主动重新加载');
+      const currentTime = audio.currentTime || 0;
+      await loadAndPlay(currentSong, currentTime);
+      return;
+    }
+
     try {
       await audio.play();
+      console.log('audio.play() 成功返回');
     } catch (error) {
       console.error('播放失败:', error);
 
-      // 如果是网络歌曲（非本地歌曲）且播放失败，尝试重新获取URL
-      if (currentSong && currentSong.source !== 'local') {
-        console.log('网络歌曲播放失败，可能是URL已过期，尝试重新获取');
+      // 无论本地还是网络歌曲，播放失败都尝试重新加载
+      // 这样可以处理暂停后连接断开的情况
+      if (currentSong) {
+        console.log(`${currentSong.source === 'local' ? '本地' : '网络'}歌曲播放失败，尝试重新加载`);
         try {
-          await loadAndPlay(currentSong);
+          // 保留当前播放位置
+          const currentTime = audio.currentTime || 0;
+          await loadAndPlay(currentSong, currentTime);
           return;
         } catch (reloadError) {
           console.error('重新加载失败:', reloadError);

@@ -2,6 +2,7 @@ import { app, BrowserWindow, session, protocol } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as fs from 'fs';
+import { Readable } from 'stream';
 import { isDev } from './util.js';
 import { registerBilibiliHandlers } from './api/bilibiliHandler.js';
 import { registerNeteaseHandlers } from './api/neteaseHandler.js';
@@ -16,14 +17,37 @@ import { registerLocalMusicHandlers } from './api/localMusicHandler.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'localmusic',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+      bypassCSP: true,
+      allowServiceWorkers: true,
+    }
+  }
+]);
+
 app.on('ready', () => {
   // 注册 localmusic:// 自定义协议（用于加载本地音频文件，支持 Range 请求）
-  // 使用 Buffer 读取文件，避免流超时问题
+  // 使用 protocol.handle + Response(web 流) 以保持浏览器端的安全校验通过
   protocol.handle('localmusic', async (request) => {
     try {
       // 提取并解码文件路径
-      const url = request.url.replace('localmusic://', '');
-      let filePath = decodeURIComponent(url);
+      // URL 格式: localmusic://localhost/E%3A%2Fmusic%2Fsong.mp3
+      // 需要去掉 localmusic://localhost/ 前缀，然后解码
+      const url = new URL(request.url);
+      let filePath = decodeURIComponent(url.pathname);
+
+      // 移除开头的斜杠（Windows 路径不需要）
+      // /E:/music/song.mp3 -> E:/music/song.mp3
+      if (filePath.startsWith('/') && /^\/[A-Za-z]:/.test(filePath)) {
+        filePath = filePath.slice(1);
+      }
 
       console.log('[localmusic protocol] 请求 URL:', request.url);
       console.log('[localmusic protocol] 解码后路径:', filePath);
@@ -66,40 +90,57 @@ app.on('ready', () => {
         const parts = rangeHeader.replace(/bytes=/, '').split('-');
         const start = parseInt(parts[0], 10);
         const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-        const chunkSize = end - start + 1;
 
+        // 校验 Range 范围是否合法
+        if (isNaN(start) || isNaN(end) || start < 0 || end >= fileSize || start > end) {
+          console.error('[localmusic protocol] 非法的 Range 请求:', rangeHeader);
+          return new Response('Requested Range Not Satisfiable', {
+            status: 416,
+            headers: {
+              'Content-Range': `bytes */${fileSize}`,
+            },
+          });
+        }
+
+        const chunkSize = end - start + 1;
         console.log(`[localmusic protocol] Range 请求: ${start}-${end}/${fileSize}`);
 
-        // 读取指定范围的文件数据到 Buffer
-        const buffer = Buffer.alloc(chunkSize);
-        const fd = fs.openSync(filePath, 'r');
-        fs.readSync(fd, buffer, 0, chunkSize, start);
-        fs.closeSync(fd);
+        const nodeStream = fs.createReadStream(filePath, { start, end, highWaterMark: 256 * 1024 });
+        nodeStream.on('error', (streamErr) => {
+          console.error('[localmusic protocol] 读取流错误:', streamErr);
+        });
 
-        // 返回 206 Partial Content 响应
-        return new Response(buffer, {
+        // 将 Node stream 转为 Web ReadableStream
+        const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
+
+        return new Response(webStream, {
           status: 206,
           headers: {
             'Content-Type': mimeType,
             'Content-Length': chunkSize.toString(),
             'Content-Range': `bytes ${start}-${end}/${fileSize}`,
             'Accept-Ranges': 'bytes',
+            'Cache-Control': 'no-store',
           },
         });
       } else {
-        // 无 Range 请求，返回完整文件
-        // 对于音频文件，通常会先请求完整文件元数据，然后再用 Range 请求分块加载
+        // 无 Range 请求，流式返回完整文件（通常浏览器随后会发 Range）
         console.log(`[localmusic protocol] 完整文件请求: ${fileSize} bytes`);
 
-        // 读取完整文件到 Buffer
-        const buffer = fs.readFileSync(filePath);
+        const nodeStream = fs.createReadStream(filePath, { highWaterMark: 256 * 1024 });
+        nodeStream.on('error', (streamErr) => {
+          console.error('[localmusic protocol] 读取流错误:', streamErr);
+        });
 
-        return new Response(buffer, {
+        const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
+
+        return new Response(webStream, {
           status: 200,
           headers: {
             'Content-Type': mimeType,
             'Content-Length': fileSize.toString(),
             'Accept-Ranges': 'bytes',
+            'Cache-Control': 'no-store',
           },
         });
       }
