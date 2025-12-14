@@ -675,7 +675,14 @@ function App() {
   const renderView = () => {
     switch (currentView) {
       case ViewState.HOME:
-        return <HomeView playerState={playerState} playSong={playSong} />;
+        return (
+          <HomeView
+            playerState={playerState}
+            playSong={playSong}
+            onNavigateToPlaylist={navigateToPlaylistDetail}
+            onShowToast={showToast}
+          />
+        );
 
       case ViewState.SEARCH:
         return (
