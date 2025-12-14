@@ -1,0 +1,307 @@
+# GitHub Actions 工作流：自动构建和发布 LZ Music
+# 
+# 功能说明：
+# 1. 支持多平台构建（Windows、Linux、macOS）
+# 2. 自动发布：推送版本标签时自动创建GitHub Release
+# 3. 手动发布：可在GitHub Actions页面手动触发
+# 4. 构建产物：Windows安装版+解压版、Linux多格式、macOS DMG
+#
+# 触发条件：
+# - 推送以 'v' 开头的标签（如 v1.0.0）
+# - 推送 beta 版本标签（如 1.0.0-beta）
+# - 手动触发工作流
+name: Build and Release
+
+# 工作流触发条件
+on:
+  # 当推送标签时触发
+  push:
+    tags:
+      - 'v*'           # 正式版本标签，如 v1.0.0
+      - '*.*.*-beta'   # Beta版本标签，如 1.0.0-beta
+  # 手动触发工作流
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: '是否创建发行版'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      upload_to_release:
+        description: '是否上传构建产物到发行版'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      version_tag:
+        description: '版本标签 (例如: v1.0.0)'
+        required: false
+        type: string
+
+# 权限配置：允许工作流创建release和写入内容
+permissions:
+  contents: write    # 允许创建release和上传文件
+  actions: read      # 允许读取actions
+  packages: write    # 允许写入包（如果需要）
+
+# 全局环境变量
+env:
+  FORCE_COLOR: true  # 启用彩色输出
+
+jobs:
+  # 构建任务：在多个平台上并行构建应用
+  build:
+    runs-on: ${{ matrix.os }}
+    
+    # 构建矩阵：定义不同平台的构建环境
+    strategy:
+      fail-fast: false  # 不因为一个平台失败而取消其他平台的构建
+      matrix:
+        include:
+          # Windows 构建环境
+          - os: windows-latest
+            platform: win32
+            arch: x64
+            npm_config_cache: ~/.npm
+          # Linux 构建环境
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            npm_config_cache: ~/.npm
+          # macOS 构建环境 (暂时禁用，因为可能需要付费开发者账户)
+          - os: macos-latest
+            platform: darwin
+            arch: x64
+            npm_config_cache: ~/.npm
+
+    steps:
+      # 步骤1：检出源代码
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # 步骤2：设置 Node.js 环境
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'  # 使用 Node.js 18
+          cache: 'npm'           # 启用 npm 缓存
+
+      # 步骤3：配置 npm 缓存以加速构建（非macOS平台）
+      - name: 配置 npm 缓存
+        if: matrix.platform != 'darwin'
+        uses: actions/cache@v4
+        with:
+          path: ${{ matrix.npm_config_cache }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # 步骤4：安装项目依赖（非macOS平台使用npm ci）
+      - name: 安装依赖
+        if: matrix.platform != 'darwin'
+        run: npm ci
+
+      # 步骤5：macOS特殊处理 - 安装依赖并添加dmg-license
+      - name: 安装依赖 (macOS)
+        if: matrix.platform == 'darwin'
+        run: |
+          echo "macOS构建：使用npm install安装依赖..."
+          npm install
+          echo "添加dmg-license依赖..."
+          npm install dmg-license
+          echo "验证dmg-license是否安装成功..."
+          npm list dmg-license || echo "dmg-license未在package.json中，但已手动安装"
+
+      # 步骤6：构建 Windows 应用
+      # 生成安装版(.exe)和解压版(.zip)
+      - name: 构建应用 (Windows)
+        if: matrix.platform == 'win32'
+        run: |
+          echo "开始构建Windows应用..."
+          npm run build-win
+          echo "构建完成，检查输出目录..."
+          dir dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 步骤7：构建 Linux 应用
+      # 生成 AppImage、deb、rpm 格式
+      - name: 构建应用 (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          echo "开始构建Linux应用..."
+          echo "当前package.json作者信息:"
+          cat package.json | grep -A 3 '"author"'
+          npm run build-linux
+          echo "构建完成，检查输出目录..."
+          ls -la dist/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 步骤8：构建 macOS 应用
+      # 生成 DMG 安装包
+      - name: 构建应用 (macOS)
+        if: matrix.platform == 'darwin'
+        run: |
+          echo "开始构建macOS应用..."
+          npm run build-mac
+          echo "构建完成，检查输出目录..."
+          ls -la dist/
+          echo "查找所有构建产物..."
+          find dist/ -name "*.dmg" -o -name "*.zip" -o -name "*.app" | head -10
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 步骤9：上传 Windows 构建产物
+      # 包含安装版和解压版
+      - name: 上传构建产物 (Windows)
+        if: matrix.platform == 'win32'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-builds
+          path: |
+            dist/*.exe
+            dist/*.zip
+          retention-days: 30
+          if-no-files-found: warn
+
+      # 步骤10：上传 Linux 构建产物
+      # 包含多种 Linux 发行版格式
+      - name: 上传构建产物 (Linux)
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-builds
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.tar.gz
+          retention-days: 30
+          if-no-files-found: warn
+
+      # 步骤11：上传 macOS 构建产物
+      - name: 上传构建产物 (macOS)
+        if: matrix.platform == 'darwin'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-builds
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          retention-days: 30
+          if-no-files-found: warn
+
+  # 发布任务：创建 GitHub Release 并上传构建产物
+  release:
+    needs: build  # 依赖构建任务完成
+    runs-on: ubuntu-latest
+    # 权限配置：确保release任务有足够权限
+    permissions:
+      contents: write      # 创建release和上传文件
+      actions: read        # 读取actions状态
+      packages: write      # 写入包权限
+    # 发布条件：推送标签或手动触发且选择创建发行版
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+    
+    steps:
+      # 步骤1：检出代码（用于获取版本信息）
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # 步骤2：下载所有平台的构建产物（仅在需要上传时下载）
+      - name: 下载所有构建产物
+        if: |
+          github.event_name == 'push' || 
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true')
+        uses: actions/download-artifact@v4
+
+      # 步骤3：获取版本信息
+      # 从标签或手动输入中提取版本号
+      - name: 获取版本信息
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION="${{ github.event.inputs.version_tag }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      # 步骤4：创建 GitHub Release
+      # 自动生成发行说明并上传所有构建产物
+      - name: 创建发行版
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: LZ Music ${{ steps.version.outputs.version }}
+          body: |
+            ## 🎵 LZ Music ${{ steps.version.outputs.version }}
+            
+            基于 Bilibili API 的音乐播放器新版本发布！
+            
+            ### 📦 下载
+            
+            **Windows:**
+            - 🔧 安装版: `LZ-Music-*-Setup.exe` - 推荐，包含自动更新
+            - 📁 解压版: `LZ-Music-*-win32-x64.zip` - 绿色版，解压即用
+            
+            **Linux:**
+            - 🐧 AppImage: `LZ-Music-*.AppImage` - 通用格式，适用于所有发行版
+            - 📦 Debian包: `LZ-Music-*.deb` - 适用于 Ubuntu/Debian
+            - 📦 RPM包: `LZ-Music-*.rpm` - 适用于 CentOS/Fedora
+            
+            **macOS:**
+            - 🍎 DMG安装包: `LZ-Music-*.dmg` - 标准 macOS 安装包
+            
+            ### 🔧 安装说明
+            
+            - **Windows**: 
+              - 安装版：下载 Setup.exe 文件直接运行安装
+              - 解压版：下载 zip 文件，解压后运行 LZ Music.exe
+            - **Linux**: 
+              - AppImage：下载后添加执行权限 `chmod +x *.AppImage`，双击运行
+              - deb/rpm：使用系统包管理器安装
+            
+            ### ✨ 主要功能
+            
+            - 🎵 音乐首页推荐
+            - 🔍 智能搜索
+            - 📱 现代界面
+            - 🎧 完整播放控制
+            - 📝 播放历史记录
+            - 🔄 多种播放模式
+            
+            ### 📝 更新日志
+            
+            请查看提交历史了解详细更改。
+            
+          draft: false      # 不创建草稿
+          prerelease: false # 不标记为预发布版本
+          files: |
+            ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true')) && 'windows-builds/*' || '' }}
+            ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true')) && 'linux-builds/*' || '' }}
+            ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true')) && 'macos-builds/*' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 步骤5：清理构建产物
+      # 发布完成后删除临时的构建产物以节省存储空间
+      - name: 清理旧的构建产物
+        if: |
+          github.event_name == 'push' || 
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_release == 'true')
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            windows-builds
+            linux-builds
+            macos-builds

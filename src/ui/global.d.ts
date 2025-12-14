@@ -6,6 +6,11 @@
 import type { SearchResult, BilibiliVideo, AudioUrlResponse } from '../shared/types';
 import type { NeteaseSearchResult, Playlist, PlaylistDetail, LocalFolder, LocalTrack } from './types';
 
+declare module '*.md?raw' {
+  const content: string;
+  export default content;
+}
+
 // 网易云音乐 API 响应类型
 interface NeteaseSearchResponse {
   success: boolean;

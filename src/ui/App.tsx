@@ -4,6 +4,7 @@ import BottomPlayer from './components/BottomPlayer';
 import FullPlayer from './components/FullPlayer';
 import PlaylistDrawer from './components/PlaylistDrawer';
 import AddToPlaylistDialog from './components/AddToPlaylistDialog';
+import AgreementDialog from './components/AgreementDialog';
 import HomeView from './views/HomeView';
 import SearchView from './views/SearchView';
 import HistoryView from './views/HistoryView';
@@ -23,6 +24,11 @@ function App() {
   // Application State
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.HOME);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  // 检查用户是否已同意协议（从 localStorage 读取）
+  const [showAgreement, setShowAgreement] = useState(() => {
+    const agreed = localStorage.getItem('agreementAccepted');
+    return agreed !== 'true'; // 如果已同意则不显示
+  });
 
   // Toast 消息管理
   const [toastMessages, setToastMessages] = useState<ToastMessage[]>([]);
@@ -573,6 +579,16 @@ function App() {
     setPlayerState(prev => ({ ...prev, coverStyle: style }));
   };
 
+  const handleAgreementAccept = () => {
+    // 保存用户同意状态到 localStorage
+    localStorage.setItem('agreementAccepted', 'true');
+    setShowAgreement(false);
+  };
+
+  const handleExitApp = () => {
+    window.close();
+  };
+
   /**
    * 歌单相关操作函数
    */
@@ -783,6 +799,13 @@ function App() {
 
       {/* Toast 通知容器 */}
       <Toast messages={toastMessages} onRemove={removeToast} />
+
+      {/* 首次启动协议弹窗 */}
+      <AgreementDialog
+        open={showAgreement}
+        onAccept={handleAgreementAccept}
+        onExit={handleExitApp}
+      />
     </div>
   );
 }

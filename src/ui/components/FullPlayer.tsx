@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Settings, MoreHorizontal } from 'lucide-react';
+import { ChevronDown, Settings } from 'lucide-react';
 import type { PlayerState } from '../types';
 import { LyricsSettingsDialog } from './LyricsSettingsDialog';
 import { Turntable } from './Turntable';
@@ -155,17 +155,14 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   return (
     <div className="fixed inset-0 z-[50] bg-white text-slate-900 flex flex-col animate-slide-up pb-24">
       {/* Header */}
-      <div className="h-16 flex items-center justify-between px-6 md:px-10 z-20 bg-white/80 backdrop-blur-sm border-b border-slate-50">
+      <div className="relative h-16 flex items-center justify-center px-6 md:px-10 z-20 bg-white/80 backdrop-blur-sm border-b border-slate-50">
         <button
           onClick={onClose}
-          className="p-2 hover:bg-slate-100 text-slate-600 rounded-full transition-colors"
+          className="absolute left-6 md:left-10 p-2 hover:bg-slate-100 text-slate-600 rounded-full transition-colors"
         >
           <ChevronDown size={28} />
         </button>
-        <div className="text-xs tracking-widest uppercase font-bold text-slate-400">正在播放</div>
-        <button className="p-2 hover:bg-slate-100 text-slate-600 rounded-full transition-colors">
-          <MoreHorizontal size={24} />
-        </button>
+        <div className="text-xs tracking-widest uppercase font-bold text-slate-400 text-center">正在播放</div>
       </div>
 
       {/* Main Content: 2 Columns */}
