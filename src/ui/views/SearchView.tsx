@@ -97,6 +97,7 @@ export default function SearchView({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
   // 分P选择对话框状态
   const [pageDialogOpen, setPageDialogOpen] = useState(false);
@@ -110,15 +111,65 @@ export default function SearchView({
   const observerTarget = useRef<HTMLDivElement>(null);
 
   /**
+   * 搜索历史相关处理
+   */
+  useEffect(() => {
+    try {
+      const storedHistory = localStorage.getItem('searchHistory');
+      if (storedHistory) {
+        const parsed: unknown = JSON.parse(storedHistory);
+        if (Array.isArray(parsed)) {
+          setSearchHistory(parsed.slice(0, 10));
+        }
+      }
+    } catch (err) {
+      console.error('加载搜索历史失败:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+    } catch (err) {
+      console.error('保存搜索历史失败:', err);
+    }
+  }, [searchHistory]);
+
+  const addToHistory = useCallback((keyword: string) => {
+    const trimmed = keyword.trim();
+    if (!trimmed) return;
+
+    setSearchHistory((prev) =>
+      [trimmed, ...prev.filter((item) => item !== trimmed)].slice(0, 10)
+    );
+  }, []);
+
+  const handleHistoryClick = (term: string) => {
+    setSearchQuery(term);
+    setShowSuggestions(false);
+    setSuggestions([]);
+  };
+
+  const handleClearHistory = () => {
+    setSearchHistory([]);
+  };
+
+  /**
    * 执行搜索
    */
   const performSearch = useCallback(
     async (keyword: string, pageNum: number, isLoadMore = false) => {
-      if (!keyword.trim()) {
+      const trimmedKeyword = keyword.trim();
+
+      if (!trimmedKeyword) {
         setSearchResults([]);
         setTotal(0);
         setHasMore(true);
         return;
+      }
+
+      if (!isLoadMore) {
+        addToHistory(trimmedKeyword);
       }
 
       try {
@@ -132,7 +183,7 @@ export default function SearchView({
         // 通过 IPC 调用主进程 API
         const result: SearchResult = await window.electron.invoke(
           'search-videos',
-          keyword.trim(),
+          trimmedKeyword,
           pageNum
         );
 
@@ -183,7 +234,7 @@ export default function SearchView({
         setLoadingMore(false);
       }
     },
-    []
+    [addToHistory]
   );
 
   /**
@@ -387,6 +438,32 @@ export default function SearchView({
           </div>
         )}
       </div>
+
+      {/* 搜索历史 - 仅在未输入搜索词时显示 */}
+      {searchHistory.length > 0 && !searchQuery.trim() && (
+        <div className="w-full max-w-4xl mx-auto mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-slate-500 font-medium">搜索历史</span>
+            <button
+              onClick={handleClearHistory}
+              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              清除
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {searchHistory.map((item) => (
+              <button
+                key={item}
+                onClick={() => handleHistoryClick(item)}
+                className="px-3 py-1.5 rounded-full bg-white border border-slate-200 text-sm text-slate-600 hover:border-primary hover:text-primary transition-colors shadow-sm"
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 搜索结果显示区域 */}
       {searchQuery.trim() ? (
