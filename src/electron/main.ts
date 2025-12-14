@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session, protocol } from 'electron';
+import { app, BrowserWindow, session, protocol, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as fs from 'fs';
@@ -16,6 +16,8 @@ import { registerLocalMusicHandlers } from './api/localMusicHandler.js';
 // 在 ES 模块中获取 __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const isMac = process.platform === 'darwin';
+let mainWindow: BrowserWindow | null = null;
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -202,12 +204,47 @@ app.on('ready', () => {
     });
   });
 
-  const mainWindow = new BrowserWindow({
+  ipcMain.handle('window-control', (event, action: 'minimize' | 'toggle-maximize' | 'close' | 'get-state') => {
+    const targetWindow = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+
+    if (!targetWindow) {
+      return { success: false, isMaximized: false };
+    }
+
+    switch (action) {
+      case 'minimize':
+        targetWindow.minimize();
+        break;
+      case 'toggle-maximize':
+        if (targetWindow.isMaximized()) {
+          targetWindow.unmaximize();
+        } else {
+          targetWindow.maximize();
+        }
+        break;
+      case 'close':
+        targetWindow.close();
+        break;
+      case 'get-state':
+      default:
+        break;
+    }
+
+    return { success: true, isMaximized: targetWindow.isMaximized() };
+  });
+
+  mainWindow = new BrowserWindow({
     width: 1024,
     height: 768,
     minWidth: 800,
     minHeight: 600,
     show: false,
+    frame: false,
+    title: 'LZMusic',
+    titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
+    backgroundColor: '#0f172a',
+    trafficLightPosition: isMac ? { x: 14, y: 14 } : undefined,
+    autoHideMenuBar: true,
     icon: path.join(app.getAppPath(), 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png'),
     webPreferences: {
       nodeIntegration: false,
@@ -218,19 +255,27 @@ app.on('ready', () => {
   });
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+    mainWindow?.show();
     // 可选：让窗口获得焦点
   });
 
   mainWindow.webContents.on('did-finish-load', () => {
-    if (!mainWindow.isVisible()) {
+    if (mainWindow && !mainWindow.isVisible()) {
       mainWindow.show();
     }
+  });
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
   });
 
 
   if (isDev()) {
     mainWindow.loadURL('http://localhost:5238');
+    // 自动在开发环境打开调试工具，便于排查问题
+    mainWindow.webContents.once('did-finish-load', () => {
+      mainWindow?.webContents.openDevTools({ mode: 'detach' });
+    });
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), '/dist-react/index.html'));
   }

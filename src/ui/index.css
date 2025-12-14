@@ -76,5 +76,14 @@
 /* 唱片旋转动画 */
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* 自定义标题栏拖拽区域 */
+.app-drag {
+  -webkit-app-region: drag;
+}
+
+.app-no-drag {
+  -webkit-app-region: no-drag;
 }

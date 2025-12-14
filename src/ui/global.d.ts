@@ -297,6 +297,13 @@ interface LocalMusicGetTrackByIdResponse {
   error?: string;
 }
 
+interface WindowControlResponse {
+  success: boolean;
+  isMaximized: boolean;
+}
+
+type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'get-state';
+
 
 declare global {
   interface Window {
@@ -374,6 +381,7 @@ declare global {
       invoke(channel: 'local-music-get-tracks', folderId: string): Promise<LocalMusicGetTracksResponse>;
       invoke(channel: 'local-music-delete-track', trackId: string): Promise<LocalMusicDeleteTrackResponse>;
       invoke(channel: 'local-music-get-track-by-id', trackId: string): Promise<LocalMusicGetTrackByIdResponse>;
+      invoke(channel: 'window-control', action: WindowControlAction): Promise<WindowControlResponse>;
     };
   }
 }

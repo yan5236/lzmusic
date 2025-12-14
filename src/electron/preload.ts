@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld('electron', {
       'local-music-rename-folder',     // 重命名虚拟文件夹
       'local-music-delete-track',      // 删除本地歌曲
       'local-music-get-track-by-id',   // 根据ID获取本地歌曲
+      'window-control',                // 自定义标题栏的窗口控制
     ];
 
     if (!validChannels.includes(channel)) {

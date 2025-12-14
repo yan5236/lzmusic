@@ -153,7 +153,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
   if (!isOpen || !currentSong) return null;
 
   return (
-    <div className="fixed inset-0 z-[50] bg-white text-slate-900 flex flex-col animate-slide-up pb-24">
+    <div className="fixed inset-0 z-[50] bg-white text-slate-900 flex flex-col animate-slide-up pb-24 pt-12">
       {/* Header */}
       <div className="relative h-16 flex items-center justify-center px-6 md:px-10 z-20 bg-white/80 backdrop-blur-sm border-b border-slate-50">
         <button

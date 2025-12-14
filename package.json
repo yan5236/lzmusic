@@ -7,6 +7,7 @@
   "scripts": {
     "build:react": "vite build",
     "build:electron": "tsc -p tsconfig.electron.json && tsc -p tsconfig.preload.json",
+    "dev": "npm-run-all --parallel dev:react dev:electron",
     "dev:dist": "npm run build:react && npm run build:electron && electron .",
     "dev:react": "vite dev",
     "dev:electron": "chcp 65001 && npm run build:electron && cross-env NODE_ENV=development electron .",
@@ -52,6 +53,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
+    "npm-run-all": "^4.1.5",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
     "vite": "^7.1.7"

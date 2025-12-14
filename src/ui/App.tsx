@@ -14,6 +14,7 @@ import PlaylistsView from './views/PlaylistsView';
 import PlaylistDetailView from './views/PlaylistDetailView';
 import LocalView from './views/LocalView';
 import Toast from './components/Toast';
+import TitleBar from './components/TitleBar';
 import type { ToastMessage } from './components/Toast';
 import type { Song, PlayerState } from './types';
 import { ViewState, PlaybackMode } from './types';
@@ -742,47 +743,47 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-secondary overflow-hidden font-sans select-none">
-      <Sidebar currentView={currentView} onChangeView={setCurrentView} />
+    <div className="h-screen w-screen bg-secondary overflow-hidden font-sans select-none">
+      <TitleBar />
+      <div className="flex h-full pt-12">
+        <Sidebar currentView={currentView} onChangeView={setCurrentView} />
 
-      {/* Main Content Area */}
-      <div className="flex-1 relative flex flex-col h-full overflow-hidden bg-secondary">
-        {/* Top Navigation / Header (simplified) */}
-        
+        {/* Main Content Area */}
+        <div className="flex-1 relative flex flex-col h-full overflow-hidden bg-secondary">
+          <main className="flex-1 overflow-y-auto hide-scrollbar pb-32 px-4 md:px-6">
+            {renderView()}
+          </main>
 
-        <main className="flex-1 overflow-y-auto hide-scrollbar pb-32">
-          {renderView()}
-        </main>
+          {/* Full Player Overlay */}
+          <FullPlayer
+              isOpen={playerState.isFullPlayerOpen}
+              onClose={toggleFullPlayer}
+              playerState={playerState}
+              seek={seek}
+              togglePlay={togglePlay}
+              nextSong={nextSong}
+              prevSong={prevSong}
+              setVolume={changeVolume}
+              onFontSizeChange={updateLyricsFontSize}
+              onOffsetChange={updateLyricsOffset}
+              onLyricsApply={updateCurrentSongLyrics}
+              showToast={showToast}
+          />
 
-        {/* Full Player Overlay */}
-        <FullPlayer
-            isOpen={playerState.isFullPlayerOpen}
-            onClose={toggleFullPlayer}
-            playerState={playerState}
-            seek={seek}
-            togglePlay={togglePlay}
-            nextSong={nextSong}
-            prevSong={prevSong}
-            setVolume={changeVolume}
-            onFontSizeChange={updateLyricsFontSize}
-            onOffsetChange={updateLyricsOffset}
-            onLyricsApply={updateCurrentSongLyrics}
-            showToast={showToast}
-        />
-
-        {/* Bottom Player */}
-        <BottomPlayer
-            playerState={playerState}
-            togglePlay={togglePlay}
-            nextSong={nextSong}
-            prevSong={prevSong}
-            seek={seek}
-            changeVolume={changeVolume}
-            toggleFullPlayer={toggleFullPlayer}
-            togglePlaylist={togglePlaylist}
-            toggleMode={toggleMode}
-            onAddToPlaylist={handleAddCurrentSongToPlaylist}
-        />
+          {/* Bottom Player */}
+          <BottomPlayer
+              playerState={playerState}
+              togglePlay={togglePlay}
+              nextSong={nextSong}
+              prevSong={prevSong}
+              seek={seek}
+              changeVolume={changeVolume}
+              toggleFullPlayer={toggleFullPlayer}
+              togglePlaylist={togglePlaylist}
+              toggleMode={toggleMode}
+              onAddToPlaylist={handleAddCurrentSongToPlaylist}
+          />
+        </div>
       </div>
 
       {/* Playlist Drawer */}
