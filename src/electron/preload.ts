@@ -62,6 +62,11 @@ contextBridge.exposeInMainWorld('electron', {
       'local-music-delete-track',      // 删除本地歌曲
       'local-music-get-track-by-id',   // 根据ID获取本地歌曲
       'window-control',                // 自定义标题栏的窗口控制
+      // 应用更新
+      'app-get-version',               // 获取应用版本
+      'app-check-update',              // 检查更新
+      'app-download-update',           // 下载更新包
+      'app-update-control',            // 控制更新下载（暂停/继续/取消）
     ];
 
     if (!validChannels.includes(channel)) {
@@ -69,5 +74,14 @@ contextBridge.exposeInMainWorld('electron', {
     }
 
     return ipcRenderer.invoke(channel, ...args);
+  },
+
+  /**
+   * 订阅更新事件（下载进度、错误等）
+   */
+  onUpdateEvent: (callback: (event: unknown) => void) => {
+    const handler = (_event: unknown, data: unknown) => callback(data);
+    ipcRenderer.on('app-update-event', handler);
+    return () => ipcRenderer.removeListener('app-update-event', handler);
   },
 });

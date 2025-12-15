@@ -4,12 +4,22 @@
  */
 
 import type { SearchResult, BilibiliVideo, AudioUrlResponse } from '../shared/types';
-import type { NeteaseSearchResult, Playlist, PlaylistDetail, LocalFolder, LocalTrack } from './types';
+import type {
+  NeteaseSearchResult,
+  Playlist,
+  PlaylistDetail,
+  LocalFolder,
+  LocalTrack,
+  UpdateEventPayload,
+  UpdateInfo,
+} from './types';
 
 declare module '*.md?raw' {
   const content: string;
   export default content;
 }
+
+declare global {
 
 // 网易云音乐 API 响应类型
 interface NeteaseSearchResponse {
@@ -297,6 +307,32 @@ interface LocalMusicGetTrackByIdResponse {
   error?: string;
 }
 
+// 更新相关
+interface AppVersionResponse {
+  success: boolean;
+  version: string;
+  error?: string;
+}
+
+interface AppCheckUpdateResponse {
+  success: boolean;
+  currentVersion: string;
+  updateAvailable?: boolean;
+  updateInfo?: UpdateInfo;
+  error?: string;
+}
+
+interface AppDownloadUpdateResponse {
+  success: boolean;
+  cancelled?: boolean;
+  error?: string;
+}
+
+interface AppUpdateControlResponse {
+  success: boolean;
+  error?: string;
+}
+
 interface WindowControlResponse {
   success: boolean;
   isMaximized: boolean;
@@ -305,7 +341,6 @@ interface WindowControlResponse {
 type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'get-state';
 
 
-declare global {
   interface Window {
     electron: {
       invoke(channel: 'search-videos', keyword: string, page: number): Promise<SearchResult>;
@@ -382,6 +417,13 @@ declare global {
       invoke(channel: 'local-music-delete-track', trackId: string): Promise<LocalMusicDeleteTrackResponse>;
       invoke(channel: 'local-music-get-track-by-id', trackId: string): Promise<LocalMusicGetTrackByIdResponse>;
       invoke(channel: 'window-control', action: WindowControlAction): Promise<WindowControlResponse>;
+      // 更新相关
+      invoke(channel: 'app-get-version'): Promise<AppVersionResponse>;
+      invoke(channel: 'app-check-update'): Promise<AppCheckUpdateResponse>;
+      invoke(channel: 'app-download-update', options?: { resume?: boolean }): Promise<AppDownloadUpdateResponse>;
+      invoke(channel: 'app-update-control', action: 'pause' | 'resume' | 'cancel'): Promise<AppUpdateControlResponse>;
+
+      onUpdateEvent(callback: (event: UpdateEventPayload) => void): () => void;
     };
   }
 }

@@ -135,3 +135,26 @@ export interface LocalTrack {
   cover_path?: string;
   created_at: number;
 }
+
+export interface UpdateInfo {
+  version: string;
+  releaseDate?: string;
+  notes?: string;
+}
+
+export interface UpdateProgress {
+  percent: number;
+  transferred?: number;
+  total?: number;
+  bytesPerSecond?: number;
+}
+
+export type UpdateDownloadState = 'idle' | 'downloading' | 'paused' | 'completed' | 'error';
+
+export type UpdateEventPayload =
+  | { type: 'download-started' | 'download-resumed' }
+  | { type: 'download-progress'; progress: UpdateProgress }
+  | { type: 'download-paused' }
+  | { type: 'download-cancelled' }
+  | { type: 'update-downloaded'; info?: UpdateInfo }
+  | { type: 'update-error'; message: string };

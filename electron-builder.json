@@ -1,5 +1,5 @@
 {
-  "appId": "com.lztoolspc.app",
+  "appId": "com.lzmusic2.app",
   "files": ["dist-electron", "dist-react"],
   "icon": "assets/icon.png",
   "mac": {
@@ -11,8 +11,18 @@
     "category": "Utility",
     "icon": "assets/icon.png"
   },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  },
   "win": {
-    "target": ["portable", "msi"],
+    "target": ["nsis", "msi"],
     "icon": "assets/icon.ico"
-  }
+  },
+  "publish": [
+    {
+      "provider": "generic",
+      "url": "http://127.0.0.1:6542/"
+    }
+  ]
 }
