@@ -3,8 +3,8 @@
  * 提供歌词搜索和其他设置功能
  */
 
-import { useState } from 'react';
-import { Search, Settings, X } from 'lucide-react';
+import { useState, type ChangeEvent } from 'react';
+import { Search, Settings, Upload, X } from 'lucide-react';
 import type { Song, NeteaseSearchResult } from '../types';
 
 interface LyricsSettingsDialogProps {
@@ -33,12 +33,15 @@ export function LyricsSettingsDialog({
   onLyricsApply,
   showToast,
 }: LyricsSettingsDialogProps) {
-  const [activeTab, setActiveTab] = useState<'search' | 'settings'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'local' | 'settings'>('search');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState<NeteaseSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedResult, setSelectedResult] = useState<NeteaseSearchResult | null>(null);
-  const [previewLyrics, setPreviewLyrics] = useState<string>('');
+  const [searchPreviewLyrics, setSearchPreviewLyrics] = useState<string>('');
+  const [localLyricsContent, setLocalLyricsContent] = useState<string>('');
+  const [localLyricsFileName, setLocalLyricsFileName] = useState<string>('');
+  const [localLyricsError, setLocalLyricsError] = useState<string>('');
 
   // 临时设置值
   const [tempFontSize, setTempFontSize] = useState(fontSize);
@@ -58,7 +61,7 @@ export function LyricsSettingsDialog({
     setIsSearching(true);
     setSearchResults([]);
     setSelectedResult(null);
-    setPreviewLyrics('');
+    setSearchPreviewLyrics('');
 
     try {
       const result = await window.electron.invoke('netease-search-song', searchKeyword);
@@ -79,38 +82,91 @@ export function LyricsSettingsDialog({
   // 预览歌词
   const handlePreviewLyrics = async (result: NeteaseSearchResult) => {
     setSelectedResult(result);
-    setPreviewLyrics('加载中...');
+    setSearchPreviewLyrics('加载中...');
 
     try {
       const lyricsResult = await window.electron.invoke('netease-get-lyrics', result.id);
 
       if (lyricsResult.success && lyricsResult.data.lrc) {
-        setPreviewLyrics(lyricsResult.data.lrc);
+        setSearchPreviewLyrics(lyricsResult.data.lrc);
       } else {
-        setPreviewLyrics('该歌曲暂无歌词');
+        setSearchPreviewLyrics('该歌曲暂无歌词');
       }
     } catch (error) {
       console.error('获取歌词错误:', error);
-      setPreviewLyrics('获取歌词失败');
+      setSearchPreviewLyrics('获取歌词失败');
     }
   };
 
+  // 解析 LRC 文本为数组
+  const rawTimeTagPattern = /\[(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?(?:\.(\d+))?\]/g;
+  const normalizeTimeTags = (lyricsText: string) => {
+    return lyricsText.replace(rawTimeTagPattern, (_full, m, s, colonMs, dotMs) => {
+      const minute = String(m).padStart(2, '0');
+      const second = String(s).padStart(2, '0');
+      const ms = String(dotMs ?? colonMs ?? '00').padStart(2, '0');
+      return `[${minute}:${second}.${ms}]`;
+    });
+  };
+
+  const timeTagPattern = /\[\d{1,2}:\d{1,2}(?:\.\d+)?\]/;
+  const timeTagLinePattern = new RegExp(`^${timeTagPattern.source}`);
+  const timeTagSplitPattern = new RegExp(`${timeTagPattern.source}[^[]*`, 'g');
+
+  const parseLrcToArray = (lyricsText: string) => {
+    const normalizedText = normalizeTimeTags(lyricsText);
+    const lyricsArray: string[] = [];
+    const hasLineBreak = /\r?\n/.test(normalizedText);
+
+    if (hasLineBreak) {
+      const lines = normalizedText.split(/\r?\n/);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && timeTagLinePattern.test(trimmed)) {
+          lyricsArray.push(trimmed);
+        }
+      }
+      return lyricsArray;
+    }
+
+    const matches = normalizedText.match(timeTagSplitPattern);
+    if (matches) {
+      for (const match of matches) {
+        const trimmed = match.trim();
+        if (trimmed && timeTagLinePattern.test(trimmed)) {
+          lyricsArray.push(trimmed);
+        }
+      }
+    }
+
+    return lyricsArray;
+  };
+
+  const formatLrcPreview = (lyricsText: string) => {
+    if (!lyricsText) return '';
+    const normalizedText = normalizeTimeTags(lyricsText);
+    if (/\r?\n/.test(normalizedText)) return normalizedText;
+
+    const matches = normalizedText.match(timeTagSplitPattern);
+    if (matches && matches.length > 0) {
+      return matches.map((item) => item.trim()).join('\n');
+    }
+
+    return normalizedText;
+  };
+
   // 应用歌词
-  const handleApplyLyrics = async () => {
-    if (!previewLyrics || previewLyrics === '加载中...' || previewLyrics === '该歌曲暂无歌词') {
+  const applyLyrics = async (lyricsText: string) => {
+    if (!lyricsText || lyricsText === '加载中...' || lyricsText === '该歌曲暂无歌词') {
+      showToast('请先选择可用歌词', 'error');
       return;
     }
 
-    // 解析LRC格式歌词
-    const lines = previewLyrics.split('\n');
-    const lyricsArray: string[] = [];
+    const lyricsArray = parseLrcToArray(lyricsText);
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      // 过滤掉空行和元数据行
-      if (trimmed && trimmed.match(/^\[\d+:\d+\.\d+\]/)) {
-        lyricsArray.push(trimmed);
-      }
+    if (lyricsArray.length === 0) {
+      showToast('未找到有效的 LRC 时间标签', 'error');
+      return;
     }
 
     // 应用到当前播放器
@@ -144,6 +200,55 @@ export function LyricsSettingsDialog({
     } else {
       showToast('歌词已应用', 'success');
     }
+  };
+
+  // 网易云搜索歌词应用
+  const handleApplySearchLyrics = () => {
+    void applyLyrics(searchPreviewLyrics);
+  };
+
+  // 处理本地歌词上传
+  const handleLocalLyricsUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.lrc')) {
+      setLocalLyricsContent('');
+      setLocalLyricsFileName('');
+      setLocalLyricsError('仅支持 .lrc 歌词文件');
+      showToast('请选择 .lrc 歌词文件', 'error');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const content = typeof reader.result === 'string' ? reader.result : '';
+      if (!content.trim()) {
+        setLocalLyricsError('文件内容为空');
+        setLocalLyricsContent('');
+        setLocalLyricsFileName('');
+        return;
+      }
+      setLocalLyricsContent(content);
+      setLocalLyricsFileName(file.name);
+      setLocalLyricsError('');
+    };
+    reader.onerror = () => {
+      setLocalLyricsError('读取文件失败,请重试');
+      setLocalLyricsContent('');
+      setLocalLyricsFileName('');
+      showToast('读取歌词文件失败', 'error');
+    };
+    reader.readAsText(file, 'utf-8');
+
+    // 允许上传同一文件时重新触发 change
+    event.target.value = '';
+  };
+
+  // 应用本地歌词
+  const handleApplyLocalLyrics = () => {
+    void applyLyrics(localLyricsContent);
   };
 
   // 应用设置
@@ -185,6 +290,19 @@ export function LyricsSettingsDialog({
             </div>
           </button>
           <button
+            onClick={() => setActiveTab('local')}
+            className={`flex-1 px-6 py-3 font-medium transition-colors ${
+              activeTab === 'local'
+                ? 'text-primary border-b-2 border-primary bg-blue-50'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Upload size={18} />
+              <span>本地歌词</span>
+            </div>
+          </button>
+          <button
             onClick={() => setActiveTab('settings')}
             className={`flex-1 px-6 py-3 font-medium transition-colors ${
               activeTab === 'settings'
@@ -201,7 +319,7 @@ export function LyricsSettingsDialog({
 
         {/* 内容区域 */}
         <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'search' ? (
+          {activeTab === 'search' && (
             <div className="space-y-4">
               {/* 搜索框 */}
               <div className="flex gap-2">
@@ -252,9 +370,9 @@ export function LyricsSettingsDialog({
                   <div className="space-y-2">
                     <h3 className="font-semibold text-slate-700 mb-2">歌词预览</h3>
                     <div className="bg-slate-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                      {previewLyrics ? (
+                      {searchPreviewLyrics ? (
                         <pre className="text-sm text-slate-600 whitespace-pre-wrap font-sans">
-                          {previewLyrics}
+                          {searchPreviewLyrics}
                         </pre>
                       ) : (
                         <p className="text-slate-400 text-center py-8">
@@ -267,18 +385,79 @@ export function LyricsSettingsDialog({
               )}
 
               {/* 应用按钮 */}
-              {previewLyrics && previewLyrics !== '加载中...' && previewLyrics !== '该歌曲暂无歌词' && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleApplyLyrics}
-                    className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                  >
-                    应用歌词
-                  </button>
-                </div>
-              )}
+              {searchPreviewLyrics &&
+                searchPreviewLyrics !== '加载中...' &&
+                searchPreviewLyrics !== '该歌曲暂无歌词' && (
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleApplySearchLyrics}
+                      className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                    >
+                      应用歌词
+                    </button>
+                  </div>
+                )}
             </div>
-          ) : (
+          )}
+
+          {activeTab === 'local' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <p className="text-sm text-slate-600">
+                    上传 .lrc 歌词文件,软件会读取并展示预览,点击应用后写入数据库。
+                  </p>
+                  <label className="block border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-primary hover:bg-blue-50 transition-colors cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".lrc"
+                      className="hidden"
+                      onChange={handleLocalLyricsUpload}
+                    />
+                    <div className="flex flex-col items-center gap-2">
+                      <Upload size={28} className="text-slate-500" />
+                      <div className="font-medium text-slate-700">
+                        {localLyricsFileName || '点击上传 .lrc 文件'}
+                      </div>
+                      <p className="text-sm text-slate-500">
+                        支持 UTF-8 编码的 LRC 歌词
+                      </p>
+                    </div>
+                  </label>
+                  {localLyricsError && (
+                    <p className="text-sm text-red-500">{localLyricsError}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-slate-700 mb-2">歌词预览</h3>
+                  <div className="bg-slate-50 rounded-lg p-4 max-h-96 overflow-y-auto min-h-[240px]">
+                    {localLyricsContent ? (
+                      <pre className="text-sm text-slate-600 whitespace-pre-wrap font-sans">
+                        {formatLrcPreview(localLyricsContent)}
+                      </pre>
+                    ) : (
+                      <p className="text-slate-400 text-center py-8">
+                        上传 .lrc 文件后显示预览
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={handleApplyLocalLyrics}
+                  disabled={!localLyricsContent}
+                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-slate-300 disabled:cursor-not-allowed"
+                >
+                  应用歌词
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
             <div className="space-y-6">
               {/* 字体大小设置 */}
               <div className="space-y-3">
