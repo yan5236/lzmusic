@@ -20,6 +20,7 @@ import type { Song, PlayerState } from './types';
 import { ViewState, PlaybackMode } from './types';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 import { notifyPlaylistUpdated } from './utils/playlistEvents';
+import { applyThemeColor, getInitialThemeColor, normalizeThemeColor, persistThemeColor } from './utils/theme';
 
 function App() {
   // Application State
@@ -43,6 +44,13 @@ function App() {
   // 从 localStorage 读取保存的封面样式设置
   const savedCoverStyle = localStorage.getItem('coverStyle') as 'normal' | 'vinyl' | null;
 
+  // 主题色
+  const [themeColor, setThemeColor] = useState<string>(() => {
+    const initialColor = getInitialThemeColor();
+    applyThemeColor(initialColor);
+    return initialColor;
+  });
+
   // Player State
   const [playerState, setPlayerState] = useState<PlayerState>({
     isPlaying: false,
@@ -58,6 +66,11 @@ function App() {
     lyricsOffset: 0, // 当前歌曲的歌词偏移(ms)，从数据库加载
     coverStyle: savedCoverStyle || 'normal', // 播放界面封面样式
   });
+
+  // 主题色变化时，应用到全局 CSS 变量
+  useEffect(() => {
+    applyThemeColor(themeColor);
+  }, [themeColor]);
 
   // 应用启动时从数据库加载历史记录
   useEffect(() => {
@@ -574,6 +587,17 @@ function App() {
     });
   };
 
+  // 更新主题色并持久化
+  const updateThemeColor = useCallback((color: string) => {
+    const normalized = normalizeThemeColor(color);
+    if (!normalized) {
+      showToast('请输入有效的颜色值', 'error');
+      return;
+    }
+    setThemeColor(normalized);
+    persistThemeColor(normalized);
+  }, [showToast]);
+
   // 更新封面样式并保存到 localStorage
   const updateCoverStyle = (style: 'normal' | 'vinyl') => {
     localStorage.setItem('coverStyle', style);
@@ -738,6 +762,8 @@ function App() {
       case ViewState.SETTINGS:
         return (
           <SettingsView
+            themeColor={themeColor}
+            onThemeColorChange={updateThemeColor}
             coverStyle={playerState.coverStyle}
             onCoverStyleChange={updateCoverStyle}
             onShowToast={showToast}
