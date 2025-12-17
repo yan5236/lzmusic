@@ -136,7 +136,7 @@ const BottomPlayer: React.FC<BottomPlayerProps> = ({
 
             <button
                 onClick={togglePlay}
-                className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-200 hover:scale-105 hover:bg-blue-700 transition-all"
+                className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/25 hover:scale-105 hover:bg-primary/90 transition-all"
             >
                 {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
             </button>
