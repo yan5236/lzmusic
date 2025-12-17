@@ -94,7 +94,7 @@ function SortableSongItem({
       style={style}
       onClick={() => !isEditMode && onPlay()}
       className={`grid ${gridClass} gap-4 p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 items-center group cursor-pointer transition-colors ${
-        isDragging ? 'bg-blue-50' : ''
+        isDragging ? 'bg-primary/10' : ''
       }`}
     >
       {/* 编辑模式：拖拽手柄 */}
@@ -116,7 +116,7 @@ function SortableSongItem({
             type="checkbox"
             checked={isSelected}
             onChange={onToggleSelect}
-            className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+            className="w-5 h-5 text-primary border-slate-300 rounded focus:ring-primary"
           />
         </div>
       )}
@@ -131,7 +131,7 @@ function SortableSongItem({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+            <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
               <Music size={16} className="text-slate-400" />
             </div>
           )}
@@ -159,7 +159,7 @@ function SortableSongItem({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+              <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                 <Music size={16} className="text-slate-400" />
               </div>
             )}
@@ -426,7 +426,7 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
                       <Music size={64} className="text-slate-400" />
                     </div>
                   )}
@@ -449,7 +449,7 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
                         type="text"
                         value={editedName}
                         onChange={(e) => setEditedName(e.target.value)}
-                        className="text-3xl font-bold text-slate-800 border-b-2 border-blue-500 outline-none bg-transparent px-2"
+                        className="text-3xl font-bold text-slate-800 border-b-2 border-primary outline-none bg-transparent px-2"
                         autoFocus
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') handleSaveName();
@@ -511,7 +511,7 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
                   <button
                     onClick={handlePlayAll}
                     disabled={songs.length === 0}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed shadow-sm"
+                    className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed shadow-sm"
                   >
                     <Play size={20} />
                     <span className="font-medium">播放全部</span>
@@ -534,7 +534,7 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
                         }
                       }
                     }}
-                    className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-full hover:bg-slate-50 transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 bg-white border border-primary text-primary rounded-full hover:bg-primary/5 transition-colors"
                   >
                     <Edit2 size={18} />
                     <span>{isEditMode ? '完成' : '编辑'}</span>
@@ -554,13 +554,13 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
 
           {/* 编辑模式工具栏 */}
           {isEditMode && (
-            <div className="px-8 py-3 bg-blue-50 border-t border-blue-100 flex items-center justify-between">
+            <div className="px-8 py-3 bg-primary/5 border-t border-primary/20 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <input
                   type="checkbox"
                   checked={selectedSongs.size === songs.length && songs.length > 0}
                   onChange={toggleSelectAll}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                  className="w-5 h-5 text-primary border-slate-300 rounded focus:ring-primary"
                 />
                 <span className="text-slate-700">
                   已选择 {selectedSongs.size} 首歌曲

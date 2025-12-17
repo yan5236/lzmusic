@@ -140,24 +140,26 @@ const ThemeSettingsCard: React.FC<ThemeSettingsCardProps> = ({
       </div>
 
       <div className="mt-5 p-4 rounded-xl bg-slate-50 border border-slate-100">
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="p-2 rounded-lg bg-white border border-slate-200 shadow-sm text-slate-600">
               <Sparkles size={18} />
             </div>
-            <div>
-              <div className="text-sm font-semibold text-slate-800">自定义颜色</div>
-              <p className="text-xs text-slate-500">输入十六进制色值或使用取色器，立即预览并应用</p>
+            <div className="flex items-center gap-2 flex-wrap text-sm">
+              <span className="font-semibold text-slate-800">自定义颜色</span>
+              <span className="text-xs text-slate-500">
+                输入十六进制色值或使用取色器，立即预览并应用
+              </span>
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col sm:flex-row gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <label className="flex items-center">
               <input
                 type="color"
                 value={safePickerValue}
                 onChange={(event) => handleSelectColor(event.target.value, { silent: true })}
-                className="w-12 h-12 rounded-lg border border-slate-200 bg-white cursor-pointer"
+                className="w-11 h-11 rounded-lg border border-slate-200 bg-white cursor-pointer"
                 aria-label="选择主题色"
               />
             </label>
@@ -166,11 +168,14 @@ const ThemeSettingsCard: React.FC<ThemeSettingsCardProps> = ({
               value={customInput}
               onChange={(event) => setCustomInput(event.target.value)}
               placeholder="#2563eb"
-              className="flex-1 px-3 py-3 rounded-lg border border-slate-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="flex-1 min-w-[200px] h-11 px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={handleApplyCustom}
-              className={`px-4 py-3 rounded-lg font-medium transition-colors ${
+              className={`h-11 px-4 text-sm rounded-lg font-medium transition-colors shrink-0 ${
                 normalizedCustomColor && normalizedCustomColor !== normalizedActiveColor
                   ? 'bg-primary text-white hover:bg-primary/90'
                   : 'bg-slate-200 text-slate-500 cursor-not-allowed'
@@ -181,7 +186,7 @@ const ThemeSettingsCard: React.FC<ThemeSettingsCardProps> = ({
             </button>
             <button
               onClick={handleReset}
-              className={`px-4 py-3 rounded-lg font-medium transition-colors border ${
+              className={`h-11 px-4 text-sm rounded-lg font-medium transition-colors border shrink-0 ${
                 normalizedActiveColor !== DEFAULT_THEME_COLOR
                   ? 'border-slate-200 text-slate-700 hover:bg-white'
                   : 'border-slate-100 text-slate-400 cursor-not-allowed bg-slate-100'

@@ -63,7 +63,7 @@ export default function CreatePlaylistDialog({
               onChange={(e) => setName(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="请输入歌单名称"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
               autoFocus
             />
           </div>
@@ -77,7 +77,7 @@ export default function CreatePlaylistDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="请输入歌单描述"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all resize-none"
               rows={3}
             />
           </div>
@@ -96,7 +96,7 @@ export default function CreatePlaylistDialog({
             disabled={!name.trim()}
             className={`px-6 py-2 rounded-lg transition-colors ${
               name.trim()
-                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                ? 'bg-primary text-white hover:bg-primary/90'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >

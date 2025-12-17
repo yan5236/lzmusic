@@ -76,7 +76,7 @@ export default function HistoryView({
       {/* 标题区域 */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl text-primary">
+          <div className="p-3 bg-primary/10 rounded-xl text-primary">
             <History size={24} />
           </div>
           <h1 className="text-3xl font-bold text-slate-900">历史播放</h1>

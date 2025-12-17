@@ -84,7 +84,7 @@ export default function AddToPlaylistDialog({
           <div className="px-6 py-3 border-b border-slate-100">
             <button
               onClick={() => setShowCreateDialog(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 text-primary hover:bg-primary/10 rounded-lg transition-colors"
             >
               <Plus size={20} />
               <span className="font-medium">新建歌单</span>
@@ -109,7 +109,7 @@ export default function AddToPlaylistDialog({
                   <button
                     key={playlist.id}
                     onClick={() => handleSelectPlaylist(playlist.id)}
-                    className="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all group"
+                    className="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:border-primary hover:bg-primary/5 transition-all group"
                   >
                     <div className="flex items-center gap-3">
                       {/* 封面或图标 */}

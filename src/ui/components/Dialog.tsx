@@ -93,7 +93,7 @@ export function DialogInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
         onKeyDown={(e) => e.key === 'Enter' && onEnter?.()}
       />
     </div>
@@ -137,7 +137,7 @@ export function DialogTextarea({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all resize-none"
       />
     </div>
   );
@@ -161,7 +161,7 @@ export function DialogButton({ children, onClick, variant = 'secondary', disable
   const variantClasses = {
     primary: disabled
       ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-      : 'bg-blue-500 text-white hover:bg-blue-600',
+      : 'bg-primary text-white hover:bg-primary/90',
     secondary: 'text-slate-600 hover:bg-slate-100',
   };
 

@@ -102,7 +102,7 @@ const PlaylistsView = memo(function PlaylistsView({
         <div className="px-8 py-6">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 rounded-xl text-primary">
+              <div className="p-3 bg-primary/10 rounded-xl text-primary">
                 <ListMusic size={24} />
               </div>
               <h1 className="text-3xl font-bold text-slate-900">我的歌单</h1>
@@ -110,7 +110,7 @@ const PlaylistsView = memo(function PlaylistsView({
             </div>
             <button
               onClick={() => setShowCreateDialog(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors shadow-sm"
             >
               <Plus size={20} />
               <span className="font-medium">新建歌单</span>
@@ -127,7 +127,7 @@ const PlaylistsView = memo(function PlaylistsView({
               <p className="text-sm mb-6">创建你的第一个歌单，开始收藏喜欢的音乐吧</p>
               <button
                 onClick={() => setShowCreateDialog(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+                className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
               >
                 <Plus size={20} />
                 <span>新建歌单</span>
@@ -150,7 +150,7 @@ const PlaylistsView = memo(function PlaylistsView({
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100">
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
                         <Music size={48} className="text-slate-400" />
                       </div>
                     )}
@@ -164,7 +164,7 @@ const PlaylistsView = memo(function PlaylistsView({
 
                   {/* 歌单信息 */}
                   <div>
-                    <h3 className="font-medium text-slate-800 truncate group-hover:text-blue-600 transition-colors">
+                    <h3 className="font-medium text-slate-800 truncate group-hover:text-primary transition-colors">
                       {playlist.name}
                     </h3>
                     <p className="text-sm text-slate-500 mt-0.5">

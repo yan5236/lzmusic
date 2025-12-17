@@ -172,7 +172,7 @@ export default function HomeView({
   return (
     <div className="p-8 space-y-8">
       {/* 单曲推荐 */}
-      <div className="bg-blue-500 rounded-2xl p-6 text-white shadow-lg">
+      <div className="bg-primary rounded-2xl p-6 text-white shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-5">
             <div
@@ -192,7 +192,7 @@ export default function HomeView({
               )}
               <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="bg-white/90 rounded-full p-3 shadow-lg">
-                  <Play size={18} className="text-indigo-600 fill-indigo-600" />
+                  <Play size={18} className="text-primary fill-primary" />
                 </div>
               </div>
             </div>
@@ -225,11 +225,11 @@ export default function HomeView({
           </div>
 
           <button
-            className="flex items-center gap-2 px-5 py-3 bg-white text-blue-600 rounded-xl font-semibold shadow-md hover:shadow-lg active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-3 bg-white text-primary rounded-xl font-semibold shadow-md hover:shadow-lg active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => recommendedSong && playSong(recommendedSong)}
             disabled={!recommendedSong || isLoadingRecommended}
           >
-            <Play size={16} className="fill-blue-600 text-blue-600" />
+            <Play size={16} className="fill-primary text-primary" />
             {isLoadingRecommended ? '挑选中...' : '立即播放'}
           </button>
         </div>
@@ -238,7 +238,7 @@ export default function HomeView({
       {/* 歌单推荐 */}
       <div>
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 bg-blue-100 rounded-xl text-primary">
+          <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
             <ListMusic size={20} />
           </div>
           <h2 className="text-2xl font-bold text-slate-800">歌单推荐</h2>
@@ -260,7 +260,7 @@ export default function HomeView({
                 className="bg-white p-4 rounded-xl hover:shadow-lg border border-slate-100 transition group cursor-pointer"
                 onClick={() => onNavigateToPlaylist && onNavigateToPlaylist(playlist.id)}
               >
-                <div className="relative aspect-square mb-3 overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 shadow">
+                <div className="relative aspect-square mb-3 overflow-hidden rounded-lg bg-gradient-to-br from-primary/10 via-white to-primary/10 shadow">
                   {playlist.coverUrl ? (
                     <img
                       src={playlist.coverUrl}
@@ -278,7 +278,7 @@ export default function HomeView({
                     </div>
                   </div>
                 </div>
-                <h3 className="font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                <h3 className="font-semibold text-slate-900 truncate group-hover:text-primary transition-colors">
                   {playlist.name}
                 </h3>
                 <p className="text-sm text-slate-500 mt-1">{playlist.songCount} 首歌曲</p>
@@ -299,7 +299,7 @@ export default function HomeView({
                 {song.coverUrl ? (
                   <img src={song.coverUrl} className="w-10 h-10 rounded shadow-sm object-cover" alt="cover" />
                 ) : (
-                  <div className="w-10 h-10 rounded shadow-sm bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded shadow-sm bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                     <Music size={16} className="text-slate-400" />
                   </div>
                 )}

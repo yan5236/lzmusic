@@ -370,7 +370,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
         {/* 标题栏 */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-100 rounded-xl text-primary">
+            <div className="p-3 bg-primary/10 rounded-xl text-primary">
               <Folder size={24} />
             </div>
             <h1 className="text-3xl font-bold text-slate-900">本地歌曲</h1>
@@ -380,7 +380,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
           <div className="flex gap-3">
             <button
               onClick={() => setShowCreateFolderDialog(true)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-2"
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition flex items-center gap-2"
             >
               <Plus size={18} />
               新建虚拟文件夹
@@ -424,7 +424,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
               >
                 {/* 文件夹图标 */}
                 <div className="w-12 text-center">
-                  <Folder size={32} className="text-blue-500 inline-block" />
+                  <Folder size={32} className="text-primary inline-block" />
                 </div>
 
                 {/* 文件夹名称 */}
@@ -608,7 +608,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
       <div className="px-6 py-3 bg-white border-b border-slate-200">
         <button
           onClick={handleAddFiles}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-2"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition flex items-center gap-2"
         >
           <Plus size={18} />
           添加歌曲
@@ -670,7 +670,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
                       src={`localmusic://localhost/${encodeURIComponent(track.cover_path.replace(/\\/g, '/'))}`}
                     />
                   ) : (
-                    <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 rounded shadow-sm">
+                    <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 rounded shadow-sm">
                       <Music size={16} className="text-slate-400" />
                     </div>
                   )}
@@ -693,7 +693,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
                       className="p-2 hover:bg-slate-200 rounded-full transition-colors"
                       title="添加到歌单"
                     >
-                      <ListPlus size={16} className="text-blue-500" />
+                      <ListPlus size={16} className="text-primary" />
                     </button>
                     <button
                       onClick={(e) => {
