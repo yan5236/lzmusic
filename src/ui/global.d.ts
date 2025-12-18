@@ -338,7 +338,7 @@ interface WindowControlResponse {
   isMaximized: boolean;
 }
 
-type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'get-state';
+type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'get-state' | 'hide-to-tray' | 'quit-app';
 
 // 托盘控制动作与状态
 type TrayControlAction = 'toggle-play' | 'next' | 'prev' | 'open-playlist' | 'show-main' | 'quit-app';

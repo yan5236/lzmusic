@@ -28,6 +28,15 @@ let isQuitting = false;
 
 registerLocalmusicScheme();
 
+const requestAppQuit = () => {
+  if (isQuitting) return;
+
+  isQuitting = true;
+  trayManager?.destroy();
+  trayManager = null;
+  app.quit();
+};
+
 function registerAppIpcHandlers(getMainWindow: () => BrowserWindow | null) {
   registerBilibiliHandlers();
   registerNeteaseHandlers();
@@ -35,7 +44,7 @@ function registerAppIpcHandlers(getMainWindow: () => BrowserWindow | null) {
   registerAppDbHandlers();
   registerPlaylistHandlers();
   registerLocalMusicHandlers();
-  registerWindowControlHandler(getMainWindow);
+  registerWindowControlHandler(getMainWindow, requestAppQuit);
   registerUpdaterIpcHandlers(getMainWindow);
 }
 
@@ -77,11 +86,7 @@ function createMainProcessResources() {
     appBasePath,
     isDev: isDev(),
     getMainWindow: () => mainWindow,
-    onRequestQuit: () => {
-      isQuitting = true;
-      trayManager?.destroy();
-      app.quit();
-    },
+    onRequestQuit: requestAppQuit,
   });
   trayManager.initialize();
 }

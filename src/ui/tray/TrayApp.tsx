@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
 type TrayControlAction = 'toggle-play' | 'next' | 'prev' | 'open-playlist' | 'show-main' | 'quit-app';
@@ -25,6 +26,14 @@ const formatTime = (val: number) => {
   const m = String(Math.floor(v / 60)).padStart(2, '0');
   const s = String(v % 60).padStart(2, '0');
   return `${m}:${s}`;
+};
+
+const twoLineClampStyle: CSSProperties = {
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  wordBreak: 'break-all',
 };
 
 function TrayApp() {
@@ -77,10 +86,24 @@ function TrayApp() {
             <div className="absolute inset-0 rounded-xl shadow-[inset_0_1px_6px_rgba(255,255,255,0.65)] pointer-events-none" />
           </div>
 
-          <div className="flex-1 min-w-0 flex flex-col gap-1">
+          <div className="flex-1 min-w-0 flex flex-col gap-1 overflow-hidden">
             <div className="text-[11px] uppercase font-semibold text-blue-700 tracking-[0.08em]">Now Playing</div>
-            <div className="text-base font-semibold truncate text-slate-900">{trayState.title || '未在播放'}</div>
-            <div className="text-sm text-slate-600 truncate">{trayState.artist || '等待播放歌曲'}</div>
+            <div
+              className="text-base font-semibold text-slate-900 leading-tight"
+              title={trayState.title || '未在播放'}
+            >
+              <span className="block w-full text-ellipsis" style={twoLineClampStyle}>
+                {trayState.title || '未在播放'}
+              </span>
+            </div>
+            <div
+              className="text-sm text-slate-600"
+              title={trayState.artist || '等待播放歌曲'}
+            >
+              <span className="block w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                {trayState.artist || '等待播放歌曲'}
+              </span>
+            </div>
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <span className="px-2 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 font-semibold">
                 {trayState.isPlaying ? '播放中' : '已暂停'}

@@ -1,8 +1,11 @@
 import { BrowserWindow, ipcMain } from 'electron';
 
-type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'get-state';
+type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'get-state' | 'hide-to-tray' | 'quit-app';
 
-export function registerWindowControlHandler(getMainWindow: () => BrowserWindow | null) {
+export function registerWindowControlHandler(
+  getMainWindow: () => BrowserWindow | null,
+  requestAppQuit: () => void
+) {
   ipcMain.handle('window-control', (event, action: WindowControlAction) => {
     const targetWindow = BrowserWindow.fromWebContents(event.sender) ?? getMainWindow();
 
@@ -20,6 +23,12 @@ export function registerWindowControlHandler(getMainWindow: () => BrowserWindow 
         } else {
           targetWindow.maximize();
         }
+        break;
+      case 'hide-to-tray':
+        targetWindow.hide();
+        break;
+      case 'quit-app':
+        requestAppQuit();
         break;
       case 'close':
         targetWindow.close();
