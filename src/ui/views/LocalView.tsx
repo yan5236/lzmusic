@@ -368,8 +368,8 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
     return (
       <div className="p-8">
         {/* 标题栏 */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <div className="p-3 bg-primary/10 rounded-xl text-primary">
               <Folder size={24} />
             </div>
@@ -377,7 +377,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
           </div>
 
           {/* 操作按钮 */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setShowCreateFolderDialog(true)}
               className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition flex items-center gap-2"
@@ -403,20 +403,21 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
             <p className="text-sm mt-2">点击上方按钮创建或导入</p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
-            {/* 表头 */}
-            <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 p-4 border-b border-slate-100 font-semibold text-slate-500 text-sm">
-              <div className="w-12 text-center">
-                <Folder size={16} className="inline-block" />
+          <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm overflow-x-auto">
+            <div className="min-w-[600px]">
+              {/* 表头 */}
+              <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 p-4 border-b border-slate-100 font-semibold text-slate-500 text-sm">
+                <div className="w-12 text-center">
+                  <Folder size={16} className="inline-block" />
+                </div>
+                <div>文件夹名称</div>
+                <div className="w-24 text-center">歌曲数量</div>
+                <div className="w-32 text-center">创建时间</div>
+                <div className="w-24 text-center">操作</div>
               </div>
-              <div>文件夹名称</div>
-              <div className="w-24 text-center">歌曲数量</div>
-              <div className="w-32 text-center">创建时间</div>
-              <div className="w-24 text-center">操作</div>
-            </div>
 
-            {/* 文件夹列表 */}
-            {folders.map((folder) => (
+              {/* 文件夹列表 */}
+              {folders.map((folder) => (
               <div
                 key={folder.id}
                 className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 items-center group cursor-pointer transition-colors"
@@ -470,6 +471,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
                 </div>
               </div>
             ))}
+            </div>
           </div>
         )}
 
@@ -624,18 +626,19 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
             <p className="text-sm mt-2">点击"添加歌曲"按钮导入音频文件</p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
-            {/* 表头 */}
-            <div className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 p-4 border-b border-slate-100 font-semibold text-slate-500 text-sm">
-              <div className="w-10 text-center">#</div>
-              <div>标题</div>
-              <div>艺术家</div>
-              <div className="w-16 text-center">时长</div>
-              <div className="w-24 text-center">操作</div>
-            </div>
+          <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm overflow-x-auto">
+            <div className="min-w-[600px]">
+              {/* 表头 */}
+              <div className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 p-4 border-b border-slate-100 font-semibold text-slate-500 text-sm">
+                <div className="w-10 text-center">#</div>
+                <div>标题</div>
+                <div>艺术家</div>
+                <div className="w-16 text-center">时长</div>
+                <div className="w-24 text-center">操作</div>
+              </div>
 
-            {/* 歌曲列表 */}
-            {tracks.map((track, index) => (
+              {/* 歌曲列表 */}
+              {tracks.map((track, index) => (
               <div
                 key={track.id}
                 className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 items-center group cursor-pointer transition-colors"
@@ -725,6 +728,7 @@ const LocalView = memo(function LocalView({ onPlaySong, onShowToast }: LocalView
                 </div>
               </div>
             ))}
+            </div>
           </div>
         )}
       </div>

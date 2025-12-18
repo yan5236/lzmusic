@@ -176,7 +176,7 @@ export default function HomeView({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-5">
             <div
-              className="relative w-24 h-24 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/10 cursor-pointer group"
+              className="relative w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/10 cursor-pointer group"
               onClick={() => recommendedSong && playSong(recommendedSong)}
             >
               {recommendedSong?.coverUrl ? (

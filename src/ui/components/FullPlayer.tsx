@@ -173,7 +173,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-100 opacity-30 rounded-full blur-[100px] pointer-events-none"></div>
 
         {/* Left Column: Cover, Info, Lyric Settings */}
-        <div className="flex flex-col items-center justify-center h-full space-y-8 relative z-10 md:items-start md:pl-10">
+        <div className="flex flex-col items-center justify-center h-full space-y-6 relative z-10 md:items-start md:pl-10">
 
           {/* Album Art - 根据 coverStyle 条件渲染 */}
           {coverStyle === 'vinyl' ? (
@@ -220,7 +220,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
           </div>
 
           {/* Bottom Left: Lyrics Settings Button */}
-          <div className="pt-4">
+          <div>
              <button
                 onClick={() => setShowSettingsDialog(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all bg-white text-slate-500 hover:bg-slate-50 border border-slate-200 hover:border-primary hover:text-primary"

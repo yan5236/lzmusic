@@ -74,8 +74,8 @@ export default function HistoryView({
   return (
     <div className="p-8">
       {/* 标题区域 */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <div className="p-3 bg-primary/10 rounded-xl text-primary">
             <History size={24} />
           </div>
@@ -95,15 +95,16 @@ export default function HistoryView({
       </div>
 
       {/* 历史播放列表 */}
-      <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
-        <div className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 p-4 border-b border-slate-100 font-semibold text-slate-500 text-sm">
-          <div className="w-10 text-center">#</div>
-          <div>标题</div>
-          <div>歌手</div>
-          <div className="w-16 text-center">时长</div>
-          <div className="w-16 text-center">操作</div>
-        </div>
-        {playerState.history.length > 0 ? playerState.history.map((song, i) => (
+      <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm overflow-x-auto">
+        <div className="min-w-[600px]">
+          <div className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 p-4 border-b border-slate-100 font-semibold text-slate-500 text-sm">
+            <div className="w-10 text-center">#</div>
+            <div>标题</div>
+            <div>歌手</div>
+            <div className="w-16 text-center">时长</div>
+            <div className="w-16 text-center">操作</div>
+          </div>
+          {playerState.history.length > 0 ? playerState.history.map((song, i) => (
           <div
             key={`history-${song.id}-${i}`}
             className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 p-4 hover:bg-slate-50 border-b border-slate-50 last:border-0 items-center group cursor-pointer transition-colors"
@@ -138,12 +139,13 @@ export default function HistoryView({
               </button>
             </div>
           </div>
-        )) : (
-          <div className="py-12 flex flex-col items-center justify-center text-slate-400">
-            <History size={48} className="mb-4 opacity-20"/>
-            <p>暂无历史播放记录</p>
-          </div>
-        )}
+          )) : (
+            <div className="py-12 flex flex-col items-center justify-center text-slate-400">
+              <History size={48} className="mb-4 opacity-20"/>
+              <p>暂无历史播放记录</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 清除全部确认对话框 */}
