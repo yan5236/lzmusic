@@ -1,7 +1,7 @@
 # LZ Music
 
 <div align="center">
-  <img src="assets/logo.png">  
+  <img src="assets/icon.png">  
     
     全新2.0重制版
 
