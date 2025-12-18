@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import BottomPlayer from './components/BottomPlayer';
 import FullPlayer from './components/FullPlayer';
@@ -51,7 +51,71 @@ function App() {
     handlePlayAllFromPlaylist,
     clearHistory,
     deleteHistory,
+    setPlayerState,
   } = usePlayerController(showToast);
+
+  // 托盘状态上报节流
+  const traySyncRef = useRef<number>(0);
+  const lastIsPlayingRef = useRef<boolean>(playerState.isPlaying);
+  const lastSongIdRef = useRef<string | null>(playerState.currentSong?.id ?? null);
+
+  useEffect(() => {
+    const now = Date.now();
+    const songId = playerState.currentSong?.id ?? null;
+    const isPlayingChanged = lastIsPlayingRef.current !== playerState.isPlaying;
+    const songChanged = lastSongIdRef.current !== songId;
+
+    // 中文注释：避免频繁上报，时间戳小于 700ms 的更新直接跳过
+    if (!isPlayingChanged && !songChanged && now - traySyncRef.current < 700 && playerState.currentTime !== 0) {
+      return;
+    }
+    traySyncRef.current = now;
+    lastIsPlayingRef.current = playerState.isPlaying;
+    lastSongIdRef.current = songId;
+
+    if (typeof window.electron?.send !== 'function') return;
+
+    try {
+      window.electron.send('player-state-update', {
+        title: playerState.currentSong?.title || '未在播放',
+        artist: playerState.currentSong?.artist || '',
+        coverUrl: playerState.currentSong?.coverUrl || '',
+        isPlaying: playerState.isPlaying,
+        duration: playerState.currentSong?.duration || 0,
+        currentTime: playerState.currentTime,
+      });
+    } catch (error) {
+      console.error('托盘状态上报失败:', error);
+    }
+  }, [playerState.currentSong, playerState.isPlaying, playerState.currentTime]);
+
+  useEffect(() => {
+    if (typeof window.electron?.onPlayerControl !== 'function') return;
+
+    const stopListen = window.electron.onPlayerControl((action) => {
+      switch (action) {
+        case 'toggle-play':
+          togglePlay();
+          break;
+        case 'next':
+          nextSong();
+          break;
+        case 'prev':
+          prevSong();
+          break;
+        case 'open-playlist':
+          setPlayerState((prev) => (prev.showPlaylist ? prev : { ...prev, showPlaylist: true }));
+          break;
+        case 'show-main':
+        default:
+          break;
+      }
+    });
+
+    return () => {
+      stopListen?.();
+    };
+  }, [nextSong, prevSong, setPlayerState, togglePlay]);
 
   const navigateToPlaylistDetail = (playlistId: string) => {
     setCurrentPlaylistId(playlistId);

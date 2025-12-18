@@ -340,6 +340,18 @@ interface WindowControlResponse {
 
 type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'get-state';
 
+// 托盘控制动作与状态
+type TrayControlAction = 'toggle-play' | 'next' | 'prev' | 'open-playlist' | 'show-main' | 'quit-app';
+
+interface TrayPlayerStatePayload {
+  title?: string;
+  artist?: string;
+  coverUrl?: string;
+  isPlaying?: boolean;
+  duration?: number;
+  currentTime?: number;
+}
+
 
   interface Window {
     electron: {
@@ -424,6 +436,10 @@ type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'get-state
       invoke(channel: 'app-update-control', action: 'pause' | 'resume' | 'cancel'): Promise<AppUpdateControlResponse>;
 
       onUpdateEvent(callback: (event: UpdateEventPayload) => void): () => void;
+      send(channel: 'player-state-update', payload: TrayPlayerStatePayload): void;
+      onPlayerControl(callback: (action: TrayControlAction) => void): () => void;
+      onTrayState(callback: (state: TrayPlayerStatePayload) => void): () => void;
+      sendTrayControl(action: TrayControlAction): void;
     };
   }
 }

@@ -5,6 +5,16 @@
 
 import { contextBridge, ipcRenderer } from 'electron';
 
+type TrayControlAction = 'toggle-play' | 'next' | 'prev' | 'open-playlist' | 'show-main' | 'quit-app';
+type TrayStatePayload = {
+  title?: string;
+  artist?: string;
+  coverUrl?: string;
+  isPlaying?: boolean;
+  duration?: number;
+  currentTime?: number;
+};
+
 // 暴露到 window.electron 的 API
 contextBridge.exposeInMainWorld('electron', {
   /**
@@ -83,5 +93,51 @@ contextBridge.exposeInMainWorld('electron', {
     const handler = (_event: unknown, data: unknown) => callback(data);
     ipcRenderer.on('app-update-event', handler);
     return () => ipcRenderer.removeListener('app-update-event', handler);
+  },
+
+  /**
+   * 主动发送消息（仅开放托盘状态上报）
+   */
+  send: (channel: string, payload: unknown) => {
+    const validSendChannels = ['player-state-update'];
+    if (!validSendChannels.includes(channel)) {
+      throw new Error(`Invalid IPC send channel: ${channel}`);
+    }
+    ipcRenderer.send(channel, payload);
+  },
+
+  /**
+   * 托盘窗口-订阅状态
+   */
+  onTrayState: (callback: (state: TrayStatePayload) => void) => {
+    const channel = 'tray-state';
+    const handler = (_event: unknown, data: unknown) => {
+      callback(data as TrayStatePayload);
+    };
+    ipcRenderer.on(channel, handler);
+    return () => ipcRenderer.removeListener(channel, handler);
+  },
+
+  /**
+   * 托盘窗口-发出控制指令
+   */
+  sendTrayControl: (action: TrayControlAction) => {
+    const validActions: TrayControlAction[] = ['toggle-play', 'next', 'prev', 'open-playlist', 'show-main', 'quit-app'];
+    if (!validActions.includes(action)) {
+      throw new Error(`Invalid tray control action: ${action}`);
+    }
+    ipcRenderer.send('tray-control', action);
+  },
+
+  /**
+   * 监听托盘控制指令
+   */
+  onPlayerControl: (callback: (action: 'toggle-play' | 'next' | 'prev' | 'open-playlist' | 'show-main' | 'quit-app') => void) => {
+    const channel = 'tray-player-control';
+    const handler = (_event: unknown, action: unknown) => {
+      callback(action as 'toggle-play' | 'next' | 'prev' | 'open-playlist' | 'show-main' | 'quit-app');
+    };
+    ipcRenderer.on(channel, handler);
+    return () => ipcRenderer.removeListener(channel, handler);
   },
 });
