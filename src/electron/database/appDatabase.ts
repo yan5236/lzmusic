@@ -22,6 +22,12 @@ export interface HistoryRecord {
   playedAt: number; // 播放时间戳
 }
 
+// 搜索历史数据结构
+export interface SearchHistoryRecord {
+  term: string;
+  searchedAt: number;
+}
+
 // 歌词偏移数据结构
 export interface LyricsOffsetRecord {
   songId: string; // 歌曲唯一标识
@@ -151,6 +157,14 @@ class AppDatabase {
           pages TEXT,
           source TEXT,
           playedAt INTEGER NOT NULL
+        )
+      `);
+
+      // 创建搜索历史表
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS search_history (
+          term TEXT PRIMARY KEY,
+          searchedAt INTEGER NOT NULL
         )
       `);
 
@@ -332,6 +346,99 @@ class AppDatabase {
       console.log(`历史记录已删除 [ID: ${id}]`);
     } catch (error) {
       console.error('删除历史记录失败:', error);
+      throw error;
+    }
+  }
+
+  // ========== 搜索历史操作 ==========
+
+  /**
+   * 记录搜索关键词
+   * 同一个关键词只保留最新搜索时间
+   * @param term - 搜索关键词
+   */
+  public addSearchHistory(term: string): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    const trimmed = term.trim();
+    if (!trimmed) return;
+
+    try {
+      const searchedAt = Date.now();
+      const stmt = this.db.prepare(`
+        INSERT INTO search_history (term, searchedAt)
+        VALUES (?, ?)
+        ON CONFLICT(term) DO UPDATE SET searchedAt = excluded.searchedAt
+      `);
+      stmt.run(trimmed, searchedAt);
+
+      // 仅保留最近 30 条记录
+      this.db.exec(`
+        DELETE FROM search_history WHERE term NOT IN (
+          SELECT term FROM search_history ORDER BY searchedAt DESC LIMIT 30
+        )
+      `);
+    } catch (error) {
+      console.error('添加搜索历史失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取搜索历史
+   * @param limit - 返回的条目数量
+   */
+  public getSearchHistory(limit: number = 30): SearchHistoryRecord[] {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const stmt = this.db.prepare(`
+        SELECT term, searchedAt
+        FROM search_history
+        ORDER BY searchedAt DESC
+        LIMIT ?
+      `);
+      return stmt.all(limit) as SearchHistoryRecord[];
+    } catch (error) {
+      console.error('获取搜索历史失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 删除指定搜索历史
+   * @param term - 要删除的关键词
+   */
+  public deleteSearchHistory(term: string): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      const stmt = this.db.prepare('DELETE FROM search_history WHERE term = ?');
+      stmt.run(term);
+    } catch (error) {
+      console.error('删除搜索历史失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 清空搜索历史
+   */
+  public clearSearchHistory(): void {
+    if (!this.db) {
+      throw new Error('数据库未初始化');
+    }
+
+    try {
+      this.db.exec('DELETE FROM search_history');
+    } catch (error) {
+      console.error('清空搜索历史失败:', error);
       throw error;
     }
   }

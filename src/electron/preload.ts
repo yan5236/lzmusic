@@ -41,6 +41,10 @@ contextBridge.exposeInMainWorld('electron', {
       'app-db-history-get',   // 获取历史记录
       'app-db-history-clear', // 清空历史记录
       'app-db-history-delete', // 删除单条历史记录
+      'app-db-search-history-add',
+      'app-db-search-history-get',
+      'app-db-search-history-clear',
+      'app-db-search-history-delete',
       // 应用数据库 - 歌词偏移
       'app-db-offset-save',   // 保存歌词偏移
       'app-db-offset-get',    // 获取歌词偏移

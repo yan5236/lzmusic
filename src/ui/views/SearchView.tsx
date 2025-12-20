@@ -110,39 +110,113 @@ export default function SearchView({
   // 无限滚动监听
   const observerTarget = useRef<HTMLDivElement>(null);
 
+  const hasIpcInvoke = () =>
+    typeof window !== 'undefined' && typeof window.electron?.invoke === 'function';
+
   /**
    * 搜索历史相关处理
    */
-  useEffect(() => {
+  const persistLocalHistory = useCallback((history: string[]) => {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem('searchHistory', JSON.stringify(history.slice(0, 10)));
+    } catch (err) {
+      console.error('保存搜索历史到本地失败:', err);
+    }
+  }, []);
+
+  const loadLocalHistory = useCallback((): string[] => {
+    if (typeof localStorage === 'undefined') return [];
+
     try {
       const storedHistory = localStorage.getItem('searchHistory');
       if (storedHistory) {
         const parsed: unknown = JSON.parse(storedHistory);
         if (Array.isArray(parsed)) {
-          setSearchHistory(parsed.slice(0, 10));
+          return parsed.slice(0, 10);
         }
       }
     } catch (err) {
-      console.error('加载搜索历史失败:', err);
+      console.error('加载本地搜索历史失败:', err);
+    }
+
+    return [];
+  }, []);
+
+  const saveSearchHistoryToDb = useCallback(async (term: string) => {
+    const invoke = hasIpcInvoke() ? window.electron.invoke : null;
+    if (!invoke) return;
+
+    try {
+      await invoke('app-db-search-history-add', term);
+    } catch (error) {
+      console.error('保存搜索历史失败:', error);
     }
   }, []);
+
+  const clearSearchHistoryInDb = useCallback(async () => {
+    const invoke = hasIpcInvoke() ? window.electron.invoke : null;
+    if (!invoke) return;
+
+    try {
+      await invoke('app-db-search-history-clear');
+    } catch (error) {
+      console.error('清空搜索历史失败:', error);
+    }
+  }, []);
+
+  const loadSearchHistory = useCallback(async () => {
+    const hasIpc = hasIpcInvoke();
+
+    if (hasIpc) {
+      try {
+        const result = await window.electron.invoke('app-db-search-history-get');
+        if (result.success && Array.isArray(result.data)) {
+          const history = result.data.slice(0, 10);
+          if (history.length > 0) {
+            persistLocalHistory(history);
+            return history;
+          }
+        }
+      } catch (error) {
+        console.error('加载搜索历史失败:', error);
+      }
+    }
+
+    const localHistory = loadLocalHistory();
+    if (localHistory.length && hasIpc) {
+      localHistory.forEach((term) => {
+        void saveSearchHistoryToDb(term);
+      });
+    }
+    persistLocalHistory(localHistory);
+    return localHistory;
+  }, [loadLocalHistory, persistLocalHistory, saveSearchHistoryToDb]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-    } catch (err) {
-      console.error('保存搜索历史失败:', err);
-    }
-  }, [searchHistory]);
+    const initHistory = async () => {
+      const history = await loadSearchHistory();
+      setSearchHistory(history);
+    };
 
-  const addToHistory = useCallback((keyword: string) => {
-    const trimmed = keyword.trim();
-    if (!trimmed) return;
+    void initHistory();
+  }, [loadSearchHistory]);
 
-    setSearchHistory((prev) =>
-      [trimmed, ...prev.filter((item) => item !== trimmed)].slice(0, 10)
-    );
-  }, []);
+  const addToHistory = useCallback(
+    (keyword: string) => {
+      const trimmed = keyword.trim();
+      if (!trimmed) return;
+
+      setSearchHistory((prev) => {
+        const nextHistory = [trimmed, ...prev.filter((item) => item !== trimmed)].slice(0, 10);
+        persistLocalHistory(nextHistory);
+        return nextHistory;
+      });
+
+      void saveSearchHistoryToDb(trimmed);
+    },
+    [persistLocalHistory, saveSearchHistoryToDb]
+  );
 
   const handleHistoryClick = (term: string) => {
     setSearchQuery(term);
@@ -152,6 +226,8 @@ export default function SearchView({
 
   const handleClearHistory = () => {
     setSearchHistory([]);
+    persistLocalHistory([]);
+    void clearSearchHistoryInDb();
   };
 
   /**

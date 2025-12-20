@@ -97,6 +97,17 @@ interface AppDbHistoryDeleteResponse {
   error?: string;
 }
 
+interface AppDbSearchHistoryGetResponse {
+  success: boolean;
+  data: string[];
+  error?: string;
+}
+
+interface AppDbSearchHistoryMutateResponse {
+  success: boolean;
+  error?: string;
+}
+
 interface AppDbOffsetSaveResponse {
   success: boolean;
   error?: string;
@@ -383,6 +394,11 @@ interface TrayPlayerStatePayload {
       invoke(channel: 'app-db-history-get'): Promise<AppDbHistoryGetResponse>;
       invoke(channel: 'app-db-history-clear'): Promise<AppDbHistoryClearResponse>;
       invoke(channel: 'app-db-history-delete', id: string): Promise<AppDbHistoryDeleteResponse>;
+      // 应用数据库 - 搜索历史
+      invoke(channel: 'app-db-search-history-add', term: string): Promise<AppDbSearchHistoryMutateResponse>;
+      invoke(channel: 'app-db-search-history-get'): Promise<AppDbSearchHistoryGetResponse>;
+      invoke(channel: 'app-db-search-history-clear'): Promise<AppDbSearchHistoryMutateResponse>;
+      invoke(channel: 'app-db-search-history-delete', term: string): Promise<AppDbSearchHistoryMutateResponse>;
       // 应用数据库 - 歌词偏移
       invoke(channel: 'app-db-offset-save', songId: string, offset: number): Promise<AppDbOffsetSaveResponse>;
       invoke(channel: 'app-db-offset-get', songId: string): Promise<AppDbOffsetGetResponse>;

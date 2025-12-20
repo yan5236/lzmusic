@@ -100,6 +100,65 @@ export function registerAppDbHandlers(): void {
     }
   });
 
+  // ========== 搜索历史相关 ==========
+
+  // 添加搜索历史
+  ipcMain.handle('app-db-search-history-add', async (_event, term: string) => {
+    try {
+      appDatabase.addSearchHistory(term);
+      return { success: true };
+    } catch (error) {
+      console.error('添加搜索历史失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误',
+      };
+    }
+  });
+
+  // 获取搜索历史
+  ipcMain.handle('app-db-search-history-get', async () => {
+    try {
+      const history = appDatabase.getSearchHistory();
+      return { success: true, data: history.map(item => item.term) };
+    } catch (error) {
+      console.error('获取搜索历史失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误',
+        data: [],
+      };
+    }
+  });
+
+  // 清空搜索历史
+  ipcMain.handle('app-db-search-history-clear', async () => {
+    try {
+      appDatabase.clearSearchHistory();
+      return { success: true };
+    } catch (error) {
+      console.error('清空搜索历史失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误',
+      };
+    }
+  });
+
+  // 删除单条搜索历史
+  ipcMain.handle('app-db-search-history-delete', async (_event, term: string) => {
+    try {
+      appDatabase.deleteSearchHistory(term);
+      return { success: true };
+    } catch (error) {
+      console.error('删除搜索历史失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误',
+      };
+    }
+  });
+
   // ========== 歌词偏移相关 ==========
 
   // 保存歌词偏移
