@@ -5,7 +5,7 @@ import { CancellationError, CancellationToken } from 'builder-util-runtime';
 // 从 CommonJS 模块解构 autoUpdater
 const { autoUpdater } = electronUpdater;
 
-const updateFeedURL = (process.env.UPDATE_FEED_URL || 'http://127.0.0.1:6542/').replace(/\/?$/, '/');
+const updateFeedURL = (process.env.UPDATE_FEED_URL || 'https://github.com/yan5236/lzmusic').replace(/\/?$/, '/');
 const UPDATE_EVENT_CHANNEL = 'app-update-event';
 
 let isUpdateFeedConfigured = false;

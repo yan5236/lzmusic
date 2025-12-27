@@ -1,9 +1,9 @@
 import React from 'react';
-import ThemeSettingsCard from '../components/settings/ThemeSettingsCard';
-import PlaybackStyleCard from '../components/settings/PlaybackStyleCard';
-import PlaylistSettingsSection from '../components/settings/PlaylistSettingsSection';
-import UpdateSection from '../components/settings/UpdateSection';
-import CloseBehaviorSettingsCard from '../components/settings/CloseBehaviorSettingsCard';
+import ThemeSettingsCard from '../components/Settings/ThemeSettingsCard';
+import PlaybackStyleCard from '../components/Settings/PlaybackStyleCard';
+import PlaylistSettingsSection from '../components/Settings/PlaylistSettingsSection';
+import UpdateSection from '../components/Settings/UpdateSection';
+import CloseBehaviorSettingsCard from '../components/Settings/CloseBehaviorSettingsCard';
 
 interface SettingsViewProps {
   themeColor: string;
