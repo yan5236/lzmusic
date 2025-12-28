@@ -28,7 +28,7 @@
 
 ## 项目介绍
 
-LZ Music 是一款基于 Electron + React + TypeScript 开发的桌面音乐播放器。支持 Bilibili 和网易云音乐的音乐播放，具有本地音乐管理、播放列表管理、歌词显示等功能。
+LZ Music 是一款基于 Electron + React + TypeScript 开发的桌面音乐播放器。支持 Bilibili 的音乐播放，具有本地音乐管理、播放列表管理、歌词显示等功能。
 
 > ⚠️ **使用前请阅读**：[使用前须知](./使用前须知.md)
 
