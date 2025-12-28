@@ -7,7 +7,7 @@
     "icon": "assets/icon.png"
   },
   "linux": {
-    "target": "AppImage",
+    "target": ["deb", "rpm"],
     "category": "Utility",
     "icon": "assets/icon.png"
   },
@@ -16,7 +16,7 @@
     "allowToChangeInstallationDirectory": true
   },
   "win": {
-    "target": ["nsis", "msi"],
+    "target": ["nsis"],
     "icon": "assets/icon.ico"
   },
   "publish": [

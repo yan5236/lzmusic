@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { isDev } from './util.js';
@@ -46,6 +46,17 @@ function registerAppIpcHandlers(getMainWindow: () => BrowserWindow | null) {
   registerLocalMusicHandlers();
   registerWindowControlHandler(getMainWindow, requestAppQuit);
   registerUpdaterIpcHandlers(getMainWindow);
+
+  // 打开外部链接
+  ipcMain.handle('open-external-url', async (_event, url: string) => {
+    try {
+      await shell.openExternal(url);
+      return { success: true };
+    } catch (error) {
+      console.error('打开外部链接失败:', error);
+      return { success: false, error: '打开链接失败' };
+    }
+  });
 }
 
 function wireTrayChannels() {

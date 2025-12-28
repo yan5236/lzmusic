@@ -4,6 +4,7 @@ import PlaybackStyleCard from '../components/Settings/PlaybackStyleCard';
 import PlaylistSettingsSection from '../components/Settings/PlaylistSettingsSection';
 import UpdateSection from '../components/Settings/UpdateSection';
 import CloseBehaviorSettingsCard from '../components/Settings/CloseBehaviorSettingsCard';
+import AboutSection from '../components/Settings/AboutSection';
 
 interface SettingsViewProps {
   themeColor: string;
@@ -33,6 +34,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
       <PlaybackStyleCard coverStyle={coverStyle} onCoverStyleChange={onCoverStyleChange} />
       <PlaylistSettingsSection onShowToast={onShowToast} />
       <UpdateSection onShowToast={onShowToast} />
+      <AboutSection />
     </div>
   </div>
 );

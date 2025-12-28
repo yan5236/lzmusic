@@ -17,6 +17,11 @@ interface PlaylistHeaderProps {
   onNameChange: (value: string) => void;
   onSaveName: () => void;
   onCancelName: () => void;
+  isEditingDescription: boolean;
+  editedDescription: string;
+  onDescriptionChange: (value: string) => void;
+  onSaveDescription: () => void;
+  onCancelDescription: () => void;
   onPlayAll: () => void;
   onEditModeToggle: () => void;
   onDeletePlaylist: () => void;
@@ -32,6 +37,11 @@ export default function PlaylistHeader({
   onNameChange,
   onSaveName,
   onCancelName,
+  isEditingDescription,
+  editedDescription,
+  onDescriptionChange,
+  onSaveDescription,
+  onCancelDescription,
   onPlayAll,
   onEditModeToggle,
   onDeletePlaylist,
@@ -55,6 +65,42 @@ export default function PlaylistHeader({
               onSave={onSaveName}
               onCancel={onCancelName}
             />
+          </div>
+
+          <div className="text-slate-500 text-sm mt-2 line-clamp-2">
+            {isEditingDescription ? (
+              <div className="flex items-start gap-2">
+                <textarea
+                  value={editedDescription}
+                  onChange={(e) => onDescriptionChange(e.target.value)}
+                  className="flex-1 text-sm text-slate-700 border-b-2 border-primary outline-none bg-transparent px-2 py-1 resize-none min-h-[60px]"
+                  placeholder="请输入歌单简介"
+                  rows={2}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      onSaveDescription();
+                    }
+                  }}
+                />
+                <div className="flex gap-1 mt-1">
+                  <button
+                    onClick={onSaveDescription}
+                    className="p-1 text-green-600 hover:bg-green-50 rounded-full"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </button>
+                  <button
+                    onClick={onCancelDescription}
+                    className="p-1 text-slate-600 hover:bg-slate-100 rounded-full"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              playlist.description || '暂无简介'
+            )}
           </div>
 
           <div className="text-slate-600 mb-6">

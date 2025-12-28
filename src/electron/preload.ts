@@ -81,6 +81,7 @@ contextBridge.exposeInMainWorld('electron', {
       'app-check-update',              // 检查更新
       'app-download-update',           // 下载更新包
       'app-update-control',            // 控制更新下载（暂停/继续/取消）
+      'open-external-url',             // 在默认浏览器中打开外部链接
     ];
 
     if (!validChannels.includes(channel)) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Play, Music, ListMusic, Clock3 } from 'lucide-react';
 import type { Song, PlayerState, Playlist, PlaylistSong, LocalTrack } from '../types';
 import { subscribePlaylistEvent } from '../utils/playlistEvents';
@@ -28,6 +28,13 @@ export default function HomeView({
 
   const playlistSongsCache = useRef<Map<string, Song[]>>(new Map());
   const localSongsCache = useRef<Song[] | null>(null);
+
+  const featuredPlaylist = useMemo(() => {
+    if (playlists.length === 0) {
+      return null;
+    }
+    return [...playlists].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  }, [playlists]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60) || 0;
@@ -242,48 +249,75 @@ export default function HomeView({
             <ListMusic size={20} />
           </div>
           <h2 className="text-2xl font-bold text-slate-800">歌单推荐</h2>
-          <span className="text-slate-400 text-sm">{playlists.length} 个歌单</span>
+          <span className="text-slate-400 text-sm">
+            {featuredPlaylist ? '1 个精选推荐' : '暂无推荐'}
+          </span>
         </div>
 
         {isLoadingPlaylists ? (
           <div className="text-slate-400">正在加载歌单...</div>
-        ) : playlists.length === 0 ? (
+        ) : !featuredPlaylist ? (
           <div className="bg-white rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-500">
             <p className="font-medium mb-2">还没有歌单</p>
             <p className="text-sm">创建或导入歌单后，这里会展示你的歌单推荐</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {playlists.map((playlist) => (
-              <div
-                key={playlist.id}
-                className="bg-white p-4 rounded-xl hover:shadow-lg border border-slate-100 transition group cursor-pointer"
-                onClick={() => onNavigateToPlaylist && onNavigateToPlaylist(playlist.id)}
-              >
-                <div className="relative aspect-square mb-3 overflow-hidden rounded-lg bg-gradient-to-br from-primary/10 via-white to-primary/10 shadow">
-                  {playlist.coverUrl ? (
-                    <img
-                      src={playlist.coverUrl}
-                      alt={playlist.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-300">
-                      <Music size={40} />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="bg-white rounded-full p-2 shadow">
-                      <Play size={16} className="text-primary fill-primary" />
-                    </div>
+          <div
+            className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition cursor-pointer group"
+            onClick={() => onNavigateToPlaylist && onNavigateToPlaylist(featuredPlaylist.id)}
+          >
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-6 p-6">
+              <div className="relative w-full md:w-40 aspect-square flex-shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-primary/10 via-white to-primary/10">
+                {featuredPlaylist.coverUrl ? (
+                  <img
+                    src={featuredPlaylist.coverUrl}
+                    alt={featuredPlaylist.name}
+                    className="w-full h-full object-cover transition-transform duration-300 md:group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300">
+                    <Music size={48} />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/10 opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="bg-white rounded-full p-3 shadow">
+                    <Play size={16} className="text-primary fill-primary" />
                   </div>
                 </div>
-                <h3 className="font-semibold text-slate-900 truncate group-hover:text-primary transition-colors">
-                  {playlist.name}
-                </h3>
-                <p className="text-sm text-slate-500 mt-1">{playlist.songCount} 首歌曲</p>
               </div>
-            ))}
+
+              <div className="flex-1 space-y-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-primary/70 font-semibold">
+                  今日精选歌单
+                </p>
+                <h3 className="text-2xl font-bold text-slate-900">{featuredPlaylist.name}</h3>
+                <p className="text-sm text-slate-600">
+                  {featuredPlaylist.description || '暂无简介，点击查看详情'}
+                </p>
+                <div className="flex items-center gap-3 text-sm text-slate-500">
+                  <span className="flex items-center gap-1 px-2 py-1 bg-slate-50 rounded-full">
+                    <ListMusic size={14} />
+                    {featuredPlaylist.songCount} 首歌曲
+                  </span>
+                  <span className="px-2 py-1 bg-primary/5 text-primary rounded-full text-xs font-semibold">
+                    为你推荐
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 w-full md:w-auto">
+                <button
+                  className="w-full md:w-32 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl font-semibold shadow-md hover:shadow-lg active:scale-95 transition"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onNavigateToPlaylist?.(featuredPlaylist.id);
+                  }}
+                >
+                  <Play size={16} className="fill-white text-white" />
+                  去看看
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

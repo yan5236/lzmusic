@@ -386,7 +386,6 @@ const UpdateSection: React.FC<UpdateSectionProps> = ({ onShowToast }) => {
               </div>
             </div>
           </div>
-          <p className="text-xs text-slate-500 ml-12">更新源：本地测试服务器（仅打包环境可用）</p>
         </div>
 
         <div className="flex gap-3">

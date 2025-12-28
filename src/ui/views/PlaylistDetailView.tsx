@@ -50,6 +50,8 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState('');
 
   // 拖拽传感器
   const sensors = useSensors(
@@ -87,6 +89,7 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
         setPlaylist(result.data.playlist);
         setSongs(result.data.songs);
         setEditedName(result.data.playlist.name);
+        setEditedDescription(result.data.playlist.description || '');
       } else {
         onShowToastRef.current('加载歌单失败');
         onNavigateBackRef.current();
@@ -209,6 +212,29 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
     }
   };
 
+  // 保存歌单简介
+  const handleSaveDescription = async () => {
+    try {
+      const description = editedDescription.trim();
+      const result = await window.electron.invoke(
+        'app-db-playlist-update',
+        playlistId,
+        { description }
+      );
+
+      if (result.success) {
+        setIsEditingDescription(false);
+        onShowToast('歌单简介已更新');
+        await loadPlaylistDetail();
+      } else {
+        onShowToast('更新失败');
+      }
+    } catch (error) {
+      console.error('更新歌单简介失败:', error);
+      onShowToast('更新失败');
+    }
+  };
+
   // 保存歌单名称
   const handleSaveName = async () => {
     if (!editedName.trim()) {
@@ -256,12 +282,15 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
     setIsEditMode(newEditMode);
     setSelectedSongs(new Set());
     if (newEditMode) {
-      setIsEditingName(true);
+      setIsEditingDescription(true);
     } else {
       if (isEditingName && editedName.trim() && editedName.trim() !== playlist?.name) {
         handleSaveName();
       } else {
         setIsEditingName(false);
+      }
+      if (isEditingDescription) {
+        handleSaveDescription();
       }
     }
   };
@@ -273,6 +302,11 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
   const handleCancelName = () => {
     setIsEditingName(false);
     setEditedName(playlist.name);
+  };
+
+  const handleCancelDescription = () => {
+    setIsEditingDescription(false);
+    setEditedDescription(playlist.description || '');
   };
 
   return (
@@ -297,6 +331,11 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
             onNameChange={setEditedName}
             onSaveName={handleSaveName}
             onCancelName={handleCancelName}
+            isEditingDescription={isEditingDescription}
+            editedDescription={editedDescription}
+            onDescriptionChange={setEditedDescription}
+            onSaveDescription={handleSaveDescription}
+            onCancelDescription={handleCancelDescription}
             onPlayAll={handlePlayAll}
             onEditModeToggle={handleEditModeToggle}
             onDeletePlaylist={() => setShowDeleteDialog(true)}
@@ -313,7 +352,7 @@ const PlaylistDetailView = memo(function PlaylistDetailView({
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden">
           <SongList
             songs={songs}
             selectedSongs={selectedSongs}
