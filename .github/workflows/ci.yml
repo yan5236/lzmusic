@@ -16,13 +16,10 @@ jobs:
         include:
           - os: windows-latest
             platform: win
-            target: nsis
           - os: macos-latest
             platform: mac
-            target: dmg
           - os: ubuntu-latest
             platform: linux
-            target: deb,rpm
 
     runs-on: ${{ matrix.os }}
 
@@ -54,7 +51,7 @@ jobs:
         run: npm run build
 
       - name: Build Electron app
-        run: npx electron-builder --${{ matrix.platform }} --${{ matrix.target }}
+        run: npx electron-builder --${{ matrix.platform }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
