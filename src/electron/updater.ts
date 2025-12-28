@@ -5,7 +5,9 @@ import { CancellationError, CancellationToken } from 'builder-util-runtime';
 // 从 CommonJS 模块解构 autoUpdater
 const { autoUpdater } = electronUpdater;
 
-const updateFeedURL = (process.env.UPDATE_FEED_URL || 'https://github.com/yan5236/lzmusic').replace(/\/?$/, '/');
+// GitHub 仓库配置
+const GITHUB_OWNER = 'yan5236';
+const GITHUB_REPO = 'lzmusic';
 const UPDATE_EVENT_CHANNEL = 'app-update-event';
 
 let isUpdateFeedConfigured = false;
@@ -14,6 +16,10 @@ let downloadCancellationToken: CancellationToken | null = null;
 let isDownloadingUpdate = false;
 let downloadControlAction: 'pause' | 'cancel' | null = null;
 
+/**
+ * 配置自动更新源
+ * 使用 GitHub provider 自动从 GitHub Releases 获取更新
+ */
 function configureUpdateFeed() {
   if (!app.isPackaged) {
     return;
@@ -22,12 +28,14 @@ function configureUpdateFeed() {
   try {
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
+    // 使用 GitHub provider，自动从 releases 获取更新文件
     autoUpdater.setFeedURL({
-      provider: 'generic',
-      url: updateFeedURL,
+      provider: 'github',
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPO,
     });
     isUpdateFeedConfigured = true;
-    console.log('[update] feed configured:', updateFeedURL);
+    console.log('[update] feed configured: GitHub', GITHUB_OWNER, '/', GITHUB_REPO);
   } catch (error) {
     console.error('[update] 配置更新源失败:', error);
   }
