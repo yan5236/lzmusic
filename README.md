@@ -9,10 +9,10 @@
   <img src="https://img.shields.io/github/v/release/yan5236/lzmusic">
   <img src="https://img.shields.io/github/languages/count/yan5236/lzmusic">
   <img src="https://img.shields.io/github/languages/top/yan5236/lzmusic">
-</div>
-
-你正在查看旧分支，此分之已不再维护，仅做存档，请使用新版本分支[main](https://github.com/yan5236/lzmusic)
-
+</div>  
+  
+> ⚠️ 你正在查看旧分支，此分之已不再维护，仅做存档，请使用新版本分支[main](https://github.com/yan5236/lzmusic)
+  
 
 一个现代化的音乐播放器
 
