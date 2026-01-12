@@ -37,7 +37,7 @@
     "better-sqlite3": "^12.5.0",
     "electron-updater": "^6.6.2",
     "lucide-react": "^0.562.0",
-    "music-metadata": "^11.10.3",
+    "music-metadata": "^11.10.5",
     "NeteaseCloudMusicApi": "^4.28.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
