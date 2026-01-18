@@ -1,7 +1,7 @@
 import React from 'react';
 import ThemeSettingsCard from '../components/Settings/ThemeSettingsCard';
 import PlaybackStyleCard from '../components/Settings/PlaybackStyleCard';
-import PlaylistSettingsSection from '../components/Settings/PlaylistSettingsSection';
+import PlaylistImportExport from '../components/PlaylistImportExport';
 import UpdateSection from '../components/Settings/UpdateSection';
 import CloseBehaviorSettingsCard from '../components/Settings/CloseBehaviorSettingsCard';
 import AboutSection from '../components/Settings/AboutSection';
@@ -32,7 +32,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
       />
       <CloseBehaviorSettingsCard onShowToast={onShowToast} />
       <PlaybackStyleCard coverStyle={coverStyle} onCoverStyleChange={onCoverStyleChange} />
-      <PlaylistSettingsSection onShowToast={onShowToast} />
+      <PlaylistImportExport onShowToast={onShowToast} />
       <UpdateSection onShowToast={onShowToast} />
       <AboutSection />
     </div>

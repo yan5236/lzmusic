@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Download, Upload, Check } from 'lucide-react';
-import { notifyPlaylistUpdated } from '../../utils/playlistEvents';
+import { notifyPlaylistUpdated } from '../utils/playlistEvents';
 
 interface PlaylistInfo {
   id: string;
@@ -8,8 +8,9 @@ interface PlaylistInfo {
   songCount: number;
 }
 
-interface PlaylistSettingsSectionProps {
+interface PlaylistImportExportProps {
   onShowToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  compact?: boolean;
 }
 
 interface ExportDialogProps {
@@ -35,7 +36,7 @@ interface ImportDialogProps {
   onConfirm: () => void;
 }
 
-const usePlaylistTransfer = (onShowToast: PlaylistSettingsSectionProps['onShowToast']) => {
+const usePlaylistTransfer = (onShowToast: PlaylistImportExportProps['onShowToast']) => {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [playlists, setPlaylists] = useState<PlaylistInfo[]>([]);
@@ -453,7 +454,7 @@ const ImportPlaylistsDialog: React.FC<ImportDialogProps> = ({
   );
 };
 
-const PlaylistSettingsSection: React.FC<PlaylistSettingsSectionProps> = ({ onShowToast }) => {
+const PlaylistImportExport: React.FC<PlaylistImportExportProps> = ({ onShowToast }) => {
   const playlistTransfer = usePlaylistTransfer(onShowToast);
 
   return (
@@ -520,4 +521,4 @@ const PlaylistSettingsSection: React.FC<PlaylistSettingsSectionProps> = ({ onSho
   );
 };
 
-export default PlaylistSettingsSection;
+export default PlaylistImportExport;

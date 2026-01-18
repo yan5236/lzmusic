@@ -111,6 +111,9 @@ lzmusic/
 # 安装依赖
 npm install
 
+# 编译 better-sqlite3 模块
+npm run rebuild
+
 # 启动开发服务器
 npm run dev
 
