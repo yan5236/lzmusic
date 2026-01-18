@@ -16,6 +16,7 @@
 [![Electron](https://img.shields.io/github/package-json/dependency-version/yan5236/lzmusic/dev/electron?style=flat-square&logo=electron&logoColor=white&label=Electron)](package.json)
 [![React](https://img.shields.io/github/package-json/dependency-version/yan5236/lzmusic/react?style=flat-square&logo=react&logoColor=61DAFB&label=React)](package.json)
 [![TypeScript](https://img.shields.io/github/package-json/dependency-version/yan5236/lzmusic/dev/typescript?style=flat-square&logo=typescript&logoColor=3178C6&label=TypeScript)](package.json)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/yan5236/lzmusic)
 
   <div>
     <a href="https://github.com/yan5236/lzmusic/releases">下载</a> ·
