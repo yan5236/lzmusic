@@ -181,7 +181,7 @@ export default function HomeView({
       {/* 单曲推荐 */}
       <div className="bg-primary rounded-2xl p-6 text-white shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-5 min-w-0 flex-1">
             <div
               className="relative w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/10 cursor-pointer group"
               onClick={() => recommendedSong && playSong(recommendedSong)}
@@ -204,9 +204,9 @@ export default function HomeView({
               </div>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <p className="text-sm uppercase tracking-[0.2em] text-white/80">单曲推荐</p>
-              <h3 className="text-2xl font-bold drop-shadow-sm">
+              <h3 className="text-2xl font-bold drop-shadow-sm truncate">
                 {recommendedSong ? recommendedSong.title : '暂无可推荐歌曲'}
               </h3>
               <p className="text-white/80">
@@ -232,7 +232,7 @@ export default function HomeView({
           </div>
 
           <button
-            className="flex items-center gap-2 px-5 py-3 bg-white text-primary rounded-xl font-semibold shadow-md hover:shadow-lg active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-3 bg-white text-primary rounded-xl font-semibold shadow-md hover:shadow-lg active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
             onClick={() => recommendedSong && playSong(recommendedSong)}
             disabled={!recommendedSong || isLoadingRecommended}
           >
