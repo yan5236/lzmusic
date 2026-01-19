@@ -33,7 +33,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.6",
-    "@mui/material": "^7.3.4",
+    "@mui/material": "^7.3.7",
     "@tailwindcss/vite": "^4.1.18",
     "better-sqlite3": "^12.5.0",
     "electron-updater": "^6.6.2",
