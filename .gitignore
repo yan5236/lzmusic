@@ -26,3 +26,5 @@ dist-ssr
 *.sw?
 
 cankao
+.codex
+.trae

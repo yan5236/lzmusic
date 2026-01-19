@@ -166,7 +166,7 @@ const FullPlayer: React.FC<FullPlayerProps> = ({
       </div>
 
       {/* Main Content: 2 Columns */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 p-6 md:p-12 overflow-hidden relative bg-gradient-to-br from-blue-50 via-white to-slate-50">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 p-6 md:p-12 overflow-hidden relative bg-gradient-to-br from-blue-50 via-white to-slate-50 full-player-bg">
 
         {/* Background Decorative Blobs */}
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-200 opacity-20 rounded-full blur-[100px] pointer-events-none"></div>

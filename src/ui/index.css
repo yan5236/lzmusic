@@ -126,6 +126,98 @@
   border-color: #475569;
 }
 
+:root[data-theme='dark'] .hover\:bg-slate-50:hover {
+  background-color: #1e293b;
+}
+
+:root[data-theme='dark'] .hover\:bg-slate-100:hover {
+  background-color: #1e293b;
+}
+
+:root[data-theme='dark'] .hover\:bg-slate-200:hover {
+  background-color: #334155;
+}
+
+:root[data-theme='dark'] .hover\:from-blue-100:hover {
+  --tw-gradient-from: rgb(37 99 235 / 0.32);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+:root[data-theme='dark'] .hover\:to-indigo-100:hover {
+  --tw-gradient-to: rgb(99 102 241 / 0.32);
+}
+
+:root[data-theme='dark'] .hover\:from-slate-100:hover {
+  --tw-gradient-from: rgb(148 163 184 / 0.18);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+:root[data-theme='dark'] .hover\:to-gray-100:hover {
+  --tw-gradient-to: rgb(148 163 184 / 0.14);
+}
+
+:root[data-theme='dark'] .hover\:border-slate-200:hover {
+  border-color: #334155;
+}
+
+:root[data-theme='dark'] .hover\:border-slate-300:hover {
+  border-color: #475569;
+}
+
+:root[data-theme='dark'] .hover\:text-slate-900:hover {
+  color: #f8fafc;
+}
+
+:root[data-theme='dark'] .bg-blue-50 {
+  background-color: rgb(37 99 235 / 0.16);
+}
+
+:root[data-theme='dark'] .bg-blue-100 {
+  background-color: rgb(37 99 235 / 0.24);
+}
+
+:root[data-theme='dark'] .from-blue-50 {
+  --tw-gradient-from: rgb(37 99 235 / 0.25);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+:root[data-theme='dark'] .to-emerald-50 {
+  --tw-gradient-to: rgb(16 185 129 / 0.18);
+}
+
+:root[data-theme='dark'] .to-indigo-50 {
+  --tw-gradient-to: rgb(99 102 241 / 0.22);
+}
+
+:root[data-theme='dark'] .from-slate-50 {
+  --tw-gradient-from: rgb(148 163 184 / 0.12);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+:root[data-theme='dark'] .to-gray-50 {
+  --tw-gradient-to: rgb(148 163 184 / 0.08);
+}
+
+:root[data-theme='dark'] .border-blue-100 {
+  border-color: rgb(37 99 235 / 0.4);
+}
+
+:root[data-theme='dark'] .text-blue-700 {
+  color: #93c5fd;
+}
+
+:root[data-theme='dark'] .full-player-bg {
+  background-image: linear-gradient(135deg, #0b1120 0%, #0f172a 48%, #1e293b 100%);
+}
+
+:root[data-theme='dark'] .full-player-bg .bg-blue-200 {
+  background-color: #1e3a8a;
+}
+
+:root[data-theme='dark'] .full-player-bg .bg-indigo-100 {
+  background-color: #312e81;
+}
+
 /* 自定义滚动条样式 */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;

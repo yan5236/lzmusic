@@ -344,6 +344,11 @@ interface AppUpdateControlResponse {
   error?: string;
 }
 
+interface OpenExternalUrlResponse {
+  success: boolean;
+  error?: string;
+}
+
 interface WindowControlResponse {
   success: boolean;
   isMaximized: boolean;
@@ -444,6 +449,7 @@ interface TrayPlayerStatePayload {
       invoke(channel: 'local-music-get-tracks', folderId: string): Promise<LocalMusicGetTracksResponse>;
       invoke(channel: 'local-music-delete-track', trackId: string): Promise<LocalMusicDeleteTrackResponse>;
       invoke(channel: 'local-music-get-track-by-id', trackId: string): Promise<LocalMusicGetTrackByIdResponse>;
+      invoke(channel: 'open-external-url', url: string): Promise<OpenExternalUrlResponse>;
       invoke(channel: 'window-control', action: WindowControlAction): Promise<WindowControlResponse>;
       // 更新相关
       invoke(channel: 'app-get-version'): Promise<AppVersionResponse>;
