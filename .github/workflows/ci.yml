@@ -61,7 +61,7 @@ jobs:
         with:
           name: windows-installer
           path: |
-            dist/*.exe
+            dist/lzmusic-Setup-*.exe
             dist/latest.yml
 
       - name: Upload artifacts (macOS)
@@ -115,7 +115,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ./artifacts/windows/*
+            ./artifacts/windows/lzmusic-Setup-*.exe
+            ./artifacts/windows/latest.yml
             ./artifacts/macos/*
             ./artifacts/linux/*
           draft: false

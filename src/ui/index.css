@@ -26,6 +26,106 @@
   }
 }
 
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-secondary: #0b1120;
+  --color-surface: #0f172a;
+  --color-dark: #f8fafc;
+  --color-muted: #94a3b8;
+}
+
+:root[data-theme='dark'] .bg-white {
+  background-color: #0f172a;
+}
+
+:root[data-theme='dark'] .bg-white\/95 {
+  background-color: rgb(15 23 42 / 0.95);
+}
+
+:root[data-theme='dark'] .bg-white\/90 {
+  background-color: rgb(15 23 42 / 0.9);
+}
+
+:root[data-theme='dark'] .bg-white\/80 {
+  background-color: rgb(15 23 42 / 0.8);
+}
+
+:root[data-theme='dark'] .bg-white\/10 {
+  background-color: rgb(15 23 42 / 0.1);
+}
+
+:root[data-theme='dark'] .bg-slate-50 {
+  background-color: #0b1120;
+}
+
+:root[data-theme='dark'] .bg-slate-100 {
+  background-color: #0f172a;
+}
+
+:root[data-theme='dark'] .bg-slate-200 {
+  background-color: #1e293b;
+}
+
+:root[data-theme='dark'] .bg-slate-300 {
+  background-color: #334155;
+}
+
+:root[data-theme='dark'] .text-slate-900 {
+  color: #f8fafc;
+}
+
+:root[data-theme='dark'] .text-slate-800 {
+  color: #e2e8f0;
+}
+
+:root[data-theme='dark'] .text-slate-700 {
+  color: #cbd5e1;
+}
+
+:root[data-theme='dark'] .text-slate-600 {
+  color: #94a3b8;
+}
+
+:root[data-theme='dark'] .text-slate-500 {
+  color: #64748b;
+}
+
+:root[data-theme='dark'] .text-slate-400 {
+  color: #94a3b8;
+}
+
+:root[data-theme='dark'] .text-slate-300 {
+  color: #cbd5e1;
+}
+
+:root[data-theme='dark'] .text-slate-200 {
+  color: #e2e8f0;
+}
+
+:root[data-theme='dark'] .text-slate-100 {
+  color: #f1f5f9;
+}
+
+:root[data-theme='dark'] .border-slate-50 {
+  border-color: #1e293b;
+}
+
+:root[data-theme='dark'] .border-slate-100 {
+  border-color: #1e293b;
+}
+
+:root[data-theme='dark'] .border-slate-200 {
+  border-color: #334155;
+}
+
+:root[data-theme='dark'] .border-slate-300 {
+  border-color: #475569;
+}
+
 /* 自定义滚动条样式 */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;

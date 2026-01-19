@@ -18,6 +18,7 @@ import TitleBar from './components/TitleBar';
 import { ViewState } from './types';
 import { useToastManager } from './hooks/useToastManager';
 import { useThemeColor } from './hooks/useThemeColor';
+import { useThemeMode } from './hooks/useThemeMode';
 import { useAgreement } from './hooks/useAgreement';
 import { usePlayerController } from './hooks/usePlayerController';
 import { notifyPlaylistUpdated } from './utils/playlistEvents';
@@ -30,6 +31,7 @@ function App() {
 
   const { toastMessages, showToast, removeToast } = useToastManager();
   const { themeColor, updateThemeColor } = useThemeColor(showToast);
+  const { themeMode, resolvedTheme, systemTheme, updateThemeMode } = useThemeMode();
   const { showAgreement, handleAgreementAccept, handleExitApp } = useAgreement();
 
   const {
@@ -234,6 +236,10 @@ function App() {
           <SettingsView
             themeColor={themeColor}
             onThemeColorChange={updateThemeColor}
+            themeMode={themeMode}
+            systemTheme={systemTheme}
+            resolvedTheme={resolvedTheme}
+            onThemeModeChange={updateThemeMode}
             coverStyle={playerState.coverStyle}
             onCoverStyleChange={updateCoverStyle}
             onShowToast={showToast}
