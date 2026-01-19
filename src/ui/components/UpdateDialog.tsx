@@ -39,6 +39,39 @@ function formatBytes(value?: number) {
   return `${size.toFixed(1)} ${units[unitIndex]}`;
 }
 
+/**
+ * 清理更新说明中的 HTML 标签，保留可读的换行与列表格式。
+ */
+function sanitizeReleaseNotes(raw: string) {
+  if (!raw) return '';
+  const withLineBreaks = raw
+    .replace(/\r\n/g, '\n')
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\/\s*p\s*>/gi, '\n')
+    .replace(/<\s*p[^>]*>/gi, '')
+    .replace(/<\/\s*li\s*>/gi, '\n')
+    .replace(/<\s*li[^>]*>/gi, '- ')
+    .replace(/<\/\s*h\d\s*>/gi, '\n')
+    .replace(/<\s*h\d[^>]*>/gi, '')
+    .replace(/<\/\s*ul\s*>/gi, '\n')
+    .replace(/<\s*ul[^>]*>/gi, '');
+  const withoutTags = withLineBreaks.replace(/<[^>]+>/g, '');
+  const decoded = withoutTags
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'");
+
+  return decoded
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 const UpdateDialog: React.FC<UpdateDialogProps> = ({
   open,
   currentVersion,
@@ -59,6 +92,7 @@ const UpdateDialog: React.FC<UpdateDialogProps> = ({
   const progressPercent = Math.min(100, Math.max(0, progress?.percent ?? (isCompleted ? 100 : 0)));
   const showRemindLater = !isDownloading || isPaused;
   const showIgnore = !isInProgress;
+  const releaseNotes = updateInfo?.notes ? sanitizeReleaseNotes(updateInfo.notes) : '';
 
   return (
     <Dialog
@@ -160,8 +194,8 @@ const UpdateDialog: React.FC<UpdateDialogProps> = ({
         )}
 
         <div className="bg-slate-50 rounded-lg p-3 max-h-52 overflow-y-auto text-sm text-slate-700 whitespace-pre-line">
-          {updateInfo?.notes && updateInfo.notes.trim().length > 0
-            ? updateInfo.notes
+          {releaseNotes.length > 0
+            ? releaseNotes
             : '暂无更新说明'}
         </div>
       </div>
