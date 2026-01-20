@@ -35,7 +35,7 @@
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.7",
     "@tailwindcss/vite": "^4.1.18",
-    "better-sqlite3": "^12.5.0",
+    "better-sqlite3": "^12.6.2",
     "electron-updater": "^6.6.2",
     "lucide-react": "^0.562.0",
     "music-metadata": "^11.10.6",
