@@ -36,7 +36,7 @@
     "@mui/material": "^7.3.7",
     "@tailwindcss/vite": "^4.1.18",
     "better-sqlite3": "^12.6.2",
-    "electron-updater": "^6.6.2",
+    "electron-updater": "^6.7.3",
     "lucide-react": "^0.562.0",
     "music-metadata": "^11.10.6",
     "NeteaseCloudMusicApi": "^4.28.1",
