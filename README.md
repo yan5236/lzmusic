@@ -28,7 +28,7 @@
 
 ---
 
-### 警告⚠️：由于[bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)被发了律师函，而此项目使用了该仓库，因此今天起将暂停更新，手机端也将不再开发，感谢各位的支持，我们在下个项目有缘再见。
+### 警告⚠️：由于[bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)被发了律师函，而此项目使用了该仓库，因此今天起将暂停更新，手机端也将不再开发，仓库将被归档，感谢各位的支持，我们在下个项目有缘再见。
 
 —— 项目维护者，2026年2月3日
 
