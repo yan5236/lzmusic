@@ -28,6 +28,8 @@
 
 ---
 
+### 警告⚠️：由于[bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)被发了律师函，此项目所使用的该仓库，因此今天起将暂停更新。
+
 ## 项目介绍
 
 LZ Music 是一款基于 Electron + React + TypeScript 开发的桌面音乐播放器。支持 Bilibili 的音乐播放，具有本地音乐管理、播放列表管理、歌词显示等功能。
