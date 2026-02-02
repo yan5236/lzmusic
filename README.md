@@ -28,7 +28,9 @@
 
 ---
 
-### 警告⚠️：由于[bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)被发了律师函，此项目所使用的该仓库，因此今天起将暂停更新，手机端也将不再开发。
+### 警告⚠️：由于[bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)被发了律师函，而此项目使用了该仓库，因此今天起将暂停更新，手机端也将不再开发，感谢各位的支持，我们在下个项目有缘再见。
+
+—— 项目维护者，2026年2月3日
 
 ## 项目介绍
 
@@ -93,7 +95,7 @@ lzmusic/
 本项目在开发过程中使用了以下优秀的开源项目：
 
 ### API 相关
-- [Bilibili API](https://github.com/SocialSisterYi/bilibili-API-collect) - Bilibili 开放 API 文档
+- [Bilibili API](https://github.com/SocialSisterYi/bilibili-API-collect) - Bilibili 开放 API 文档，被发律师函，已停更
 - [NeteaseCloudMusicApi - 已删库](https://github.com/Binaryify/NeteaseCloudMusicApi) - 网易云音乐 API（原仓库已删除）
 
 ### 核心依赖
